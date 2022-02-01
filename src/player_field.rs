@@ -53,7 +53,7 @@ impl FieldPlayer {
     }
 
     fn probability_of_actions(&self) -> Vec<Action> {
-        return match self.role {
+        match self.role {
             Passer => to_action(4, 1, 3, 2),
             Professor => to_action(4, 1, 3, 2),
             Shooter => to_action(2, 4, 1, 3),
@@ -63,7 +63,7 @@ impl FieldPlayer {
             Dangler => to_action(1, 3, 2, 4),
             Rock => to_action(1, 3, 2, 4),
             _ => panic!()
-        };
+        }
     }
 }
 
