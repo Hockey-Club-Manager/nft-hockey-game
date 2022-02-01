@@ -1,5 +1,5 @@
-use crate::player::Player;
+use crate::player::FieldPlayer;
 
 pub struct CellData {
-    players: Vec<Player>,
+    players: Vec<FieldPlayer>,
 }

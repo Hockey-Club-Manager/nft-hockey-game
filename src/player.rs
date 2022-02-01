@@ -1,20 +1,20 @@
 use crate::player::ActionType::{Dangle, Move, Pass, Shot};
-use crate::player::PlayerPosition::Goalie;
+use crate::player::PlayerPosition::GoaliePos;
 use crate::player::PlayerRole::{Goon, Passer, Professor, Shooter, ToughGuy, TryHarder};
 
 // #[derive(BorshDeserialize, BorshSerialize, PartialEq)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum PlayerPosition {
     Center,
     LeftWing,
     RightWing,
     LeftDefender,
     RightDefender,
-    Goalie,
+    GoaliePos,
 }
 
 // #[derive(BorshDeserialize, BorshSerialize, PartialEq)]
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Copy)]
 pub enum PlayerRole {
     // Winger
     Passer,
@@ -45,28 +45,23 @@ pub struct Action {
     probability: u8,
 }
 
-pub enum Stats {
-	PlayerStats,
-	GoalieStats,
-}
-
 // #[derive(BorshDeserialize, BorshSerialize)]
-pub struct PlayerStats {
-    skating: u128,
+pub struct FieldPlayerStats {
+    pub(crate) skating: u128,
     shooting: u128,
     strength: u128,
     iq: u128,
     morale: u128,
 }
 
-impl PlayerStats {
+impl FieldPlayerStats {
     pub fn new(skating: u128,
                shooting: u128,
                strength: u128,
                iq: u128,
                morale: u128,)
-               -> PlayerStats {
-        PlayerStats {
+               -> FieldPlayerStats {
+        FieldPlayerStats {
             skating,
             shooting,
             strength,
@@ -101,22 +96,28 @@ impl GoalieStats {
     }
 }
 
-// #[derive(BorshDeserialize, BorshSerialize, Clone)]
-pub struct Player {
+pub trait Player {
+    fn get_user_id(&self) -> u32;
+    fn get_position(&self) -> PlayerPosition;
+    fn get_role(&self) -> PlayerRole;
+    fn get_holds_puck(&self) -> bool;
+}
+
+pub struct Goalie {
     holds_puck: bool,
     position: PlayerPosition,
     role: PlayerRole,
     user_id: u32,
-    pub(crate) stats: Stats,
+    stats: GoalieStats,
 }
 
-impl Player {
+impl Goalie {
     pub fn new(holds_puck: bool,
-           position: PlayerPosition,
-           role: PlayerRole,
-           user_id: u32,
-           stats: Stats) -> Player {
-        Player {
+               position: PlayerPosition,
+               role: PlayerRole,
+               user_id: u32,
+               stats: GoalieStats) -> Goalie {
+        Goalie {
             holds_puck,
             position,
             role,
@@ -124,11 +125,38 @@ impl Player {
             stats,
         }
     }
+}
 
+impl Player for Goalie {
     fn get_user_id(&self) -> u32 { self.user_id }
     fn get_position(&self) -> PlayerPosition { self.position.into() }
     fn get_role(&self) -> PlayerRole { self.role.into() }
     fn get_holds_puck(&self) -> bool { self.holds_puck }
+}
+
+// #[derive(BorshDeserialize, BorshSerialize, Clone)]
+pub struct FieldPlayer {
+    holds_puck: bool,
+    position: PlayerPosition,
+    role: PlayerRole,
+    user_id: u32,
+    pub(crate) stats: FieldPlayerStats,
+}
+
+impl FieldPlayer {
+    pub fn new(holds_puck: bool,
+               position: PlayerPosition,
+               role: PlayerRole,
+               user_id: u32,
+               stats: FieldPlayerStats) -> FieldPlayer {
+        FieldPlayer {
+            holds_puck,
+            position,
+            role,
+            user_id,
+            stats,
+        }
+    }
 
     fn probability_of_actions(&self) -> Vec<Action> {
         if self.role == Passer || self.role == Professor {
@@ -148,6 +176,13 @@ impl Player {
             return to_action(result)
         }
     }
+}
+
+impl Player for FieldPlayer {
+    fn get_user_id(&self) -> u32 { self.user_id }
+    fn get_position(&self) -> PlayerPosition { self.position.into() }
+    fn get_role(&self) -> PlayerRole { self.role.into() }
+    fn get_holds_puck(&self) -> bool { self.holds_puck }
 }
 
 fn to_action(actions: Vec<u8>) -> Vec<Action> {
