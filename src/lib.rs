@@ -1,5 +1,4 @@
 mod game;
-mod cell;
 mod timer;
 mod user;
 mod player;
