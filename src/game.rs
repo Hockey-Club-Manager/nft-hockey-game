@@ -6,7 +6,7 @@ extern crate rand;
 
 use rand::Rng;
 use crate::player::ActionType;
-use crate::player::ActionType::{Dangle, Move, Pass};
+use crate::player::ActionType::{Dangle, Move, Pass, Shot};
 
 // #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault, Clone)]
 pub struct UserInfo {
@@ -38,18 +38,22 @@ pub struct Game {
 }
 
 impl Game {
-    fn pass(&self, competitor_iq: u128, competitor_strength: u128) {
+    fn pass(&self, competitor: FieldPlayer) {
         let mut rng = rand::thread_rng();
         let random_number = rng.gen_range(1, 101);
 
         if random_number > 20 {
-            if self.player_with_puck.as_ref().unwrap().won_pass(competitor_strength) {
+            if self.player_with_puck.as_ref()
+                                    .unwrap()
+                                    .won_pass(competitor.stats.get_strength()) {
                 // TODO
             } else {
                 // TODO
             }
         } else {
-            if self.player_with_puck.as_ref().unwrap().won_battle(competitor_iq) {
+            if self.player_with_puck.as_ref()
+                                    .unwrap()
+                                    .won_battle(competitor.stats.get_iq()) {
                 // TODO
             } else {
                 // TODO
@@ -57,29 +61,38 @@ impl Game {
         }
     }
 
-    fn move_(&self, competitor_strength: u128) {
-        if self.player_with_puck.as_ref().unwrap().won_move(competitor_strength) {
+    fn move_(&mut self, competitor: FieldPlayer) {
+        if self.player_with_puck.as_ref()
+                                .unwrap()
+                                .won_move(competitor.stats.get_strength()) {
             // TODO
         } else {
-            // TODO
+            self.player_with_puck = Option::from(competitor);
         }
     }
 
-    fn dangle(&self, competitor_strength: u128) {
-        if self.player_with_puck.as_ref().unwrap().won_dangle(competitor_strength){
+    fn dangle(&mut self, competitor: FieldPlayer) {
+        if self.player_with_puck.as_ref()
+                                .unwrap()
+                                .won_dangle(competitor.stats.get_strength()){
             // TODO
+            if self.player_with_puck.as_ref().unwrap().get_user_id() == 1 {
+                self.number_of_zone += 1;
+            } else {
+                self.number_of_zone -= 1;
+            }
         } else {
-            // TODO
+            self.player_with_puck = Option::from(competitor);
         }
     }
 
-    pub fn make_an_action(&self, competitor: FieldPlayer, action: ActionType) {
+    fn make_an_action_against_field_player (&mut self, competitor: FieldPlayer, action: ActionType) {
         assert_ne!(self.player_with_puck.is_some(), false, "No player with the puck");
 
         return match action {
-            Pass => self.pass(competitor.stats.get_iq(), competitor.stats.get_strength()),
-            Move => self.move_(competitor.stats.get_strength()),
-            Dangle => self.dangle(competitor.stats.get_strength()),
+            Pass => self.pass(competitor),
+            Move => self.move_(competitor),
+            Dangle => self.dangle(competitor),
             _ => panic!("Action is undefined")
         }
     }

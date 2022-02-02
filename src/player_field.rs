@@ -63,6 +63,8 @@ impl FieldPlayer {
         }
     }
 
+    pub fn get_user_id(&self) -> u32 { self.user_id }
+
     fn probability_of_actions(&self) -> Vec<Action> {
         match self.role {
             Passer => to_action(4, 1, 3, 2),
