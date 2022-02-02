@@ -113,42 +113,48 @@ impl FieldPlayer {
         is_won(self.stats.iq, iq)
     }
 
+    fn pass(&self, competitor_iq: u128, competitor_strength: u128) {
+        let mut rng = rand::thread_rng();
+        let random_number = rng.gen_range(1, 101);
+
+        if random_number > 20 {
+            if self.won_pass(competitor_strength) {
+                // TODO
+            } else {
+                // TODO
+            }
+        } else {
+            if self.won_battle(competitor_iq) {
+                // TODO
+            } else {
+                // TODO
+            }
+        }
+    }
+
+    fn move_(&self, competitor_strength: u128) {
+        if self.won_move(competitor_strength) {
+            // TODO
+        } else {
+            // TODO
+        }
+    }
+
+    fn dangle(&self, competitor_strength: u128) {
+        if self.won_dangle(competitor_strength){
+            // TODO
+        } else {
+            // TODO
+        }
+    }
+
     pub fn make_an_action(&self, competitor: FieldPlayer, action: ActionType) {
         assert_eq!(self.holds_puck, true, "The player does not have the puck");
 
         return match action {
-            Pass => {
-                let mut rng = rand::thread_rng();
-                let random_number = rng.gen_range(1, 101);
-
-                if random_number > 20 {
-                    if self.won_pass(competitor.stats.iq) {
-                        // TODO
-                    } else {
-                        // TODO
-                    }
-                } else {
-                    if self.won_battle(competitor.stats.strength) {
-                        // TODO
-                    } else {
-                        // TODO
-                    }
-                }
-            },
-            Move => {
-                if self.won_move(competitor.stats.strength) {
-                    // TODO
-                } else {
-                    // TODO
-                }
-            },
-            Dangle => {
-                if self.won_dangle(competitor.stats.strength){
-                    // TODO
-                } else {
-                    // TODO
-                }
-            },
+            Pass => self.pass(competitor.stats.iq, competitor.stats.strength),
+            Move => self.move_(competitor.stats.strength),
+            Dangle => self.dangle(competitor.stats.strength),
             _ => panic!("Action is undefined")
         }
     }
