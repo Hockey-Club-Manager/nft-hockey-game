@@ -39,7 +39,7 @@ pub struct FieldPlayer {
     position: PlayerPosition,
     role: PlayerRole,
     user_id: u32,
-    pub(crate) stats: FieldPlayerStats,
+    stats: FieldPlayerStats,
 }
 
 impl FieldPlayer {
@@ -67,7 +67,7 @@ impl FieldPlayer {
             Goon => to_action(3, 2, 4, 1),
             Dangler => to_action(1, 3, 2, 4),
             Rock => to_action(1, 3, 2, 4),
-            _ => panic!()
+            _ => panic!("Player has no role")
         }
     }
 
@@ -82,18 +82,52 @@ impl FieldPlayer {
         actions.sort_by(|a, b| b.probability.cmp(&a.probability)); // descending
 
         let mut rng = rand::thread_rng();
-        let x = rng.gen_range(1, 11);
+        let random_number = rng.gen_range(1, 11);
 
-        return if x >= 7 && (is_attack_zone || actions[0].type_action != Shot) {
+        return if random_number >= 7 && (is_attack_zone || actions[0].type_action != Shot) {
             actions[0].type_action
-        } else if x >= 4 && (is_attack_zone || actions[1].type_action != Shot) {
+        } else if random_number >= 4 && (is_attack_zone || actions[1].type_action != Shot) {
             actions[1].type_action
-        } else if x >= 2 && (is_attack_zone || actions[2].type_action != Shot) {
+        } else if random_number >= 2 && (is_attack_zone || actions[2].type_action != Shot) {
             actions[2].type_action
-        } else if x == 1 && (is_attack_zone || actions[3].type_action != Shot) {
+        } else if random_number == 1 && (is_attack_zone || actions[3].type_action != Shot) {
             actions[3].type_action
         } else {
             actions[2].type_action
+        }
+    }
+
+    fn won_battle(&self, strength: u128) -> bool {
+        true
+    }
+
+    fn won_dangle(&self, strength: u128) -> bool {
+        true
+    }
+
+    fn won_move(&self, strength: u128) -> bool {
+        true
+    }
+
+    fn won_pass(&self, iq: u128) -> bool {
+        true
+    }
+
+    pub fn make_an_action(&self, competitor: FieldPlayer, action: ActionType) {
+        assert_eq!(self.holds_puck, true, "The player does not have the puck");
+
+        return match action {
+            Pass => {
+                let mut rng = rand::thread_rng();
+                let random_number = rng.gen_range(1, 101);
+
+                if random_number > 20 {
+
+                } else {
+
+                }
+            }
+            _ => panic!("Action is undefined")
         }
     }
 }
