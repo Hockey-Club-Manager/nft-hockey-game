@@ -1,5 +1,5 @@
 use std::borrow::Borrow;
-use crate::player::{Action, ActionType, Player, PlayerPosition, PlayerRole};
+use crate::player::{Action, ActionType, is_won, Player, PlayerPosition, PlayerRole};
 use crate::player::ActionType::{Dangle, Move, Pass, Shot};
 use crate::player::PlayerRole::{Goon, Passer, Professor, Shooter, ToughGuy, TryHarder, Rock, Dangler};
 extern crate rand;
@@ -98,19 +98,19 @@ impl FieldPlayer {
     }
 
     fn won_battle(&self, strength: u128) -> bool {
-        true
+        is_won(self.stats.strength, strength)
     }
 
     fn won_dangle(&self, strength: u128) -> bool {
-        true
+        is_won(self.stats.iq, strength)
     }
 
     fn won_move(&self, strength: u128) -> bool {
-        true
+        is_won(self.stats.skating, strength)
     }
 
     fn won_pass(&self, iq: u128) -> bool {
-        true
+        is_won(self.stats.iq, iq)
     }
 
     pub fn make_an_action(&self, competitor: FieldPlayer, action: ActionType) {

@@ -56,7 +56,7 @@ pub trait Player {
     fn get_holds_puck(&self) -> bool;
 }
 
-fn is_won(stat: u128, opponents_stat: u128) -> bool {
+pub fn is_won(stat: u128, opponents_stat: u128) -> bool {
     let sum = stat + opponents_stat;
 
     let mut rng = rand::thread_rng();
