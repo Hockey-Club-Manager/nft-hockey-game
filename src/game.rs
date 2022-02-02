@@ -65,7 +65,11 @@ impl Game {
         if self.player_with_puck.as_ref()
                                 .unwrap()
                                 .won_move(competitor.stats.get_strength()) {
-            // TODO
+            if self.player_with_puck.as_ref().unwrap().get_user_id() == 1 {
+                self.number_of_zone += 1;
+            } else {
+                self.number_of_zone -= 1;
+            }
         } else {
             self.player_with_puck = Option::from(competitor);
         }
@@ -75,7 +79,6 @@ impl Game {
         if self.player_with_puck.as_ref()
                                 .unwrap()
                                 .won_dangle(competitor.stats.get_strength()){
-            // TODO
             if self.player_with_puck.as_ref().unwrap().get_user_id() == 1 {
                 self.number_of_zone += 1;
             } else {
