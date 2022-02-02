@@ -122,11 +122,33 @@ impl FieldPlayer {
                 let random_number = rng.gen_range(1, 101);
 
                 if random_number > 20 {
-
+                    if self.won_pass(competitor.stats.iq) {
+                        // TODO
+                    } else {
+                        // TODO
+                    }
                 } else {
-
+                    if self.won_battle(competitor.stats.strength) {
+                        // TODO
+                    } else {
+                        // TODO
+                    }
                 }
-            }
+            },
+            Move => {
+                if self.won_move(competitor.stats.strength) {
+                    // TODO
+                } else {
+                    // TODO
+                }
+            },
+            Dangle => {
+                if self.won_dangle(competitor.stats.strength){
+                    // TODO
+                } else {
+                    // TODO
+                }
+            },
             _ => panic!("Action is undefined")
         }
     }
