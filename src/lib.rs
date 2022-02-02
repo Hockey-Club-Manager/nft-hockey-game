@@ -8,6 +8,7 @@ mod player_field;
 
 #[cfg(test)]
 mod tests {
+    use crate::player::ActionType::Shot;
     use crate::player::PlayerPosition::Center;
     use crate::player::PlayerRole::Shooter;
     use crate::player_field::{FieldPlayer, FieldPlayerStats};
@@ -16,9 +17,9 @@ mod tests {
     fn it_works() {
         let stats: FieldPlayerStats = FieldPlayerStats::new(125, 124, 144, 0, 200);
 
-
         let player: FieldPlayer = FieldPlayer::new(false, Center, Shooter, 0, stats);
 
         assert_eq!(player.stats.skating, 125, "not eq");
+        assert_eq!(Shot, player.get_random_action(true), "Not Shot");
     }
 }

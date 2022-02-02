@@ -1,6 +1,11 @@
-use crate::player::{Action, Player, PlayerPosition, PlayerRole};
+use std::borrow::Borrow;
+use crate::player::{Action, ActionType, Player, PlayerPosition, PlayerRole};
 use crate::player::ActionType::{Dangle, Move, Pass, Shot};
 use crate::player::PlayerRole::{Goon, Passer, Professor, Shooter, ToughGuy, TryHarder, Rock, Dangler};
+extern crate rand;
+
+use rand::Rng;
+
 
 // #[derive(BorshDeserialize, BorshSerialize)]
 pub struct FieldPlayerStats {
@@ -65,6 +70,32 @@ impl FieldPlayer {
             _ => panic!()
         }
     }
+
+    /*
+    1 - 1
+    2 - 2 3
+    3 - 4 5 6
+    4 - 7 8 9 10
+     */
+    pub fn get_random_action(&self, is_attack_zone: bool) -> ActionType {
+        let mut actions = self.probability_of_actions();
+        actions.sort_by(|a, b| b.probability.cmp(&a.probability)); // descending
+
+        let mut rng = rand::thread_rng();
+        let x = rng.gen_range(1, 11);
+
+        return if x >= 7 && (is_attack_zone || actions[0].type_action != Shot) {
+            actions[0].type_action
+        } else if x >= 4 && (is_attack_zone || actions[1].type_action != Shot) {
+            actions[1].type_action
+        } else if x >= 2 && (is_attack_zone || actions[2].type_action != Shot) {
+            actions[2].type_action
+        } else if x == 1 && (is_attack_zone || actions[3].type_action != Shot) {
+            actions[3].type_action
+        } else {
+            actions[2].type_action
+        }
+    }
 }
 
 impl Player for FieldPlayer {
@@ -74,7 +105,11 @@ impl Player for FieldPlayer {
     fn get_holds_puck(&self) -> bool { self.holds_puck }
 }
 
-fn to_action(pass_probability: u8, shot_probability: u8, move_probability: u8, dangle_probability: u8) -> Vec<Action> {
+fn to_action(pass_probability: u8,
+             shot_probability: u8,
+             move_probability: u8,
+             dangle_probability: u8)
+             -> Vec<Action> {
     let result:Vec<Action> = vec![
         Action {
             type_action: Pass,

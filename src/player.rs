@@ -33,6 +33,7 @@ pub enum PlayerRole {
     Post2Post,
 }
 
+#[derive(PartialEq, Debug, Copy, Clone)]
 pub enum ActionType {
     Pass,
     Shot,
