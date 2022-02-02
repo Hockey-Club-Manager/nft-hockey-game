@@ -23,6 +23,12 @@ impl GoalieStats {
             morale,
         }
     }
+
+    pub fn get_glove_and_blocker(&self) -> u128 { self.glove_and_blocker }
+    pub fn get_pads(&self) -> u128 { self.pads }
+    pub fn get_stand(&self) -> u128 { self.stand }
+    pub fn get_stretch(&self) -> u128 { self.stretch }
+    pub fn get_morale(&self) -> u128 { self.morale }
 }
 
 pub struct Goalie {
@@ -30,7 +36,7 @@ pub struct Goalie {
     position: PlayerPosition,
     role: PlayerRole,
     user_id: u32,
-    stats: GoalieStats,
+    pub(crate) stats: GoalieStats,
 }
 
 impl Goalie {

@@ -9,7 +9,7 @@ use rand::Rng;
 
 // #[derive(BorshDeserialize, BorshSerialize)]
 pub struct FieldPlayerStats {
-    pub(crate) skating: u128,
+    skating: u128,
     shooting: u128,
     strength: u128,
     iq: u128,
@@ -31,6 +31,12 @@ impl FieldPlayerStats {
             morale,
         }
     }
+
+    pub fn get_skating(&self) -> u128 { self.skating }
+    pub fn get_shooting(&self) -> u128 { self.shooting }
+    pub fn get_strength(&self) -> u128 { self.strength }
+    pub fn get_iq(&self) -> u128 { self.iq }
+    pub fn get_morale(&self) -> u128 { self.morale }
 }
 
 // #[derive(BorshDeserialize, BorshSerialize, Clone)]
@@ -39,7 +45,7 @@ pub struct FieldPlayer {
     position: PlayerPosition,
     role: PlayerRole,
     user_id: u32,
-    stats: FieldPlayerStats,
+    pub(crate) stats: FieldPlayerStats,
 }
 
 impl FieldPlayer {
@@ -97,66 +103,20 @@ impl FieldPlayer {
         }
     }
 
-    fn won_battle(&self, strength: u128) -> bool {
+    pub fn won_battle(&self, strength: u128) -> bool {
         is_won(self.stats.strength, strength)
     }
 
-    fn won_dangle(&self, strength: u128) -> bool {
+    pub fn won_dangle(&self, strength: u128) -> bool {
         is_won(self.stats.iq, strength)
     }
 
-    fn won_move(&self, strength: u128) -> bool {
+    pub fn won_move(&self, strength: u128) -> bool {
         is_won(self.stats.skating, strength)
     }
 
-    fn won_pass(&self, iq: u128) -> bool {
+    pub fn won_pass(&self, iq: u128) -> bool {
         is_won(self.stats.iq, iq)
-    }
-
-    fn pass(&self, competitor_iq: u128, competitor_strength: u128) {
-        let mut rng = rand::thread_rng();
-        let random_number = rng.gen_range(1, 101);
-
-        if random_number > 20 {
-            if self.won_pass(competitor_strength) {
-                // TODO
-            } else {
-                // TODO
-            }
-        } else {
-            if self.won_battle(competitor_iq) {
-                // TODO
-            } else {
-                // TODO
-            }
-        }
-    }
-
-    fn move_(&self, competitor_strength: u128) {
-        if self.won_move(competitor_strength) {
-            // TODO
-        } else {
-            // TODO
-        }
-    }
-
-    fn dangle(&self, competitor_strength: u128) {
-        if self.won_dangle(competitor_strength){
-            // TODO
-        } else {
-            // TODO
-        }
-    }
-
-    pub fn make_an_action(&self, competitor: FieldPlayer, action: ActionType) {
-        assert_eq!(self.holds_puck, true, "The player does not have the puck");
-
-        return match action {
-            Pass => self.pass(competitor.stats.iq, competitor.stats.strength),
-            Move => self.move_(competitor.stats.strength),
-            Dangle => self.dangle(competitor.stats.strength),
-            _ => panic!("Action is undefined")
-        }
     }
 }
 
