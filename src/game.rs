@@ -41,8 +41,8 @@ pub struct Game {
 }
 
 impl Game {
-    fn get_random_position(&self, player_pos: PlayerPosition) -> PlayerPosition {
-        let player_positions = self.other_positions(player_pos);
+    fn get_another_random_position(&self, current_player_pos: PlayerPosition) -> PlayerPosition {
+        let player_positions = self.get_other_positions(current_player_pos);
 
         let mut rng = rand::thread_rng();
         let random_pos = rng.gen_range(0, 5);
@@ -50,7 +50,7 @@ impl Game {
         player_positions[random_pos]
     }
 
-    fn other_positions(&self, player_pos: PlayerPosition) -> Vec<PlayerPosition> {
+    fn get_other_positions(&self, player_pos: PlayerPosition) -> Vec<PlayerPosition> {
         let mut player_positions = vec![RightWing, LeftWing, Center, RightDefender, LeftDefender];
 
         for num in 0..5 {
@@ -71,7 +71,7 @@ impl Game {
             if self.player_with_puck.as_ref()
                                     .unwrap()
                                     .won_pass(competitor.stats.get_strength()) {
-                let pass_to = self.get_random_position(self.player_with_puck.as_ref().unwrap().get_position());
+                let pass_to = self.get_another_random_position(self.player_with_puck.as_ref().unwrap().get_position());
 
                 let user = &self.users[self.player_with_puck.as_ref().unwrap().get_user_id() - 1];
 
