@@ -5,7 +5,7 @@ use crate::user::User;
 extern crate rand;
 
 use rand::Rng;
-use crate::player::ActionType;
+use crate::player::{ActionType};
 use crate::player::ActionType::{Dangle, Move, Pass, Shot};
 
 // #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault, Clone)]
@@ -38,7 +38,7 @@ pub struct Game {
 }
 
 impl Game {
-    fn pass(&self, competitor: FieldPlayer) {
+    fn pass(&mut self, competitor: FieldPlayer) {
         let mut rng = rand::thread_rng();
         let random_number = rng.gen_range(1, 101);
 
@@ -48,7 +48,7 @@ impl Game {
                                     .won_pass(competitor.stats.get_strength()) {
                 // TODO
             } else {
-                // TODO
+                self.player_with_puck = Option::from(competitor);
             }
         } else {
             if self.player_with_puck.as_ref()
@@ -56,7 +56,7 @@ impl Game {
                                     .won_battle(competitor.stats.get_iq()) {
                 // TODO
             } else {
-                // TODO
+                self.player_with_puck = Option::from(competitor);
             }
         }
     }
@@ -92,11 +92,15 @@ impl Game {
     fn make_an_action_against_field_player (&mut self, competitor: FieldPlayer, action: ActionType) {
         assert_ne!(self.player_with_puck.is_some(), false, "No player with the puck");
 
-        return match action {
+        match action {
             Pass => self.pass(competitor),
             Move => self.move_(competitor),
             Dangle => self.dangle(competitor),
             _ => panic!("Action is undefined")
+        };
+
+        if self.number_of_zone < 0 || self.number_of_zone > 3 {
+            panic!("Going out of bounds");
         }
     }
 }
