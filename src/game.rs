@@ -6,7 +6,7 @@ extern crate rand;
 
 use rand::Rng;
 use crate::player::{ActionType};
-use crate::player::ActionType::{Dangle, Move, Pass, Shot};
+use crate::player::ActionType::{Battle, Dangle, Move, Pass, Shot};
 
 // #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault, Clone)]
 pub struct UserInfo {
@@ -34,6 +34,7 @@ pub struct Game {
     pub(crate) winner_index: Option<usize>,
     // pub(crate) total_time_spent: Vec<Timestamp>,
     pub(crate) player_with_puck: Option<FieldPlayer>,
+    pub(crate) last_action: ActionType,
     pub(crate) number_of_zone: u8,
 }
 
@@ -47,17 +48,20 @@ impl Game {
                                     .unwrap()
                                     .won_pass(competitor.stats.get_strength()) {
                 // TODO
+                self.last_action = Pass;
+
             } else {
                 self.player_with_puck = Option::from(competitor);
+                self.last_action = Battle;
             }
         } else {
-            if self.player_with_puck.as_ref()
+            if !self.player_with_puck.as_ref()
                                     .unwrap()
                                     .won_battle(competitor.stats.get_iq()) {
-                // TODO
-            } else {
                 self.player_with_puck = Option::from(competitor);
             }
+
+            self.last_action = Battle;
         }
     }
 
@@ -70,8 +74,11 @@ impl Game {
             } else {
                 self.number_of_zone -= 1;
             }
+
+            self.last_action = Move;
         } else {
             self.player_with_puck = Option::from(competitor);
+            self.last_action = Battle;
         }
     }
 
@@ -84,8 +91,11 @@ impl Game {
             } else {
                 self.number_of_zone -= 1;
             }
+
+            self.last_action = Dangle;
         } else {
             self.player_with_puck = Option::from(competitor);
+            self.last_action = Battle;
         }
     }
 

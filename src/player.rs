@@ -42,6 +42,7 @@ pub enum ActionType {
     Shot,
     Move,
     Dangle,
+    Battle,
 }
 
 pub struct Action {
