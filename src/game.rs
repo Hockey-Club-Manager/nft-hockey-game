@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::collections::HashMap;
 use crate::goalie::Goalie;
 use crate::player_field::FieldPlayer;
@@ -30,7 +31,7 @@ pub struct GameToSave {
 */
 
 pub struct Game {
-    pub(crate) players: [UserInfo; 2],
+    pub(crate) users: [UserInfo; 2],
     // pub(crate) reward: TokenBalance,
     pub(crate) winner_index: Option<usize>,
     // pub(crate) total_time_spent: Vec<Timestamp>,
@@ -70,9 +71,16 @@ impl Game {
             if self.player_with_puck.as_ref()
                                     .unwrap()
                                     .won_pass(competitor.stats.get_strength()) {
+                let pass_to = self.get_random_position(self.player_with_puck.as_ref().unwrap().get_position());
+
+                let user = &self.users[self.player_with_puck.as_ref().unwrap().get_user_id() - 1];
+
+                match user.field_players.get(&pass_to) {
+                    Some(player) => self.player_with_puck = Option::from(*player),
+                    None => panic!("Player not found")
+                }
 
                 self.last_action = Pass;
-
             } else {
                 self.player_with_puck = Option::from(competitor);
                 self.last_action = Battle;

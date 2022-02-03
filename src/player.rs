@@ -6,7 +6,7 @@ extern crate rand;
 use rand::Rng;
 
 // #[derive(BorshDeserialize, BorshSerialize, PartialEq)]
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Eq, Hash)]
 pub enum PlayerPosition {
     Center,
     LeftWing,
@@ -51,7 +51,7 @@ pub struct Action {
 }
 
 pub trait Player {
-    fn get_user_id(&self) -> u32;
+    fn get_user_id(&self) -> usize;
     fn get_position(&self) -> PlayerPosition;
     fn get_role(&self) -> PlayerRole;
     fn get_holds_puck(&self) -> bool;

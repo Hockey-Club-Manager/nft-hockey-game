@@ -1,5 +1,5 @@
 // #[derive(BorshDeserialize, BorshSerialize, Clone)]
 pub struct User {
-    id: u8,
+    id: usize,
     score: u8,
 }

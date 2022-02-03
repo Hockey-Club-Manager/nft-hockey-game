@@ -8,6 +8,7 @@ use rand::Rng;
 
 
 // #[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Copy, Clone)]
 pub struct FieldPlayerStats {
     skating: u128,
     shooting: u128,
@@ -40,11 +41,12 @@ impl FieldPlayerStats {
 }
 
 // #[derive(BorshDeserialize, BorshSerialize, Clone)]
+#[derive(Copy, Clone)]
 pub struct FieldPlayer {
     holds_puck: bool,
     position: PlayerPosition,
     role: PlayerRole,
-    user_id: u32,
+    user_id: usize,
     pub(crate) stats: FieldPlayerStats,
 }
 
@@ -52,7 +54,7 @@ impl FieldPlayer {
     pub fn new(holds_puck: bool,
                position: PlayerPosition,
                role: PlayerRole,
-               user_id: u32,
+               user_id: usize,
                stats: FieldPlayerStats) -> FieldPlayer {
         FieldPlayer {
             holds_puck,
@@ -63,7 +65,7 @@ impl FieldPlayer {
         }
     }
 
-    pub fn get_user_id(&self) -> u32 { self.user_id }
+    pub fn get_user_id(&self) -> usize { self.user_id }
 
     fn probability_of_actions(&self) -> Vec<Action> {
         match self.role {
@@ -123,7 +125,7 @@ impl FieldPlayer {
 }
 
 impl Player for FieldPlayer {
-    fn get_user_id(&self) -> u32 { self.user_id }
+    fn get_user_id(&self) -> usize { self.user_id }
     fn get_position(&self) -> PlayerPosition { self.position.into() }
     fn get_role(&self) -> PlayerRole { self.role.into() }
     fn get_holds_puck(&self) -> bool { self.holds_puck }

@@ -35,15 +35,15 @@ pub struct Goalie {
     holds_puck: bool,
     position: PlayerPosition,
     role: PlayerRole,
-    user_id: u32,
-    pub(crate) stats: GoalieStats,
+    user_id: usize,
+    stats: GoalieStats,
 }
 
 impl Goalie {
     pub fn new(holds_puck: bool,
                position: PlayerPosition,
                role: PlayerRole,
-               user_id: u32,
+               user_id: usize,
                stats: GoalieStats) -> Goalie {
         Goalie {
             holds_puck,
@@ -56,7 +56,7 @@ impl Goalie {
 }
 
 impl Player for Goalie {
-    fn get_user_id(&self) -> u32 { self.user_id }
+    fn get_user_id(&self) -> usize { self.user_id }
     fn get_position(&self) -> PlayerPosition { self.position.into() }
     fn get_role(&self) -> PlayerRole { self.role.into() }
     fn get_holds_puck(&self) -> bool { self.holds_puck }
