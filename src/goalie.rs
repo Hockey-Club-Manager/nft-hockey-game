@@ -1,4 +1,4 @@
-use crate::player::{Action, Player, PlayerPosition, PlayerRole};
+use crate::player::{Player, PlayerPosition, PlayerRole};
 
 // #[derive(BorshDeserialize, BorshSerialize)]
 pub struct GoalieStats {
@@ -32,7 +32,6 @@ impl GoalieStats {
 }
 
 pub struct Goalie {
-    holds_puck: bool,
     position: PlayerPosition,
     role: PlayerRole,
     user_id: usize,
@@ -46,7 +45,6 @@ impl Goalie {
                user_id: usize,
                stats: GoalieStats) -> Goalie {
         Goalie {
-            holds_puck,
             position,
             role,
             user_id,
@@ -57,7 +55,5 @@ impl Goalie {
 
 impl Player for Goalie {
     fn get_user_id(&self) -> usize { self.user_id }
-    fn get_position(&self) -> PlayerPosition { self.position.into() }
     fn get_role(&self) -> PlayerRole { self.role.into() }
-    fn get_holds_puck(&self) -> bool { self.holds_puck }
 }

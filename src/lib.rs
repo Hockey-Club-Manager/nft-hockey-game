@@ -4,6 +4,7 @@ mod user;
 mod player;
 mod goalie;
 mod player_field;
+mod action;
 
 #[cfg(test)]
 mod tests {
