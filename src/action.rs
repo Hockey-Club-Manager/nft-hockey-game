@@ -10,21 +10,21 @@ use rand::Rng;
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
-const PASS_HAPPENED: i32 = 20;
+const PROBABILITY_PASS_NOT_HAPPENED: i32 = 20;
 
 
 trait DoAction {
-    fn do_action<T: Player>(&self, game: &mut Game);
+    fn do_action(&self, game: &mut Game);
 }
 
 pub struct Action;
 
 impl Action {
     /*
-    1 - pass_probability
-    2 - shot_probability
-    3 - move_probability
-    4 - dangle_probability
+    0 - pass_probability
+    1 - shot_probability
+    2 - move_probability
+    3 - dangle_probability
      */
     fn get_probability_of_actions(&self, role: PlayerRole) -> Vec<i32> {
 
@@ -40,8 +40,8 @@ impl Action {
             _ => panic!("Player has no role")
         }
     }
-/*
-    fn get_random_action<T: DoAction>(&self, is_attack_zone: bool, role: PlayerRole) -> T {
+
+    fn get_random_action(&self, is_attack_zone: bool, role: PlayerRole) -> Box<dyn DoAction> {
         let mut actions = self.get_probability_of_actions(role);
 
         let mut rng = rand::thread_rng();
@@ -50,38 +50,38 @@ impl Action {
         let probability_distribution = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4];
 
         return if !is_attack_zone && actions[3] == probability_distribution[rnd] {
-            Dangle
+            Box::new(Dangle {})
         } else if !is_attack_zone && actions[2] == probability_distribution[rnd] {
-            Move
-        } else if is_attack_zone && actions[1] == probability_distribution[rnd] {
-            Shot
+            Box::new(Move {})
+        // } else if is_attack_zone && actions[1] == probability_distribution[rnd] {
+        //     Box::new(Shot{})
         } else {
-            Pass
+            Box::new(Pass {})
         }
     }
 
-    pub fn do_random_action<T: DoAction, U: Player>(self, mut game: Game) {
+    pub fn do_random_action(self, mut game: Game) {
         let mut is_attack_zone = false;
         let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
         if game.zone_number == 3 && user_id == 1 || game.zone_number == 1 && user_id == 2 {
             is_attack_zone = true;
         }
 
-        let action = self.get_random_action(is_attack_zone, game.player_with_puck.get_role());
+        let action = self.get_random_action(is_attack_zone, game.player_with_puck.unwrap().get_role());
 
         action.do_action(&mut game);
-    }*/
+    }
 }
 
 pub struct Pass;
 impl DoAction for Pass {
-    fn do_action<T: Player>(&self, game: &mut Game) {
+    fn do_action(&self, game: &mut Game) {
         let opponent = get_opponents_field_player(&game);
 
         let mut rng = rand::thread_rng();
         let random_number = rng.gen_range(1, 101);
 
-        if random_number > PASS_HAPPENED {
+        if random_number > PROBABILITY_PASS_NOT_HAPPENED {
             if has_won(game.player_with_puck.unwrap().stats.get_iq(), opponent.stats.get_iq()) {
                 let pass_to = get_another_random_position(game.player_with_puck.as_ref().unwrap().get_player_position());
 
@@ -106,7 +106,7 @@ pub struct Shot;
 
 pub struct Move;
 impl DoAction for Move {
-    fn do_action<T: Player>(&self, game: &mut Game) {
+    fn do_action(&self, game: &mut Game) {
         let opponent = get_opponents_field_player(&game);
 
         if has_won(game.player_with_puck.unwrap().stats.get_skating(), opponent.stats.get_strength()) {
@@ -123,7 +123,7 @@ impl DoAction for Move {
 
 pub struct Dangle;
 impl DoAction for Dangle {
-    fn do_action<T: Player>(&self, game: &mut Game) {
+    fn do_action(&self, game: &mut Game) {
         let opponent = get_opponents_field_player(&game);
 
         if has_won(game.player_with_puck.unwrap().stats.get_iq(), opponent.stats.get_strength()) {
