@@ -122,9 +122,8 @@ impl DoAction for Shot {
             (0.7, 1.0)
         };
 
-        let player_stat = (game.player_with_puck.unwrap().stats.get_shooting() +
-                                 game.player_with_puck.unwrap().stats.get_morale() +
-                                 game.player_with_puck.unwrap().stats.get_strength()) / 3;
+        let player_stat = get_relative_field_player_stat(&game.player_with_puck.unwrap(),
+                                                                 game.player_with_puck.unwrap().stats.get_shooting());
 
         if pass_before_shot {
             let opponent_stat = (((opponent.stats.get_stand() + opponent.stats.get_stretch()) as f64 * p_w.0) / 2 as f64 +
