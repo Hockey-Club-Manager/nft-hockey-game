@@ -60,7 +60,7 @@ impl Action {
         }
     }
 
-    pub fn do_random_action(self, mut game: Game) {
+    pub fn do_random_action(self, game: &mut Game) {
         let mut is_attack_zone = false;
         let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
         if game.zone_number == 3 && user_id == 1 || game.zone_number == 1 && user_id == 2 {
@@ -69,7 +69,7 @@ impl Action {
 
         let action = self.get_random_action(is_attack_zone, game.player_with_puck.unwrap().get_role());
 
-        action.do_action(&mut game);
+        action.do_action(game);
     }
 }
 
@@ -82,7 +82,11 @@ impl DoAction for Pass {
         let random_number = rng.gen_range(1, 101);
 
         if random_number > PROBABILITY_PASS_NOT_HAPPENED {
-            if has_won(game.player_with_puck.unwrap().stats.get_iq(), opponent.stats.get_iq()) {
+            let player_stat = get_relative_field_player_stat(&game.player_with_puck.unwrap(),
+                                                             game.player_with_puck.unwrap().stats.get_iq());
+            let opponent_stat = get_relative_field_player_stat(opponent, opponent.stats.get_iq());
+
+            if has_won(player_stat, opponent_stat) {
                 let pass_to = get_another_random_position(game.player_with_puck.as_ref().unwrap().get_player_position());
 
                 let user = &game.users[game.player_with_puck.as_ref().unwrap().get_user_id() - 1];
@@ -95,7 +99,11 @@ impl DoAction for Pass {
                 game.player_with_puck = Option::from(*opponent);
             }
         } else {
-            if !has_won(game.player_with_puck.unwrap().stats.get_strength(), opponent.stats.get_strength()) {
+            let player_stat = get_relative_field_player_stat(&game.player_with_puck.unwrap(),
+                                                             game.player_with_puck.unwrap().stats.get_strength());
+            let opponent_stat = get_relative_field_player_stat(opponent, opponent.stats.get_strength());
+
+            if !has_won(player_stat, opponent_stat) {
                 game.player_with_puck = Option::from(*opponent);
             }
         }
@@ -141,9 +149,13 @@ impl DoAction for Shot {
 pub struct Move;
 impl DoAction for Move {
     fn do_action(&self, game: &mut Game) {
-        let opponent = get_opponents_field_player(&game);
+        let opponent = get_opponents_field_player(game);
 
-        if has_won(game.player_with_puck.unwrap().stats.get_skating(), opponent.stats.get_strength()) {
+        let player_stat = get_relative_field_player_stat(&game.player_with_puck.unwrap(),
+                                                         game.player_with_puck.unwrap().stats.get_skating());
+        let opponent_stat = get_relative_field_player_stat(opponent, opponent.stats.get_strength());
+
+        if has_won(player_stat, opponent_stat) {
             if game.player_with_puck.as_ref().unwrap().get_user_id() == 1 {
                 game.zone_number += 1;
             } else {
@@ -158,9 +170,13 @@ impl DoAction for Move {
 pub struct Dangle;
 impl DoAction for Dangle {
     fn do_action(&self, game: &mut Game) {
-        let opponent = get_opponents_field_player(&game);
+        let opponent = get_opponents_field_player(game);
 
-        if has_won(game.player_with_puck.unwrap().stats.get_iq(), opponent.stats.get_strength()) {
+        let player_stat = get_relative_field_player_stat(&game.player_with_puck.unwrap(),
+                                                                 game.player_with_puck.unwrap().stats.get_iq());
+        let opponent_stat = get_relative_field_player_stat(opponent, opponent.stats.get_strength());
+
+        if has_won(player_stat, opponent_stat) {
             if game.player_with_puck.as_ref().unwrap().get_user_id() == 1 {
                 game.zone_number += 1;
             } else {
@@ -233,4 +249,8 @@ fn get_opponents_field_player(game: &Game) -> &FieldPlayer {
     } else {
         &game.users[0].field_players[&game.player_with_puck.unwrap().get_player_position()]
     }
+}
+
+fn get_relative_field_player_stat(player: &FieldPlayer, stat: u128) -> u128{
+    (stat + player.stats.get_morale() + player.stats.get_strength()) / 3
 }
