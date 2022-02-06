@@ -32,6 +32,7 @@ impl GoalieStats {
 }
 
 pub struct Goalie {
+    // TODO nft_token
     position: PlayerPosition,
     role: PlayerRole,
     user_id: usize,

@@ -12,6 +12,13 @@ use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefende
 
 const PROBABILITY_PASS_NOT_HAPPENED: i32 = 20;
 
+pub enum ActionTypes {
+    Pass,
+    Shot,
+    Move,
+    Dangle,
+    Battle,
+}
 
 trait DoAction {
     fn do_action(&self, game: &mut Game);
@@ -50,13 +57,13 @@ impl Action {
         let probability_distribution = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4];
 
         return if !is_attack_zone && actions[3] == probability_distribution[rnd] {
-            Box::new(Dangle {})
+            Box::new(DangleAction {})
         } else if !is_attack_zone && actions[2] == probability_distribution[rnd] {
-            Box::new(Move {})
+            Box::new(MoveAction {})
         } else if is_attack_zone && actions[1] == probability_distribution[rnd] {
-            Box::new(Shot{})
+            Box::new(ShotAction{})
         } else {
-            Box::new(Pass {})
+            Box::new(PassAction {})
         }
     }
 
@@ -73,8 +80,8 @@ impl Action {
     }
 }
 
-pub struct Pass;
-impl DoAction for Pass {
+pub struct PassAction;
+impl DoAction for PassAction {
     fn do_action(&self, game: &mut Game) {
         let opponent = get_opponents_field_player(&game);
 
@@ -110,8 +117,8 @@ impl DoAction for Pass {
     }
 }
 
-pub struct Shot;
-impl DoAction for Shot {
+pub struct ShotAction;
+impl DoAction for ShotAction {
     fn do_action(&self, game: &mut Game) {
         let pass_before_shot = game.has_pass_before_shot();
         let opponent = get_opponents_goalie(game);
@@ -145,8 +152,8 @@ impl DoAction for Shot {
     }
 }
 
-pub struct Move;
-impl DoAction for Move {
+pub struct MoveAction;
+impl DoAction for MoveAction {
     fn do_action(&self, game: &mut Game) {
         let opponent = get_opponents_field_player(game);
 
@@ -166,8 +173,8 @@ impl DoAction for Move {
     }
 }
 
-pub struct Dangle;
-impl DoAction for Dangle {
+pub struct DangleAction;
+impl DoAction for DangleAction {
     fn do_action(&self, game: &mut Game) {
         let opponent = get_opponents_field_player(game);
 

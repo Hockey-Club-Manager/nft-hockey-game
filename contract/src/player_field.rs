@@ -42,6 +42,7 @@ impl FieldPlayerStats {
 
 #[derive(Copy, Clone)]
 pub struct FieldPlayer {
+    // TODO nft_token
     holds_puck: bool,
     position: PlayerPosition,
     role: PlayerRole,
