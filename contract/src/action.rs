@@ -2,7 +2,7 @@ use std::borrow::{Borrow, BorrowMut};
 use crate::player::{Player, PlayerPosition, PlayerRole};
 use crate::player_field::FieldPlayer;
 use crate::game::Game;
-use crate::player::PlayerRole::{Dangler, Goon, Passer, Professor, Rock, Shooter, ToughGuy, TryHarder};
+use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Rock, Shooter, ToughGuy, TryHarder};
 
 extern crate rand;
 
@@ -105,7 +105,36 @@ impl DoAction for Pass {
 pub struct Shot;
 impl DoAction for Shot {
     fn do_action(&self, game: &mut Game) {
-        todo!()
+        let pass_before_shot = game.has_pass_before_shot();
+        let opponent = get_opponents_goalie(game);
+
+        let p_w: (f64, f64) = if opponent.get_role() == Post2Post {
+            (1.0, 0.7)
+        } else {
+            (0.7, 1.0)
+        };
+
+        let player_stat = (game.player_with_puck.unwrap().stats.get_shooting() +
+                                 game.player_with_puck.unwrap().stats.get_morale() +
+                                 game.player_with_puck.unwrap().stats.get_strength()) / 3;
+
+        if pass_before_shot {
+            let opponent_stat = (((opponent.stats.get_stand() + opponent.stats.get_stretch()) as f64 * p_w.0) / 2 as f64 +
+                                opponent.stats.get_morale() as f64) / 2 as f64;
+            if has_won(player_stat, opponent_stat as u128) {
+
+            } else {
+
+            }
+        } else {
+            let opponent_stat = (((opponent.stats.get_glove_and_blocker() + opponent.stats.get_pads()) as f64 * p_w.1) / 2 as f64 +
+                opponent.stats.get_morale() as f64) / 2 as f64;
+            if has_won(player_stat, opponent_stat as u128) {
+
+            } else {
+
+            }
+        }
     }
 }
 

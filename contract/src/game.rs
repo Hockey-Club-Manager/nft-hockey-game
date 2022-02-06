@@ -29,4 +29,9 @@ pub struct Game {
 }
 
 impl Game {
+
+    // TODO A function that determines if there was a pass before the shot
+    pub fn has_pass_before_shot(&self) -> bool {
+        return true;
+    }
 }

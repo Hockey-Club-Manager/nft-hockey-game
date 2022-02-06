@@ -35,7 +35,7 @@ pub struct Goalie {
     position: PlayerPosition,
     role: PlayerRole,
     user_id: usize,
-    stats: GoalieStats,
+    pub(crate) stats: GoalieStats,
 }
 
 impl Goalie {
