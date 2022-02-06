@@ -1,6 +1,6 @@
 use crate::player::{Player, PlayerPosition, PlayerRole};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
-// #[derive(BorshDeserialize, BorshSerialize)]
 pub struct GoalieStats {
     glove_and_blocker: u128,
     pads: u128,
@@ -39,8 +39,7 @@ pub struct Goalie {
 }
 
 impl Goalie {
-    pub fn new(holds_puck: bool,
-               position: PlayerPosition,
+    pub fn new(position: PlayerPosition,
                role: PlayerRole,
                user_id: usize,
                stats: GoalieStats) -> Goalie {

@@ -1,3 +1,5 @@
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+
 use std::borrow::Borrow;
 use crate::player::PlayerRole::{Goon, Passer, Professor, Shooter, ToughGuy, TryHarder, Rock, Dangler};
 extern crate rand;
@@ -6,7 +8,6 @@ use rand::Rng;
 use crate::player::{Player, PlayerPosition, PlayerRole};
 
 
-// #[derive(BorshDeserialize, BorshSerialize)]
 #[derive(Copy, Clone)]
 pub struct FieldPlayerStats {
     skating: u128,
@@ -39,7 +40,6 @@ impl FieldPlayerStats {
     pub fn get_morale(&self) -> u128 { self.morale }
 }
 
-// #[derive(BorshDeserialize, BorshSerialize, Clone)]
 #[derive(Copy, Clone)]
 pub struct FieldPlayer {
     holds_puck: bool,

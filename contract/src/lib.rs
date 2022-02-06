@@ -30,7 +30,7 @@ enum StorageKey {
 }
 
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
+#[derive(PanicOnDefault)]
 struct Hockey {
     games: LookupMap<GameId, Game>,
     // available_players: UnorderedMap<AccountId, VGameConfig>,

@@ -53,8 +53,8 @@ impl Action {
             Box::new(Dangle {})
         } else if !is_attack_zone && actions[2] == probability_distribution[rnd] {
             Box::new(Move {})
-        // } else if is_attack_zone && actions[1] == probability_distribution[rnd] {
-        //     Box::new(Shot{})
+        } else if is_attack_zone && actions[1] == probability_distribution[rnd] {
+            Box::new(Shot{})
         } else {
             Box::new(Pass {})
         }
@@ -103,6 +103,11 @@ impl DoAction for Pass {
 }
 
 pub struct Shot;
+impl DoAction for Shot {
+    fn do_action(&self, game: &mut Game) {
+        todo!()
+    }
+}
 
 pub struct Move;
 impl DoAction for Move {
