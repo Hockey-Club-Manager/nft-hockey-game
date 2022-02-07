@@ -12,6 +12,7 @@ use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefende
 
 const PROBABILITY_PASS_NOT_HAPPENED: i32 = 20;
 
+#[derive(PartialEq)]
 pub enum ActionTypes {
     Pass,
     Shot,

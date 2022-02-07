@@ -10,6 +10,7 @@ extern crate rand;
 
 use rand::Rng;
 use crate::action::{Action, ActionTypes};
+use crate::action::ActionTypes::Pass;
 use crate::player::PlayerPosition;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
@@ -45,9 +46,16 @@ pub struct Game {
 }
 
 impl Game {
-
-    // TODO A function that determines if there was a pass before the shot
     pub fn has_pass_before_shot(&self) -> bool {
-        return true;
+        if self.events.len() == 0 {
+            return false;
+        }
+
+        let action = &self.events[self.events.len() - 1].action;
+        if *action == Pass {
+            true
+        } else {
+            false
+        }
     }
 }
