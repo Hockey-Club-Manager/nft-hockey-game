@@ -12,7 +12,7 @@ use crate::player::{Player, PlayerPosition, PlayerRole};
 pub struct FieldPlayerStats {
     skating: u128,
     shooting: u128,
-    strength: u128,
+    pub(crate) strength: f64,
     iq: u128,
     morale: u128,
 }
@@ -20,7 +20,7 @@ pub struct FieldPlayerStats {
 impl FieldPlayerStats {
     pub fn new(skating: u128,
                shooting: u128,
-               strength: u128,
+               strength: f64,
                iq: u128,
                morale: u128,)
                -> FieldPlayerStats {
@@ -35,7 +35,7 @@ impl FieldPlayerStats {
 
     pub fn get_skating(&self) -> u128 { self.skating }
     pub fn get_shooting(&self) -> u128 { self.shooting }
-    pub fn get_strength(&self) -> u128 { self.strength }
+    pub fn get_strength(&self) -> f64 { self.strength }
     pub fn get_iq(&self) -> u128 { self.iq }
     pub fn get_morale(&self) -> u128 { self.morale }
 }

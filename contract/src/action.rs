@@ -78,6 +78,8 @@ impl Action {
         let action = self.get_random_action(is_attack_zone, game.player_with_puck.unwrap().get_role());
 
         action.do_action(game);
+
+        reduce_strength(game);
     }
 }
 
@@ -91,8 +93,8 @@ impl DoAction for PassAction {
 
         if random_number > PROBABILITY_PASS_NOT_HAPPENED {
             let player_stat = get_relative_field_player_stat(&game.player_with_puck.unwrap(),
-                                                             game.player_with_puck.unwrap().stats.get_iq());
-            let opponent_stat = get_relative_field_player_stat(opponent, opponent.stats.get_iq());
+                                                             game.player_with_puck.unwrap().stats.get_iq() as f64);
+            let opponent_stat = get_relative_field_player_stat(opponent, opponent.stats.get_iq() as f64);
 
             if has_won(player_stat, opponent_stat) {
                 let pass_to = get_another_random_position(game.player_with_puck.as_ref().unwrap().get_player_position());
@@ -131,12 +133,12 @@ impl DoAction for ShotAction {
         };
 
         let player_stat = get_relative_field_player_stat(&game.player_with_puck.unwrap(),
-                                                                 game.player_with_puck.unwrap().stats.get_shooting());
+                                                                 game.player_with_puck.unwrap().stats.get_shooting() as f64);
 
         if pass_before_shot {
             let opponent_stat = (((opponent.stats.get_stand() + opponent.stats.get_stretch()) as f64 * p_w.0) / 2 as f64 +
                                 opponent.stats.get_morale() as f64) / 2 as f64;
-            if has_won(player_stat, opponent_stat as u128) {
+            if has_won(player_stat, opponent_stat as f64) {
 
             } else {
 
@@ -144,7 +146,7 @@ impl DoAction for ShotAction {
         } else {
             let opponent_stat = (((opponent.stats.get_glove_and_blocker() + opponent.stats.get_pads()) as f64 * p_w.1) / 2 as f64 +
                 opponent.stats.get_morale() as f64) / 2 as f64;
-            if has_won(player_stat, opponent_stat as u128) {
+            if has_won(player_stat, opponent_stat as f64) {
 
             } else {
 
@@ -159,7 +161,7 @@ impl DoAction for MoveAction {
         let opponent = get_opponents_field_player(game);
 
         let player_stat = get_relative_field_player_stat(&game.player_with_puck.unwrap(),
-                                                         game.player_with_puck.unwrap().stats.get_skating());
+                                                         game.player_with_puck.unwrap().stats.get_skating() as f64);
         let opponent_stat = get_relative_field_player_stat(opponent, opponent.stats.get_strength());
 
         if has_won(player_stat, opponent_stat) {
@@ -180,7 +182,7 @@ impl DoAction for DangleAction {
         let opponent = get_opponents_field_player(game);
 
         let player_stat = get_relative_field_player_stat(&game.player_with_puck.unwrap(),
-                                                                 game.player_with_puck.unwrap().stats.get_iq());
+                                                                 game.player_with_puck.unwrap().stats.get_iq() as f64);
         let opponent_stat = get_relative_field_player_stat(opponent, opponent.stats.get_strength());
 
         if has_won(player_stat, opponent_stat) {
@@ -195,20 +197,20 @@ impl DoAction for DangleAction {
     }
 }
 
-fn has_won(stat: u128, opponents_stat: u128) -> bool {
+fn has_won(stat: f64, opponents_stat: f64) -> bool {
     let sum = stat + opponents_stat;
 
     let mut rng = rand::thread_rng();
     let random_number = rng.gen_range(1, sum as i32 + 1);
 
     return if stat > opponents_stat {
-        if random_number as u128 > opponents_stat {
+        if random_number as f64 > opponents_stat {
             true
         } else {
             false
         }
     } else {
-        if random_number as u128 > stat {
+        if random_number as f64 > stat {
             false
         } else {
             true
@@ -258,6 +260,17 @@ fn get_opponents_field_player(game: &Game) -> &FieldPlayer {
     }
 }
 
-fn get_relative_field_player_stat(player: &FieldPlayer, stat: u128) -> u128{
-    (stat + player.stats.get_morale() + player.stats.get_strength()) / 3
+fn get_relative_field_player_stat(player: &FieldPlayer, stat: f64) -> f64 {
+    (stat as f64 + player.stats.get_morale() as f64 + player.stats.get_strength() as f64) / 3 as f64
+}
+
+fn reduce_strength(game: &mut Game) {
+    let q = 0.99;
+    let n = 20;
+
+    for mut user in &mut game.users {
+        for (_player_pos, field_player) in &mut user.field_players {
+            field_player.stats.strength = field_player.stats.strength * f64::powf(q, (n - 1) as f64);
+        }
+    }
 }
