@@ -140,6 +140,8 @@ impl DoAction for ShotAction {
                                 opponent.stats.get_morale() as f64) / 2 as f64;
             if has_won(player_stat, opponent_stat as f64) {
                 change_morale_after_a_goal(game);
+                game.users[game.player_with_puck.unwrap().get_user_id() -1].user.score += 1;
+
             } else {
 
             }
@@ -148,6 +150,8 @@ impl DoAction for ShotAction {
                 opponent.stats.get_morale() as f64) / 2 as f64;
             if has_won(player_stat, opponent_stat as f64) {
                 change_morale_after_a_goal(game);
+                game.users[game.player_with_puck.unwrap().get_user_id() -1].user.score += 1;
+
             } else {
 
             }

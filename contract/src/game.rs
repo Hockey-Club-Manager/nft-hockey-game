@@ -15,7 +15,7 @@ use crate::player::PlayerPosition;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
 pub struct UserInfo {
-    user: User,
+    pub(crate) user: User,
     pub(crate) field_players: HashMap<PlayerPosition, FieldPlayer>,
     pub(crate) goalie: Goalie,
     pub(crate) account_id: AccountId,
