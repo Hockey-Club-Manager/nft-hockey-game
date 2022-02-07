@@ -46,16 +46,5 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn has_pass_before_shot(&self) -> bool {
-        if self.events.len() == 0 {
-            return false;
-        }
 
-        let action = &self.events[self.events.len() - 1].action;
-        if *action == Pass {
-            true
-        } else {
-            false
-        }
-    }
 }

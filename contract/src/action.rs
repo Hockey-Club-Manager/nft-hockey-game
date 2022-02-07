@@ -7,6 +7,7 @@ use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Roc
 extern crate rand;
 
 use rand::Rng;
+use crate::action::ActionTypes::Pass;
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
@@ -123,7 +124,7 @@ impl DoAction for PassAction {
 pub struct ShotAction;
 impl DoAction for ShotAction {
     fn do_action(&self, game: &mut Game) {
-        let pass_before_shot = game.has_pass_before_shot();
+        let pass_before_shot = has_pass_before_shot(game);
         let opponent = get_opponents_goalie(game);
 
         let p_w: (f64, f64) = if opponent.get_role() == Post2Post {
@@ -141,7 +142,6 @@ impl DoAction for ShotAction {
             if has_won(player_stat, opponent_stat as f64) {
                 change_morale_after_a_goal(game);
                 game.users[game.player_with_puck.unwrap().get_user_id() -1].user.score += 1;
-
             } else {
 
             }
@@ -308,5 +308,18 @@ fn change_morale_after_a_goal(game: &mut Game) {
 
     for (_player_pos, field_player) in &mut game.users[opponent_id - 1].field_players {
         field_player.stats.morale -= 1;
+    }
+}
+
+pub fn has_pass_before_shot(game: &Game) -> bool {
+    if game.events.len() == 0 {
+        return false;
+    }
+
+    let action = &game.events[game.events.len() - 1].action;
+    if *action == Pass {
+        true
+    } else {
+        false
     }
 }
