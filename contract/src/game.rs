@@ -31,7 +31,7 @@ pub struct Event {
 
 pub struct EventToSave {
     pub(crate) action: ActionTypes,
-    pub(crate) zone_number: u8,
+    pub(crate) zone_number: i8,
     pub(crate) time: Timestamp,
 }
 
@@ -41,7 +41,7 @@ pub struct Game {
     pub(crate) winner_index: Option<usize>,
     pub(crate) total_time_spent: Vec<Timestamp>,
     pub(crate) player_with_puck: Option<FieldPlayer>,
-    pub(crate) zone_number: u8,
+    pub(crate) zone_number: i8,
     pub(crate) events: Vec<EventToSave>,
 }
 
