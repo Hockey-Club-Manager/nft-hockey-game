@@ -6,7 +6,7 @@ pub struct GoalieStats {
     pads: u128,
     stand: u128,
     stretch: u128,
-    morale: u128,
+    pub(crate) morale: u128,
 }
 
 impl GoalieStats {

@@ -14,7 +14,7 @@ pub struct FieldPlayerStats {
     shooting: u128,
     pub(crate) strength: f64,
     iq: u128,
-    morale: u128,
+    pub(crate) morale: u128,
 }
 
 impl FieldPlayerStats {

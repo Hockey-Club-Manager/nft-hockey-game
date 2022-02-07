@@ -139,7 +139,7 @@ impl DoAction for ShotAction {
             let opponent_stat = (((opponent.stats.get_stand() + opponent.stats.get_stretch()) as f64 * p_w.0) / 2 as f64 +
                                 opponent.stats.get_morale() as f64) / 2 as f64;
             if has_won(player_stat, opponent_stat as f64) {
-
+                change_morale_after_a_goal(game);
             } else {
 
             }
@@ -147,7 +147,7 @@ impl DoAction for ShotAction {
             let opponent_stat = (((opponent.stats.get_glove_and_blocker() + opponent.stats.get_pads()) as f64 * p_w.1) / 2 as f64 +
                 opponent.stats.get_morale() as f64) / 2 as f64;
             if has_won(player_stat, opponent_stat as f64) {
-
+                change_morale_after_a_goal(game);
             } else {
 
             }
@@ -282,5 +282,27 @@ fn reduce_strength(game: &mut Game) {
         for (_player_pos, field_player) in &mut user.field_players {
             field_player.stats.strength = field_player.stats.strength * f64::powf(q, (n - 1) as f64);
         }
+    }
+}
+
+fn change_morale_after_a_goal(game: &mut Game) {
+    let user_id = game.player_with_puck.unwrap().get_user_id();
+
+    let player_goalie = &mut game.users[user_id- 1].goalie;
+    player_goalie.stats.morale += 2;
+
+    for (_player_pos, field_player) in &mut game.users[user_id - 1].field_players {
+        field_player.stats.morale += 2;
+    }
+
+    let mut opponent_id = 1;
+    if user_id == 1 {
+        opponent_id = 2;
+    }
+
+    game.users[opponent_id].goalie.stats.morale -= 1;
+
+    for (_player_pos, field_player) in &mut game.users[opponent_id - 1].field_players {
+        field_player.stats.morale -= 1;
     }
 }
