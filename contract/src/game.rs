@@ -21,12 +21,17 @@ pub struct UserInfo {
     pub(crate) account_id: AccountId,
 }
 
+pub struct Team {
+    pub(crate) field_players: Vec<FieldPlayer>,
+    pub(crate) goalie: Goalie,
+}
+
 pub struct Event {
     pub(crate) action: ActionTypes,
     pub(crate) zone_number: i8,
     pub(crate) time: Timestamp,
-    pub(crate) field_players: Vec<FieldPlayer>,
-    pub(crate) goalie: Goalie,
+    pub(crate) my_team: Team,
+    pub(crate) opponent_team: Team,
 }
 
 pub struct EventToSave {
