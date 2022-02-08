@@ -23,7 +23,7 @@ pub struct UserInfo {
 
 pub struct Event {
     pub(crate) action: ActionTypes,
-    pub(crate) zone_number: u8,
+    pub(crate) zone_number: i8,
     pub(crate) time: Timestamp,
     pub(crate) field_players: Vec<FieldPlayer>,
     pub(crate) goalie: Goalie,
@@ -33,6 +33,16 @@ pub struct EventToSave {
     pub(crate) action: ActionTypes,
     pub(crate) zone_number: i8,
     pub(crate) time: Timestamp,
+}
+
+impl From<Event> for EventToSave {
+    fn from(event: Event) -> Self {
+        Self {
+            action: event.action,
+            zone_number: event.zone_number,
+            time: event.time,
+        }
+    }
 }
 
 pub struct Game {
@@ -46,5 +56,4 @@ pub struct Game {
 }
 
 impl Game {
-
 }
