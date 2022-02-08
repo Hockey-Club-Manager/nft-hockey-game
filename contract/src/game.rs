@@ -22,7 +22,7 @@ pub struct UserInfo {
 }
 
 pub struct Team {
-    pub(crate) field_players: Vec<FieldPlayer>,
+    pub(crate) field_players: HashMap<PlayerPosition, FieldPlayer>,
     pub(crate) goalie: Goalie,
 }
 

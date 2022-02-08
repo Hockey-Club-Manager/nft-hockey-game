@@ -1,7 +1,7 @@
 use std::borrow::{Borrow, BorrowMut};
 use crate::player::{Player, PlayerPosition, PlayerRole};
 use crate::player_field::FieldPlayer;
-use crate::game::Game;
+use crate::game::{Event, EventToSave, Game, Team};
 use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Rock, Shooter, ToughGuy, TryHarder};
 
 extern crate rand;
@@ -325,4 +325,15 @@ pub fn has_pass_before_shot(game: &Game) -> bool {
     } else {
         false
     }
+}
+
+pub fn generate_an_event(action: ActionTypes, game: &mut Game) {
+    // TODO time
+    let new_event = EventToSave {
+        action,
+        time: 0,
+        zone_number: game.zone_number,
+    };
+
+    game.events.push(new_event);
 }
