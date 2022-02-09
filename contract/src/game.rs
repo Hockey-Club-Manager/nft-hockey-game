@@ -9,8 +9,8 @@ use crate::user::User;
 extern crate rand;
 
 use rand::Rng;
-use crate::action::{Action, ActionTypes, get_opponents_field_player, get_relative_field_player_stat, has_won};
-use crate::action::ActionTypes::Pass;
+use crate::action::{Action, ActionTypes, generate_an_event, get_opponents_field_player, get_relative_field_player_stat, has_won};
+use crate::action::ActionTypes::{Battle, Pass};
 use crate::player::{Player, PlayerPosition};
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
@@ -77,5 +77,12 @@ impl Game {
         } else {
             self.player_with_puck = Option::from(player2);
         }
+    }
+
+    fn face_off(&mut self) {
+        // TODO TIME
+
+        self.battle();
+        generate_an_event(Battle, self);
     }
 }
