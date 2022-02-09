@@ -7,7 +7,7 @@ use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Roc
 extern crate rand;
 
 use rand::Rng;
-use crate::action::ActionTypes::Pass;
+use crate::action::ActionTypes::{Battle, Dangle, Move, Pass};
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
@@ -22,6 +22,7 @@ pub enum ActionTypes {
     Battle,
     Goal,
     Save,
+    HitThePuck,
 }
 
 trait DoAction {
@@ -108,8 +109,11 @@ impl DoAction for PassAction {
                     Some(player) => game.player_with_puck = Option::from(*player),
                     None => panic!("Player not found")
                 }
+
+                generate_an_event(Pass, game);
             } else {
                 game.player_with_puck = Option::from(*opponent);
+                generate_an_event(Battle, game);
             }
         } else {
             let player_stat = get_relative_field_player_stat(&game.player_with_puck.unwrap(),
@@ -119,6 +123,8 @@ impl DoAction for PassAction {
             if !has_won(player_stat, opponent_stat) {
                 game.player_with_puck = Option::from(*opponent);
             }
+
+            generate_an_event(Battle, game);
         }
     }
 }
@@ -182,8 +188,11 @@ impl DoAction for MoveAction {
             } else {
                 game.zone_number -= relative_side_zone;
             }
+
+            generate_an_event(Move, game);
         } else {
             game.player_with_puck = Option::from(*opponent);
+            generate_an_event(Battle, game);
         }
     }
 }
@@ -208,8 +217,12 @@ impl DoAction for DangleAction {
             } else {
                 game.zone_number -= relative_side_zone;
             }
+
+            generate_an_event(Dangle, game);
         } else {
             game.player_with_puck = Option::from(*opponent);
+
+            generate_an_event(Battle, game);
         }
     }
 }
