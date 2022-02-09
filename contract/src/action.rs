@@ -227,7 +227,7 @@ impl DoAction for DangleAction {
     }
 }
 
-fn has_won(stat: f64, opponents_stat: f64) -> bool {
+pub fn has_won(stat: f64, opponents_stat: f64) -> bool {
     let sum = stat + opponents_stat;
 
     let mut rng = rand::thread_rng();
@@ -280,7 +280,7 @@ fn get_opponents_goalie(game: &Game) -> &Goalie {
     }
 }
 
-fn get_opponents_field_player(game: &Game) -> &FieldPlayer {
+pub fn get_opponents_field_player(game: &Game) -> &FieldPlayer {
     let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
 
     return if user_id == 1 {
@@ -290,7 +290,7 @@ fn get_opponents_field_player(game: &Game) -> &FieldPlayer {
     }
 }
 
-fn get_relative_field_player_stat(player: &FieldPlayer, stat: f64) -> f64 {
+pub fn get_relative_field_player_stat(player: &FieldPlayer, stat: f64) -> f64 {
     (stat as f64 + player.stats.get_morale() as f64 + player.stats.get_strength() as f64) / 3 as f64
 }
 

@@ -9,9 +9,9 @@ use crate::user::User;
 extern crate rand;
 
 use rand::Rng;
-use crate::action::{Action, ActionTypes};
+use crate::action::{Action, ActionTypes, get_opponents_field_player, get_relative_field_player_stat, has_won};
 use crate::action::ActionTypes::Pass;
-use crate::player::PlayerPosition;
+use crate::player::{Player, PlayerPosition};
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
 pub struct UserInfo {
@@ -61,4 +61,21 @@ pub struct Game {
 }
 
 impl Game {
+    fn get_center_forward_in_the_zone(&self, user: &UserInfo) -> FieldPlayer {
+        user.field_players[&Center]
+    }
+
+    fn battle(&mut self) {
+        let player1 = self.get_center_forward_in_the_zone(&self.users[0]);
+        let player2 = self.get_center_forward_in_the_zone(&self.users[1]);
+
+        let player1_stat = get_relative_field_player_stat(&player1, player1.stats.strength);
+        let player2_stat = get_relative_field_player_stat(&player2, player2.stats.strength);
+
+        if has_won(player1_stat, player2_stat) {
+            self.player_with_puck = Option::from(player1);
+        } else {
+            self.player_with_puck = Option::from(player2);
+        }
+    }
 }
