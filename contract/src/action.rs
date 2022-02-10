@@ -150,7 +150,7 @@ impl DoAction for ShotAction {
             if has_won(player_stat, opponent_stat as f64) {
                 change_morale_after_a_goal(game);
                 game.users[game.player_with_puck.unwrap().get_user_id() -1].user.score += 1;
-
+                game.zone_number = 2;
             } else {
 
             }
@@ -160,7 +160,7 @@ impl DoAction for ShotAction {
             if has_won(player_stat, opponent_stat as f64) {
                 change_morale_after_a_goal(game);
                 game.users[game.player_with_puck.unwrap().get_user_id() -1].user.score += 1;
-
+                game.zone_number = 2;
             } else {
 
             }
@@ -344,7 +344,7 @@ pub fn generate_an_event(action: ActionTypes, game: &mut Game) {
     // TODO time
     let new_event = EventToSave {
         action,
-        time: 0,
+        time: game.total_time_spent[game.total_time_spent.len() - 1],
         zone_number: game.zone_number,
     };
 

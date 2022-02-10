@@ -10,7 +10,7 @@ extern crate rand;
 
 use rand::Rng;
 use crate::action::{Action, ActionTypes, generate_an_event, get_opponents_field_player, get_relative_field_player_stat, has_won};
-use crate::action::ActionTypes::{Battle, Pass};
+use crate::action::ActionTypes::{Battle, Goal, HitThePuck, Pass};
 use crate::player::{Player, PlayerPosition};
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
@@ -84,5 +84,20 @@ impl Game {
 
         self.battle();
         generate_an_event(Battle, self);
+    }
+
+    fn step(&mut self) {
+        let action_type = self.get_last_action();
+        let action = Action;
+
+        match action_type {
+            Goal => self.battle(),
+            HitThePuck => self.battle(),
+             _ => action.do_random_action(self)
+         };
+    }
+
+    fn get_last_action(&self) -> &ActionTypes {
+        &self.events[self.events.len() - 1].action
     }
 }
