@@ -23,6 +23,7 @@ pub enum ActionTypes {
     Goal,
     Save,
     HitThePuck,
+    EndOfPeriod,
 }
 
 trait DoAction {

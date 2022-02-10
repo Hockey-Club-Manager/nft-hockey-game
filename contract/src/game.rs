@@ -10,7 +10,7 @@ extern crate rand;
 
 use rand::Rng;
 use crate::action::{Action, ActionTypes, generate_an_event, get_opponents_field_player, get_relative_field_player_stat, has_won};
-use crate::action::ActionTypes::{Battle, Goal, HitThePuck, Pass};
+use crate::action::ActionTypes::{Battle, EndOfPeriod, Goal, HitThePuck, Pass};
 use crate::player::{Player, PlayerPosition};
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
@@ -57,6 +57,7 @@ pub struct Game {
     pub(crate) total_time_spent: Vec<Timestamp>,
     pub(crate) player_with_puck: Option<FieldPlayer>,
     pub(crate) zone_number: i8,
+    pub(crate) turns: u128,
     pub(crate) events: Vec<EventToSave>,
 }
 
@@ -88,11 +89,18 @@ impl Game {
         let action_type = self.get_last_action();
         let action = Action;
 
+        self.turns += 1;
+
         match action_type {
             Goal => self.battle(),
             HitThePuck => self.battle(),
+            EndOfPeriod => self.battle(),
              _ => action.do_random_action(self)
          };
+
+        if [30, 60, 90].contains(&self.turns) {
+            generate_an_event(EndOfPeriod, game);
+        }
     }
 
     fn get_last_action(&self) -> &ActionTypes {
