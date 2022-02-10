@@ -7,7 +7,7 @@ use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Roc
 extern crate rand;
 
 use rand::Rng;
-use crate::action::ActionTypes::{Battle, Dangle, Move, Pass};
+use crate::action::ActionTypes::{Battle, Dangle, Goal, HitThePuck, Move, Pass};
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
@@ -151,8 +151,10 @@ impl DoAction for ShotAction {
                 change_morale_after_a_goal(game);
                 game.users[game.player_with_puck.unwrap().get_user_id() -1].user.score += 1;
                 game.zone_number = 2;
-            } else {
 
+                generate_an_event(Goal, game);
+            } else {
+                generate_an_event(HitThePuck, game);
             }
         } else {
             let opponent_stat = (((opponent.stats.get_glove_and_blocker() + opponent.stats.get_pads()) as f64 * p_w.1) / 2 as f64 +
@@ -161,8 +163,10 @@ impl DoAction for ShotAction {
                 change_morale_after_a_goal(game);
                 game.users[game.player_with_puck.unwrap().get_user_id() -1].user.score += 1;
                 game.zone_number = 2;
-            } else {
 
+                generate_an_event(Goal, game);
+            } else {
+                generate_an_event(HitThePuck, game);
             }
         }
     }
@@ -341,7 +345,6 @@ pub fn has_pass_before_shot(game: &Game) -> bool {
 }
 
 pub fn generate_an_event(action: ActionTypes, game: &mut Game) {
-    // TODO time
     let new_event = EventToSave {
         action,
         time: game.total_time_spent[game.total_time_spent.len() - 1],

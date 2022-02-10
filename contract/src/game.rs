@@ -80,8 +80,6 @@ impl Game {
     }
 
     fn face_off(&mut self) {
-        // TODO TIME
-
         self.battle();
         generate_an_event(Battle, self);
     }
