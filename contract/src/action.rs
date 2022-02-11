@@ -58,7 +58,7 @@ impl Action {
         let mut actions = self.get_probability_of_actions(role);
 
         let mut rng = rand::thread_rng();
-        let rnd = rng.gen_range(0, 9);
+        let rnd = rng.gen_range(0, 10);
 
         let probability_distribution = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4];
 
@@ -145,30 +145,27 @@ impl DoAction for ShotAction {
         let player_stat = get_relative_field_player_stat(&game.player_with_puck.unwrap(),
                                                                  game.player_with_puck.unwrap().stats.get_shooting() as f64);
 
-        if pass_before_shot {
-            let opponent_stat = (((opponent.stats.get_stand() + opponent.stats.get_stretch()) as f64 * p_w.0) / 2 as f64 +
-                                opponent.stats.get_morale() as f64) / 2 as f64;
-            if has_won(player_stat, opponent_stat as f64) {
-                change_morale_after_a_goal(game);
-                game.users[game.player_with_puck.unwrap().get_user_id() -1].user.score += 1;
-                game.zone_number = 2;
-
-                generate_an_event(Goal, game);
-            } else {
-                generate_an_event(HitThePuck, game);
-            }
+        let opponent_stat =  if pass_before_shot {
+            (((opponent.stats.get_stand() + opponent.stats.get_stretch()) as f64 * p_w.0) / 2 as f64 +
+                opponent.stats.get_morale() as f64) / 2 as f64
         } else {
-            let opponent_stat = (((opponent.stats.get_glove_and_blocker() + opponent.stats.get_pads()) as f64 * p_w.1) / 2 as f64 +
-                opponent.stats.get_morale() as f64) / 2 as f64;
-            if has_won(player_stat, opponent_stat as f64) {
-                change_morale_after_a_goal(game);
-                game.users[game.player_with_puck.unwrap().get_user_id() -1].user.score += 1;
-                game.zone_number = 2;
+            (((opponent.stats.get_glove_and_blocker() + opponent.stats.get_pads()) as f64 * p_w.1) / 2 as f64 +
+                opponent.stats.get_morale() as f64) / 2 as f64
+        };
 
-                generate_an_event(Goal, game);
-            } else {
-                generate_an_event(HitThePuck, game);
-            }
+        if has_won(player_stat, opponent_stat as f64) {
+            change_morale_after_a_goal(game);
+            game.users[game.player_with_puck.unwrap().get_user_id() -1].user.score += 1;
+            game.zone_number = 2;
+
+            generate_an_event(Goal, game);
+        } else {
+            generate_an_event(HitThePuck, game);
+
+            let player_pos = get_random_position_after_rebound();
+            battle_by_position(player_pos, game);
+
+            generate_an_event(Battle, game);
         }
     }
 }
@@ -353,4 +350,36 @@ pub fn generate_an_event(action: ActionTypes, game: &mut Game) {
     };
 
     game.events.push(new_event);
+}
+
+fn get_random_position_after_rebound() -> PlayerPosition {
+    let mut rng = rand::thread_rng();
+    let rnd = rng.gen_range(0, 10);
+
+    let probability_distribution = vec![1, 1, 2, 2, 3, 3, 3, 3, 4, 5];
+
+    let num_player_pos = probability_distribution[rnd];
+
+    match num_player_pos {
+        1 => LeftDefender,
+        2 => RightDefender,
+        3 => Center,
+        4 => LeftWing,
+        5 => RightWing,
+        _ => panic!("Player position not found")
+    }
+}
+
+fn battle_by_position(pos: PlayerPosition, game: &mut Game) {
+    let player1 = &game.users[0].field_players[&pos];
+    let player2 = &game.users[1].field_players[&pos];
+
+    let player1_stat = get_relative_field_player_stat(player1, player1.stats.strength);
+    let player2_stat = get_relative_field_player_stat(player2, player2.stats.strength);
+
+    if has_won(player1_stat, player2_stat) {
+        game.player_with_puck = Option::from(*player1);
+    } else {
+        game.player_with_puck = Option::from(*player2);
+    }
 }
