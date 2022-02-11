@@ -10,7 +10,7 @@ extern crate rand;
 
 use rand::Rng;
 use crate::action::{Action, ActionTypes, generate_an_event, get_opponents_field_player, get_relative_field_player_stat, has_won};
-use crate::action::ActionTypes::{Battle, EndOfPeriod, Goal, HitThePuck, Pass};
+use crate::action::ActionTypes::{Battle, EndOfPeriod, Goal, HitThePuck, Pass, Save};
 use crate::player::{Player, PlayerPosition};
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
@@ -89,17 +89,18 @@ impl Game {
         let action_type = self.get_last_action();
         let action = Action;
 
-        self.turns += 1;
-
         match action_type {
-            Goal => self.battle(),
-            HitThePuck => self.battle(),
-            EndOfPeriod => self.battle(),
+            Goal => self.face_off(),
+            Save => self.face_off(),
+            EndOfPeriod => self.face_off(),
              _ => action.do_random_action(self)
          };
 
+        self.turns += 1;
+
         if [30, 60, 90].contains(&self.turns) {
-            generate_an_event(EndOfPeriod, game);
+            generate_an_event(EndOfPeriod, self);
+            self.zone_number = 2;
         }
     }
 
