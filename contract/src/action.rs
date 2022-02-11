@@ -1,7 +1,6 @@
-use std::borrow::{Borrow, BorrowMut};
 use crate::player::{Player, PlayerPosition, PlayerRole};
 use crate::player_field::FieldPlayer;
-use crate::game::{Event, EventToSave, Game, Team};
+use crate::game::{EventToSave, Game};
 use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Rock, Shooter, ToughGuy, TryHarder};
 
 extern crate rand;
@@ -55,7 +54,7 @@ impl Action {
     }
 
     fn get_random_action(&self, is_attack_zone: bool, role: PlayerRole) -> Box<dyn DoAction> {
-        let mut actions = self.get_probability_of_actions(role);
+        let actions = self.get_probability_of_actions(role);
 
         let mut rng = rand::thread_rng();
         let rnd = rng.gen_range(0, 10);
@@ -300,7 +299,7 @@ fn reduce_strength(game: &mut Game) {
     let q = 0.99;
     let n = 20;
 
-    for mut user in &mut game.users {
+    for user in &mut game.users {
         for (_player_pos, field_player) in &mut user.field_players {
             field_player.stats.strength = field_player.stats.strength * f64::powf(q, (n - 1) as f64);
         }

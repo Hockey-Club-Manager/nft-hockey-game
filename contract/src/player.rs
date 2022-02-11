@@ -1,11 +1,3 @@
-use crate::player::PlayerPosition::GoaliePos;
-use crate::player::PlayerRole::{Goon, Passer, Professor, Shooter, ToughGuy, TryHarder};
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-
-extern crate rand;
-
-use rand::Rng;
-
 #[derive(PartialEq, Clone, Copy, Eq, Hash)]
 pub enum PlayerPosition {
     Center,

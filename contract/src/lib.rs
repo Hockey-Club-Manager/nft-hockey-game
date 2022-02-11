@@ -1,6 +1,6 @@
-use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap};
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, PanicOnDefault, setup_alloc, Timestamp};
+use near_sdk::collections::{LookupMap};
+use near_sdk::borsh::{self, BorshSerialize};
+use near_sdk::{BorshStorageKey, near_bindgen, PanicOnDefault, setup_alloc};
 
 use crate::game::Game;
 
@@ -8,7 +8,6 @@ setup_alloc!();
 
 
 mod game;
-mod timer;
 mod user;
 mod player;
 mod goalie;

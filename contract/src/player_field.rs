@@ -1,10 +1,3 @@
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-
-use std::borrow::Borrow;
-use crate::player::PlayerRole::{Goon, Passer, Professor, Shooter, ToughGuy, TryHarder, Rock, Dangler};
-extern crate rand;
-
-use rand::Rng;
 use crate::player::{Player, PlayerPosition, PlayerRole};
 
 
@@ -43,7 +36,6 @@ impl FieldPlayerStats {
 #[derive(Copy, Clone)]
 pub struct FieldPlayer {
     // TODO nft_token
-    holds_puck: bool,
     position: PlayerPosition,
     role: PlayerRole,
     user_id: usize,
@@ -51,13 +43,11 @@ pub struct FieldPlayer {
 }
 
 impl FieldPlayer {
-    pub fn new(holds_puck: bool,
-               position: PlayerPosition,
+    pub fn new(position: PlayerPosition,
                role: PlayerRole,
                user_id: usize,
                stats: FieldPlayerStats) -> FieldPlayer {
         FieldPlayer {
-            holds_puck,
             position,
             role,
             user_id,

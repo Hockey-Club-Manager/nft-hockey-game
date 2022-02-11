@@ -1,18 +1,13 @@
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, Timestamp};
 
-use std::borrow::Borrow;
 use std::collections::HashMap;
 use crate::goalie::Goalie;
 use crate::player_field::FieldPlayer;
 use crate::user::User;
-extern crate rand;
-
-use rand::Rng;
-use crate::action::{Action, ActionTypes, generate_an_event, get_opponents_field_player, get_relative_field_player_stat, has_won};
-use crate::action::ActionTypes::{Battle, EndOfPeriod, Goal, HitThePuck, Pass, Save};
-use crate::player::{Player, PlayerPosition};
-use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
+use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won};
+use crate::action::ActionTypes::{Battle, EndOfPeriod, Goal, Save};
+use crate::player::{PlayerPosition};
+use crate::player::PlayerPosition::{Center};
 
 pub struct UserInfo {
     pub(crate) user: User,
