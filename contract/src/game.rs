@@ -8,6 +8,7 @@ use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_p
 use crate::action::ActionTypes::{Battle, EndOfPeriod, Goal, Save};
 use crate::player::{PlayerPosition};
 use crate::player::PlayerPosition::{Center};
+use crate::TokenBalance;
 
 pub struct UserInfo {
     pub(crate) user: User,
@@ -47,13 +48,28 @@ impl From<Event> for EventToSave {
 
 pub struct Game {
     pub(crate) users: [UserInfo; 2],
-    // pub(crate) reward: TokenBalance,
+    pub(crate) reward: TokenBalance,
     pub(crate) winner_index: Option<usize>,
     pub(crate) total_time_spent: Vec<Timestamp>,
     pub(crate) player_with_puck: Option<FieldPlayer>,
     pub(crate) zone_number: i8,
     pub(crate) turns: u128,
     pub(crate) events: Vec<EventToSave>,
+}
+
+impl Game {
+    pub fn new (account_id_1: AccountId, account_id_2: AccountId, reward: TokenBalance) -> Game {
+        let (user1, user2) = Game::create_two_players();
+
+    }
+
+    // creates and returns two players with distinct IDs
+    fn create_two_players() -> (User, User) {
+        (
+            User { id: 1, score: 0 },
+            User { id: 2, score: 0 }
+        )
+    }
 }
 
 impl Game {
