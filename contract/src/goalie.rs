@@ -3,10 +3,10 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct GoalieStats {
-    glove_and_blocker: u128,
-    pads: u128,
-    stand: u128,
-    stretch: u128,
+    pub(crate) glove_and_blocker: u128,
+    pub(crate) pads: u128,
+    pub(crate) stand: u128,
+    pub(crate) stretch: u128,
     pub(crate) morale: u128,
 }
 

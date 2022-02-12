@@ -31,7 +31,8 @@ enum StorageKey {
     Affiliates {account_id: AccountId},
     TotalRewards {account_id: AccountId},
     TotalAffiliateRewards{ account_id: AccountId},
-    WhitelistedTokens
+    WhitelistedTokens,
+    FieldPlayers,
 }
 
 #[near_bindgen]

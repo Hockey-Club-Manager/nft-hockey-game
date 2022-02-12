@@ -2,6 +2,8 @@ use near_sdk::{AccountId, Timestamp};
 
 use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::collections::{LookupMap, UnorderedMap};
+use near_sdk::env::panic;
 use crate::goalie::{Goalie, GoalieStats};
 use crate::player_field::{FieldPlayer, FieldPlayerStats};
 use crate::user::User;
@@ -9,23 +11,24 @@ use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_p
 use crate::action::ActionTypes::{Battle, EndOfPeriod, Goal, Save};
 use crate::player::{PlayerPosition, PlayerRole};
 use crate::player::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
-use crate::TokenBalance;
+use crate::{StorageKey, TokenBalance};
 
 extern crate rand;
 
 use rand::Rng;
 use crate::player::PlayerRole::{Dangler, Goon, Post2Post, Professor, Shooter, TryHarder, Wall};
+use crate::StorageKey::FieldPlayers;
 
-#[derive(Default, BorshDeserialize, BorshSerialize, Copy)]
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct UserInfo {
     pub(crate) user: User,
-    pub(crate) field_players: HashMap<PlayerPosition, FieldPlayer>,
+    pub(crate) field_players: UnorderedMap<PlayerPosition, FieldPlayer>,
     pub(crate) goalie: Goalie,
     pub(crate) account_id: AccountId,
 }
 
 pub struct Team {
-    pub(crate) field_players: HashMap<PlayerPosition, FieldPlayer>,
+    pub(crate) field_players: UnorderedMap<PlayerPosition, FieldPlayer>,
     pub(crate) goalie: Goalie,
 }
 
@@ -56,7 +59,8 @@ impl From<Event> for EventToSave {
 
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Game {
-    pub(crate) users: [UserInfo; 2],
+    pub(crate) user1: UserInfo,
+    pub(crate) user2: UserInfo,
     pub(crate) reward: TokenBalance,
     pub(crate) winner_index: Option<usize>,
     pub(crate) total_time_spent: Vec<Timestamp>,
@@ -91,7 +95,8 @@ impl Game {
         };
 
         Game {
-            users: [user_info1, user_info2],
+            user1: user_info1,
+            user2: user_info2,
             reward,
             winner_index: None,
             total_time_spent: [0, 0].to_vec(),
@@ -110,8 +115,8 @@ impl Game {
         )
     }
 
-    fn create_field_players_with_random_stats(user_id: usize) -> HashMap<PlayerPosition, FieldPlayer> {
-        let mut field_players: HashMap<PlayerPosition, FieldPlayer> = HashMap::new();
+    fn create_field_players_with_random_stats(user_id: usize) -> UnorderedMap<PlayerPosition, FieldPlayer> {
+        let mut field_players = UnorderedMap::new(FieldPlayers);
 
         let center = Game::create_field_player_with_random_stats(Shooter, Center, user_id);
         let right_wind = Game::create_field_player_with_random_stats(TryHarder, RightWing, user_id);
@@ -119,11 +124,11 @@ impl Game {
         let right_defender = Game::create_field_player_with_random_stats(Goon, RightDefender, user_id);
         let left_defender = Game::create_field_player_with_random_stats(Professor, LeftDefender, user_id);
 
-        field_players.insert(center.get_player_position(), center);
-        field_players.insert(right_wind.get_player_position(), right_wind);
-        field_players.insert(left_wind.get_player_position(), left_wind);
-        field_players.insert(right_defender.get_player_position(), right_defender);
-        field_players.insert(left_defender.get_player_position(), left_defender);
+        field_players.insert(&center.get_player_position(), &center);
+        field_players.insert(&right_wind.get_player_position(), &right_wind);
+        field_players.insert(&left_wind.get_player_position(), &left_wind);
+        field_players.insert(&right_defender.get_player_position(), &right_defender);
+        field_players.insert(&left_defender.get_player_position(), &left_defender);
         field_players
     }
 
@@ -162,12 +167,15 @@ impl Game {
 
 impl Game {
     fn get_center_forward_in_the_zone(&self, user: &UserInfo) -> FieldPlayer {
-        user.field_players[&Center]
+        match user.field_players.get(&Center) {
+            Some(player) => player,
+            _ => panic!("Player not found")
+        }
     }
 
     fn battle(&mut self) {
-        let player1 = self.get_center_forward_in_the_zone(&self.users[0]);
-        let player2 = self.get_center_forward_in_the_zone(&self.users[1]);
+        let player1 = self.get_center_forward_in_the_zone(&self.user1);
+        let player2 = self.get_center_forward_in_the_zone(&self.user2);
 
         let player1_stat = get_relative_field_player_stat(&player1, player1.stats.strength);
         let player2_stat = get_relative_field_player_stat(&player2, player2.stats.strength);
@@ -205,5 +213,13 @@ impl Game {
 
     fn get_last_action(&self) -> &ActionTypes {
         &self.events[self.events.len() - 1].action
+    }
+
+    pub fn get_user_info(&mut self, user_id: usize) -> &mut UserInfo {
+        if user_id == 1 {
+            &mut self.user1
+        } else {
+            &mut self.user2
+        }
     }
 }
