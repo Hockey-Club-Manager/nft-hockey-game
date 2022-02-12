@@ -1,18 +1,20 @@
 use crate::player::{Player, PlayerPosition, PlayerRole};
 use crate::player_field::FieldPlayer;
 use crate::game::{EventToSave, Game};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Rock, Shooter, ToughGuy, TryHarder};
 
 extern crate rand;
 
 use rand::Rng;
 use crate::action::ActionTypes::{Battle, Dangle, Goal, HitThePuck, Move, Pass};
+
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
 const PROBABILITY_PASS_NOT_HAPPENED: i32 = 20;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, BorshDeserialize, BorshSerialize)]
 pub enum ActionTypes {
     Pass,
     Shot,

@@ -1,7 +1,7 @@
 use crate::player::{Player, PlayerPosition, PlayerRole};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
-
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, BorshDeserialize, BorshSerialize)]
 pub struct FieldPlayerStats {
     skating: u128,
     shooting: u128,
@@ -33,7 +33,7 @@ impl FieldPlayerStats {
     pub fn get_morale(&self) -> u128 { self.morale }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, BorshDeserialize, BorshSerialize)]
 pub struct FieldPlayer {
     // TODO nft_token
     position: PlayerPosition,

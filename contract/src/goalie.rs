@@ -1,5 +1,7 @@
 use crate::player::{Player, PlayerPosition, PlayerRole};
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct GoalieStats {
     glove_and_blocker: u128,
     pads: u128,
@@ -30,6 +32,7 @@ impl GoalieStats {
     pub fn get_morale(&self) -> u128 { self.morale }
 }
 
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct Goalie {
     // TODO nft_token
     role: PlayerRole,

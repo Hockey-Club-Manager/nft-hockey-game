@@ -1,15 +1,22 @@
 use near_sdk::{AccountId, Timestamp};
 
 use std::collections::HashMap;
-use crate::goalie::Goalie;
-use crate::player_field::FieldPlayer;
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use crate::goalie::{Goalie, GoalieStats};
+use crate::player_field::{FieldPlayer, FieldPlayerStats};
 use crate::user::User;
 use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won};
 use crate::action::ActionTypes::{Battle, EndOfPeriod, Goal, Save};
-use crate::player::{PlayerPosition};
-use crate::player::PlayerPosition::{Center};
+use crate::player::{PlayerPosition, PlayerRole};
+use crate::player::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
 use crate::TokenBalance;
 
+extern crate rand;
+
+use rand::Rng;
+use crate::player::PlayerRole::{Dangler, Goon, Post2Post, Professor, Shooter, TryHarder, Wall};
+
+#[derive(Default, BorshDeserialize, BorshSerialize, Copy)]
 pub struct UserInfo {
     pub(crate) user: User,
     pub(crate) field_players: HashMap<PlayerPosition, FieldPlayer>,
@@ -30,6 +37,7 @@ pub struct Event {
     pub(crate) opponent_team: Team,
 }
 
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct EventToSave {
     pub(crate) action: ActionTypes,
     pub(crate) zone_number: i8,
@@ -46,6 +54,7 @@ impl From<Event> for EventToSave {
     }
 }
 
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct Game {
     pub(crate) users: [UserInfo; 2],
     pub(crate) reward: TokenBalance,
@@ -61,6 +70,36 @@ impl Game {
     pub fn new (account_id_1: AccountId, account_id_2: AccountId, reward: TokenBalance) -> Game {
         let (user1, user2) = Game::create_two_players();
 
+        let field_players1 = Game::create_field_players_with_random_stats(user1.id);
+        let goalie1 = Game::create_goalie_with_random_stats(Post2Post ,user1.id);
+
+        let field_players2 = Game::create_field_players_with_random_stats(user1.id);
+        let goalie2 = Game::create_goalie_with_random_stats(Wall ,user1.id);
+
+        let user_info1 = UserInfo {
+            user: user1,
+            field_players: field_players1,
+            goalie: goalie1,
+            account_id: account_id_1,
+        };
+
+        let user_info2 = UserInfo {
+            user: user2,
+            field_players: field_players2,
+            goalie: goalie2,
+            account_id: account_id_2,
+        };
+
+        Game {
+            users: [user_info1, user_info2],
+            reward,
+            winner_index: None,
+            total_time_spent: [0, 0].to_vec(),
+            player_with_puck: None,
+            zone_number: 2,
+            turns: 0,
+            events: vec![],
+        }
     }
 
     // creates and returns two players with distinct IDs
@@ -68,6 +107,55 @@ impl Game {
         (
             User { id: 1, score: 0 },
             User { id: 2, score: 0 }
+        )
+    }
+
+    fn create_field_players_with_random_stats(user_id: usize) -> HashMap<PlayerPosition, FieldPlayer> {
+        let mut field_players: HashMap<PlayerPosition, FieldPlayer> = HashMap::new();
+
+        let center = Game::create_field_player_with_random_stats(Shooter, Center, user_id);
+        let right_wind = Game::create_field_player_with_random_stats(TryHarder, RightWing, user_id);
+        let left_wind = Game::create_field_player_with_random_stats(Dangler, RightWing, user_id);
+        let right_defender = Game::create_field_player_with_random_stats(Goon, RightDefender, user_id);
+        let left_defender = Game::create_field_player_with_random_stats(Professor, LeftDefender, user_id);
+
+        field_players.insert(center.get_player_position(), center);
+        field_players.insert(right_wind.get_player_position(), right_wind);
+        field_players.insert(left_wind.get_player_position(), left_wind);
+        field_players.insert(right_defender.get_player_position(), right_defender);
+        field_players.insert(left_defender.get_player_position(), left_defender);
+        field_players
+    }
+
+    fn create_field_player_with_random_stats(role: PlayerRole, position: PlayerPosition, user_id: usize) -> FieldPlayer {
+        let mut rng = rand::thread_rng();
+
+        FieldPlayer::new(
+            position,
+            role,
+            user_id,
+            FieldPlayerStats::new(
+                rng.gen_range(60, 95) as u128,
+                rng.gen_range(60, 95) as u128,
+                rng.gen_range(60.0, 95.0),
+                rng.gen_range(60, 95) as u128,
+                rng.gen_range(60, 95) as u128
+            ))
+    }
+
+    fn create_goalie_with_random_stats(role: PlayerRole, user_id: usize) -> Goalie {
+        let mut rng = rand::thread_rng();
+
+        Goalie::new(
+            role,
+            user_id,
+            GoalieStats::new(
+                rng.gen_range(60, 95) as u128,
+                rng.gen_range(60, 95) as u128,
+                rng.gen_range(60, 95) as u128,
+                rng.gen_range(60, 95) as u128,
+                rng.gen_range(60, 95) as u128,
+            )
         )
     }
 }

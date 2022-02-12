@@ -1,4 +1,7 @@
-#[derive(PartialEq, Clone, Copy, Eq, Hash)]
+use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+
+
+#[derive(PartialEq, Clone, Copy, Eq, Hash, BorshDeserialize, BorshSerialize)]
 pub enum PlayerPosition {
     Center,
     LeftWing,
@@ -8,7 +11,7 @@ pub enum PlayerPosition {
     GoaliePos,
 }
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, BorshDeserialize, BorshSerialize)]
 pub enum PlayerRole {
     // Winger
     Passer,
