@@ -1,14 +1,13 @@
-use near_sdk::{AccountId, Balance};
+use near_sdk::{AccountId, Balance, near_bindgen};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
 use near_sdk::json_types::U128;
-use crate::{Hockey, StorageKey};
+use crate::{Game, GameId, Hockey, StorageKey};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 
 
 
-#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct TokenBalance {
     pub(crate) token_id: Option<AccountId>,
     pub(crate) balance: Balance,
@@ -34,8 +33,7 @@ impl From<VGameConfig> for GameConfig {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
+#[derive(BorshSerialize, BorshDeserialize)]
 pub struct GameConfigOutput {
     deposit: U128,
     opponent_id: Option<AccountId>,
@@ -144,6 +142,10 @@ impl Hockey {
         } else {
             Stats::new(&account_id)
         }
+    }
+
+    pub(crate) fn internal_get_game(&self, game_id: &GameId) -> Game {
+        self.games.get(game_id).expect("Game not found")
     }
 
     pub(crate) fn is_account_exists(&self, account_id: &Option<AccountId>) -> bool {

@@ -2,7 +2,7 @@ use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap};
 use near_sdk::borsh::{self, BorshSerialize};
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, PanicOnDefault, setup_alloc, Timestamp};
 
-use crate::game::Game;
+use crate::game::{Event, Game, Team};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
 
 mod game;
@@ -146,6 +146,50 @@ impl Hockey {
             game_id
         } else {
             panic!("Your opponent is not ready");
+        }
+    }
+
+    pub fn generate_event(&mut self, game_id: GameId) -> Event {
+        let mut game: Game = self.internal_get_game(&game_id).into();
+        assert!(game.winner_index.is_none(), "Game already finished");
+
+        let time = env::block_timestamp();
+        if time - game.last_event_generation_time >= 1 {
+            game.last_event_generation_time = time;
+
+            game.step();
+
+            game.turns += 1;
+            self.games.insert(&game_id, &game);
+
+        }
+
+        let teams = if game.user1.account_id == env::predecessor_account_id() {
+            (Team {
+                field_players: game.user1.field_players,
+                goalie: game.user1.goalie
+            },
+             Team{
+                 field_players: game.user2.field_players,
+                 goalie: game.user2.goalie
+             })
+        } else {
+            (Team {
+                field_players: game.user2.field_players,
+                goalie: game.user1.goalie
+            },
+             Team{
+                 field_players: game.user1.field_players,
+                 goalie: game.user2.goalie
+             })
+        };
+
+        Event {
+            my_team: teams.0,
+            opponent_team: teams.1,
+            time: game.events[game.events.len() - 1].time,
+            zone_number: game.events[game.events.len() - 1].zone_number,
+            action: game.events[game.events.len() - 1].action,
         }
     }
 }

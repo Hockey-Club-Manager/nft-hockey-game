@@ -15,7 +15,7 @@ use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefende
 
 const PROBABILITY_PASS_NOT_HAPPENED: i32 = 20;
 
-#[derive(PartialEq, BorshDeserialize, BorshSerialize)]
+#[derive(Clone, Copy, PartialEq, BorshDeserialize, BorshSerialize)]
 pub enum ActionTypes {
     Pass,
     Shot,
@@ -357,7 +357,7 @@ pub fn has_pass_before_shot(game: &Game) -> bool {
 pub fn generate_an_event(action: ActionTypes, game: &mut Game) {
     let new_event = EventToSave {
         action,
-        time: game.total_time_spent[game.total_time_spent.len() - 1],
+        time: game.last_event_generation_time,
         zone_number: game.zone_number,
     };
 

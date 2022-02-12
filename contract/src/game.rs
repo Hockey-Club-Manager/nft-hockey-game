@@ -1,9 +1,9 @@
-use near_sdk::{AccountId, Timestamp};
-
 use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::env::panic;
+use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, PanicOnDefault, setup_alloc, Timestamp};
+use near_sdk::serde::{Deserialize, Serialize};
 use crate::goalie::{Goalie, GoalieStats};
 use crate::player_field::{FieldPlayer, FieldPlayerStats};
 use crate::user::User;
@@ -63,7 +63,7 @@ pub struct Game {
     pub(crate) user2: UserInfo,
     pub(crate) reward: TokenBalance,
     pub(crate) winner_index: Option<usize>,
-    pub(crate) total_time_spent: Vec<Timestamp>,
+    pub(crate) last_event_generation_time: Timestamp,
     pub(crate) player_with_puck: Option<FieldPlayer>,
     pub(crate) zone_number: i8,
     pub(crate) turns: u128,
@@ -99,7 +99,7 @@ impl Game {
             user2: user_info2,
             reward,
             winner_index: None,
-            total_time_spent: [0, 0].to_vec(),
+            last_event_generation_time: env::block_timestamp(),
             player_with_puck: None,
             zone_number: 2,
             turns: 0,
@@ -192,7 +192,7 @@ impl Game {
         generate_an_event(Battle, self);
     }
 
-    fn step(&mut self) {
+    pub fn step(&mut self) {
         let action_type = self.get_last_action();
         let action = Action;
 
