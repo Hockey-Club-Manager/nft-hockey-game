@@ -212,7 +212,11 @@ impl Game {
     }
 
     fn get_last_action(&self) -> &ActionTypes {
-        &self.events[self.events.len() - 1].action
+        if self.events.len() == 0 {
+            &EndOfPeriod
+        } else {
+            &self.events[self.events.len() - 1].action
+        }
     }
 
     pub fn get_user_info(&mut self, user_id: usize) -> &mut UserInfo {
