@@ -1,2 +1,0 @@
-cargo:rustc-env=TYPENUM_BUILD_CONSTS=/home/yurii/nft-hockey-game-console/contract/target/debug/build/typenum-53e3b8c9a86e36b7/out/consts.rs
-cargo:rustc-env=TYPENUM_BUILD_OP=/home/yurii/nft-hockey-game-console/contract/target/debug/build/typenum-53e3b8c9a86e36b7/out/op.rs
