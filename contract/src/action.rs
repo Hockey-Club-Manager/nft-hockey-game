@@ -12,10 +12,13 @@ use crate::action::ActionTypes::{Battle, Dangle, Goal, HitThePuck, Move, Pass};
 
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
+use near_sdk::serde::{Deserialize, Serialize};
 
 const PROBABILITY_PASS_NOT_HAPPENED: i32 = 20;
 
+#[derive(Serialize, Deserialize)]
 #[derive(Clone, Copy, PartialEq, BorshDeserialize, BorshSerialize)]
+#[serde(crate = "near_sdk::serde")]
 pub enum ActionTypes {
     Pass,
     Shot,

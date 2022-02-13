@@ -27,11 +27,15 @@ pub struct UserInfo {
     pub(crate) account_id: AccountId,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct Team {
-    pub(crate) field_players: UnorderedMap<PlayerPosition, FieldPlayer>,
+    pub(crate) field_players: HashMap<PlayerPosition, FieldPlayer>,
     pub(crate) goalie: Goalie,
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct Event {
     pub(crate) action: ActionTypes,
     pub(crate) zone_number: i8,
