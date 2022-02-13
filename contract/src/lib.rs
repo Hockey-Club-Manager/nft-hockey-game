@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap};
-use near_sdk::borsh::{self, BorshSerialize};
-use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, PanicOnDefault, setup_alloc, Timestamp};
+use near_sdk::borsh::{self, BorshSerialize, BorshDeserialize};
+use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, init, PanicOnDefault, setup_alloc, Timestamp};
 
 use crate::game::{Event, Game, GameState, Team, UserInfo};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
@@ -39,7 +39,7 @@ enum StorageKey {
 }
 
 #[near_bindgen]
-#[derive(PanicOnDefault)]
+#[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 struct Hockey {
     games: LookupMap<GameId, Game>,
     available_players: UnorderedMap<AccountId, VGameConfig>,
@@ -53,6 +53,7 @@ struct Hockey {
 
 #[near_bindgen]
 impl Hockey {
+    #[init]
     pub fn new() -> Self {
         Self {
             games: LookupMap::new(StorageKey::Games),

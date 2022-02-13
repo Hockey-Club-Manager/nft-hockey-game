@@ -1,10 +1,11 @@
-use near_sdk::{AccountId, Balance, env, log, near_bindgen, Promise, PromiseOrValue};
+use near_sdk::{AccountId, Balance, env, log, Promise, PromiseOrValue};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
 use near_sdk::json_types::U128;
 use crate::{Game, GameId, Hockey, StorageKey};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-use crate::HockeyContract;
+use crate::*;
+
 
 
 #[derive(BorshSerialize, BorshDeserialize)]
@@ -33,7 +34,8 @@ impl From<VGameConfig> for GameConfig {
     }
 }
 
-#[derive(BorshSerialize, BorshDeserialize)]
+#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct GameConfigOutput {
     deposit: U128,
     opponent_id: Option<AccountId>,
