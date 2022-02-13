@@ -207,6 +207,7 @@ impl Hockey {
             time: game.events[game.events.len() - 1].time,
             zone_number: game.events[game.events.len() - 1].zone_number,
             action: game.events[game.events.len() - 1].action,
+            player_with_puck: game.player_with_puck,
         }
     }
 

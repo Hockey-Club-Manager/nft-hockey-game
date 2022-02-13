@@ -43,6 +43,7 @@ pub struct Team {
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Event {
+    pub(crate) player_with_puck: Option<FieldPlayer>,
     pub(crate) action: ActionTypes,
     pub(crate) zone_number: i8,
     pub(crate) time: Timestamp,
