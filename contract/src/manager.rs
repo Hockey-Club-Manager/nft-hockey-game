@@ -1,4 +1,4 @@
-use near_sdk::{AccountId, Balance, env, near_bindgen, Promise, PromiseOrValue};
+use near_sdk::{AccountId, Balance, env, log, near_bindgen, Promise, PromiseOrValue};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
 use near_sdk::json_types::U128;
 use crate::{Game, GameId, Hockey, StorageKey};
@@ -98,6 +98,34 @@ impl From<VStats> for Stats {
 }
 
 impl Hockey {
+    pub(crate) fn internal_distribute_reward(&mut self, token_balance: &TokenBalance, winner_id: &AccountId) {
+        // TODO add for FT
+        let amount = token_balance.balance;
+        let fee = amount / 10;
+        let winner_reward: Balance = amount - fee;
+        Promise::new(winner_id.clone()).transfer(winner_reward);
+        log!("Winner is {}. Reward: {}", winner_id, winner_reward);
+
+        let stats = self.internal_get_stats(winner_id);
+        let referrer_fee = if let Some(referrer_id) = stats.referrer_id {
+            let referrer_fee = fee / 2;
+            log!("Affiliate reward for {} is {}", referrer_id, referrer_fee);
+            self.internal_update_stats(&referrer_id, UpdateStatsAction::AddAffiliateReward, None, Some(referrer_fee));
+            Promise::new(referrer_id.clone()).transfer(referrer_fee);
+            referrer_fee
+        } else {
+            0
+        };
+
+        self.service_fee += fee - referrer_fee;
+
+        self.internal_update_stats(winner_id, UpdateStatsAction::AddWonGame, None   , None);
+        self.internal_update_stats(winner_id, UpdateStatsAction::AddTotalReward, None, Some(winner_reward));
+
+        // finish
+        // TODO add to stats
+    }
+
     pub(crate) fn internal_update_stats(&mut self,
                                         account_id: &AccountId,
                                         action: UpdateStatsAction,

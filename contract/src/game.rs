@@ -19,6 +19,12 @@ use rand::Rng;
 use crate::player::PlayerRole::{Dangler, Goon, Post2Post, Professor, Shooter, TryHarder, Wall};
 use crate::StorageKey::FieldPlayers;
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum GameState {
+    InProgress,
+    GameOver { winner_id: usize },
+}
+
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct UserInfo {
     pub(crate) user: User,
@@ -196,7 +202,7 @@ impl Game {
         generate_an_event(Battle, self);
     }
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> GameState {
         let action_type = self.get_last_action();
         let action = Action;
 
@@ -213,6 +219,30 @@ impl Game {
             generate_an_event(EndOfPeriod, self);
             self.zone_number = 2;
         }
+
+        if self.is_game_over() {
+            GameState::GameOver { winner_id: self.get_winner_id() }
+        } else {
+            GameState::InProgress
+        }
+    }
+
+    fn is_game_over(&self) -> bool {
+        if self.turns >= 90 {
+            true
+        } else {
+            false
+        }
+    }
+
+    fn get_winner_id(&self) -> usize {
+         if self.user2.user.score >= self.user1.user.score {
+             2
+         } else if self.user2.user.score <= self.user1.user.score {
+             1
+         } else {
+             0
+         }
     }
 
     fn get_last_action(&self) -> &ActionTypes {

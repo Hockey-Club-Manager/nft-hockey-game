@@ -3,7 +3,7 @@ use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap};
 use near_sdk::borsh::{self, BorshSerialize};
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, PanicOnDefault, setup_alloc, Timestamp};
 
-use crate::game::{Event, Game, Team, UserInfo};
+use crate::game::{Event, Game, GameState, Team, UserInfo};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
 use crate::player::{PlayerPosition, PlayerRole};
 use crate::player_field::FieldPlayer;
@@ -160,11 +160,25 @@ impl Hockey {
         if time - game.last_event_generation_time >= 1 {
             game.last_event_generation_time = time;
 
-            game.step();
+            match game.step() {
+                GameState::GameOver { winner_id: winner_index} => {
+                    let winner_account = if game.user1.user.id == winner_index {
+                        game.user1.account_id.clone()
+                    } else {
+                        game.user2.account_id.clone()
+                    };
 
-            game.turns += 1;
+                    self.internal_distribute_reward(&game.reward, &winner_account);
+                    game.winner_index = Some(winner_index);
+
+                    self.internal_stop_game(game_id);
+
+                    log!("\nGame over! {} won!", winner_account);
+                },
+                _ => {}
+            };
+
             self.games.insert(&game_id, &game);
-
         }
 
         let teams = if game.user1.account_id == env::predecessor_account_id() {
@@ -204,6 +218,10 @@ impl Hockey {
         }
 
         field_players
+    }
+
+    fn internal_stop_game(&mut self, game_id: GameId) {
+        self.available_games.remove(&game_id);
     }
 }
 
