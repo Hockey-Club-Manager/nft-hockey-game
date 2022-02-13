@@ -1,10 +1,10 @@
-use near_sdk::{AccountId, Balance, near_bindgen};
+use near_sdk::{AccountId, Balance, env, near_bindgen, Promise, PromiseOrValue};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
 use near_sdk::json_types::U128;
 use crate::{Game, GameId, Hockey, StorageKey};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
-
+use crate::HockeyContract;
 
 
 #[derive(BorshSerialize, BorshDeserialize)]
@@ -154,5 +154,41 @@ impl Hockey {
         } else {
             false
         }
+    }
+}
+
+#[near_bindgen]
+impl Hockey {
+    pub fn make_unavailable(&mut self) -> PromiseOrValue<bool> {
+        let account_id = env::predecessor_account_id();
+        if let Some(v_game_config) = self.available_players.get(&account_id) {
+            let config: GameConfig = v_game_config.into();
+            self.available_players.remove(&account_id);
+            PromiseOrValue::Promise(Promise::new(account_id).transfer(config.deposit.unwrap_or(0)))
+        } else {
+            PromiseOrValue::Value(false)
+        }
+    }
+
+    pub fn get_available_players(&self, from_index: u64, limit: u64) -> Vec<(AccountId, GameConfigOutput)> {
+        let keys = self.available_players.keys_as_vector();
+        let values = self.available_players.values_as_vector();
+        (from_index..std::cmp::min(from_index + limit, keys.len()))
+            .map(|index| {
+                let config: GameConfig = values.get(index).unwrap().into();
+                (keys.get(index).unwrap(), config.into())
+            })
+            .collect()
+    }
+
+    pub fn get_available_games(&self, from_index: u64, limit: u64) -> Vec<(GameId, (AccountId, AccountId))> {
+        let keys = self.available_games.keys_as_vector();
+        let values = self.available_games.values_as_vector();
+        (from_index..std::cmp::min(from_index + limit, keys.len()))
+            .map(|index| {
+                let accounts: (AccountId, AccountId) = values.get(index).unwrap().into();
+                (keys.get(index).unwrap(), accounts)
+            })
+            .collect()
     }
 }
