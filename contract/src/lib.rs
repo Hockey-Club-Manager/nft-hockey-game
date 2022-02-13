@@ -1,9 +1,12 @@
+use std::collections::HashMap;
 use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap};
 use near_sdk::borsh::{self, BorshSerialize};
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, PanicOnDefault, setup_alloc, Timestamp};
 
-use crate::game::{Event, Game, Team};
+use crate::game::{Event, Game, Team, UserInfo};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
+use crate::player::{PlayerPosition, PlayerRole};
+use crate::player_field::FieldPlayer;
 
 mod game;
 mod user;
@@ -149,49 +152,59 @@ impl Hockey {
         }
     }
 
-    // pub fn generate_event(&mut self, game_id: GameId) -> Event {
-    //     let mut game: Game = self.internal_get_game(&game_id).into();
-    //     assert!(game.winner_index.is_none(), "Game already finished");
-    //
-    //     let time = env::block_timestamp();
-    //     if time - game.last_event_generation_time >= 1 {
-    //         game.last_event_generation_time = time;
-    //
-    //         game.step();
-    //
-    //         game.turns += 1;
-    //         self.games.insert(&game_id, &game);
-    //
-    //     }
-    //
-    //     let teams = if game.user1.account_id == env::predecessor_account_id() {
-    //         (Team {
-    //             field_players: game.user1.field_players,
-    //             goalie: game.user1.goalie
-    //         },
-    //          Team{
-    //              field_players: game.user2.field_players,
-    //              goalie: game.user2.goalie
-    //          })
-    //     } else {
-    //         (Team {
-    //             field_players: game.user2.field_players,
-    //             goalie: game.user1.goalie
-    //         },
-    //          Team{
-    //              field_players: game.user1.field_players,
-    //              goalie: game.user2.goalie
-    //          })
-    //     };
-    //
-    //     Event {
-    //         my_team: teams.0,
-    //         opponent_team: teams.1,
-    //         time: game.events[game.events.len() - 1].time,
-    //         zone_number: game.events[game.events.len() - 1].zone_number,
-    //         action: game.events[game.events.len() - 1].action,
-    //     }
-    // }
+    pub fn generate_event(&mut self, game_id: GameId) -> Event {
+        let mut game: Game = self.internal_get_game(&game_id).into();
+        assert!(game.winner_index.is_none(), "Game already finished");
+
+        let time = env::block_timestamp();
+        if time - game.last_event_generation_time >= 1 {
+            game.last_event_generation_time = time;
+
+            game.step();
+
+            game.turns += 1;
+            self.games.insert(&game_id, &game);
+
+        }
+
+        let teams = if game.user1.account_id == env::predecessor_account_id() {
+            (Team {
+                field_players: self.get_field_player_map(&game.user1),
+                goalie: game.user1.goalie
+            },
+             Team{
+                 field_players: self.get_field_player_map(&game.user2),
+                 goalie: game.user2.goalie
+             })
+        } else {
+            (Team {
+                field_players: self.get_field_player_map(&game.user2),
+                goalie: game.user2.goalie
+            },
+             Team{
+                 field_players: self.get_field_player_map(&game.user1),
+                 goalie: game.user1.goalie
+             })
+        };
+
+        Event {
+            my_team: teams.0,
+            opponent_team: teams.1,
+            time: game.events[game.events.len() - 1].time,
+            zone_number: game.events[game.events.len() - 1].zone_number,
+            action: game.events[game.events.len() - 1].action,
+        }
+    }
+
+    fn get_field_player_map(&self, user: &UserInfo) -> HashMap<PlayerPosition, FieldPlayer> {
+        let mut field_players: HashMap<PlayerPosition, FieldPlayer> = HashMap::new();
+
+        for (player_pos, field_player) in user.field_players.iter() {
+            field_players.insert(player_pos, field_player);
+        }
+
+        field_players
+    }
 }
 
 #[cfg(test)]
