@@ -363,6 +363,7 @@ pub fn generate_an_event(action: ActionTypes, game: &mut Game) {
         action,
         time: game.last_event_generation_time,
         zone_number: game.zone_number,
+        player_with_puck: game.player_with_puck,
     };
 
     game.events.push(new_event);

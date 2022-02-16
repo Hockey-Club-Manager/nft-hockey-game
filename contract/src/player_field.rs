@@ -2,7 +2,7 @@ use crate::player::{Player, PlayerPosition, PlayerRole};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 
-#[derive(Clone, BorshDeserialize, BorshSerialize)]
+#[derive(Clone, Copy, BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FieldPlayerStats {
@@ -36,7 +36,7 @@ impl FieldPlayerStats {
     pub fn get_morale(&self) -> u128 { self.morale }
 }
 
-#[derive(Clone, BorshDeserialize, BorshSerialize)]
+#[derive(Clone, Copy, BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FieldPlayer {

@@ -33,10 +33,10 @@ pub struct UserInfo {
     pub(crate) account_id: AccountId,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Team {
-    pub(crate) field_players: HashMap<PlayerPosition, FieldPlayer>,
+    pub(crate) field_players: Vec<FieldPlayer>,
     pub(crate) goalie: Goalie,
 }
 
@@ -51,7 +51,7 @@ pub struct Event {
     pub(crate) opponent_team: Team,
 }
 
-#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize, Copy, Clone)]
 pub struct EventToSave {
     pub(crate) action: ActionTypes,
     pub(crate) zone_number: i8,

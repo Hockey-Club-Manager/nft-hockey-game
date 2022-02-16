@@ -153,7 +153,7 @@ impl Hockey {
         }
     }
 
-    pub fn generate_event(&mut self, game_id: GameId, number_of_rendered_events: u32) -> Vec<Event> {
+    pub fn generate_event(&mut self, game_id: GameId, number_of_rendered_events: usize) -> Vec<Event> {
         let mut game: Game = self.internal_get_game(&game_id).into();
         assert!(game.winner_index.is_none(), "Game already finished");
 
@@ -184,56 +184,51 @@ impl Hockey {
 
         let teams = if game.user1.account_id == env::predecessor_account_id() {
             (Team {
-                field_players: self.get_field_player_map(&game.user1),
+                field_players: self.get_field_player_vec(&game.user1),
                 goalie: game.user1.goalie
             },
              Team{
-                 field_players: self.get_field_player_map(&game.user2),
+                 field_players: self.get_field_player_vec(&game.user2),
                  goalie: game.user2.goalie
              })
         } else {
             (Team {
-                field_players: self.get_field_player_map(&game.user2),
+                field_players: self.get_field_player_vec(&game.user2),
                 goalie: game.user2.goalie
             },
              Team{
-                 field_players: self.get_field_player_map(&game.user1),
+                 field_players: self.get_field_player_vec(&game.user1),
                  goalie: game.user1.goalie
              })
         };
 
 
-        vec![Event {
-            my_team: teams.0,
-            opponent_team: teams.1,
-            time: game.events[game.events.len() - 1].time,
-            zone_number: game.events[game.events.len() - 1].zone_number,
-            action: game.events[game.events.len() - 1].action,
-            player_with_puck: game.player_with_puck,
-        }]
+        self.get_events(game.events.len() - number_of_rendered_events, teams.0, teams.1, &game)
     }
 
-    // fn get_events(&self, num: u8, my_team: Team, opponent_team: Team, game: &Game) -> Vec<Event> {
-    //     let mut result: Vec<Event> = vec![];
-    //     for i in 0..num {
-    //         result.push(Event {
-    //             my_team,
-    //             opponent_team,
-    //             time: game.events[game.events.len() - 1].time,
-    //             zone_number: game.events[game.events.len() - 1].zone_number,
-    //             action: game.events[game.events.len() - 1].action,
-    //             player_with_puck: game.player_with_puck,
-    //         })
-    //     }
-    //
-    //     result
-    // }
+    fn get_events(&self, number_of_events: usize, my_team: Team, opponent_team: Team, game: &Game) -> Vec<Event> {
+        let mut result: Vec<Event> = vec![];
+        for i in 0..number_of_events {
+            let event = game.events[game.events.len() - 1 - i];
 
-    fn get_field_player_map(&self, user: &UserInfo) -> HashMap<PlayerPosition, FieldPlayer> {
-        let mut field_players: HashMap<PlayerPosition, FieldPlayer> = HashMap::new();
+            result.push(Event {
+                my_team: my_team.clone(),
+                opponent_team: opponent_team.clone(),
+                time: event.time,
+                zone_number: event.zone_number,
+                action: event.action,
+                player_with_puck: event.player_with_puck,
+            })
+        }
+
+        result
+    }
+
+    fn get_field_player_vec(&self, user: &UserInfo) -> Vec<FieldPlayer> {
+        let mut field_players = Vec::new();
 
         for (player_pos, field_player) in user.field_players.iter() {
-            field_players.insert(player_pos, field_player);
+            field_players.insert(field_players.len() - 1,field_player);
         }
 
         field_players
