@@ -99,6 +99,33 @@ impl From<VStats> for Stats {
     }
 }
 
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct StatsOutput {
+    referrer_id: Option<AccountId>,
+    affiliates: Vec<AccountId>,
+    games_num: u64,
+    victories_num: u64,
+    penalties_num: u64,
+    total_reward: U128,
+    total_affiliate_reward: U128
+}
+
+impl From<Stats> for StatsOutput {
+    fn from(stats: Stats) -> Self {
+        StatsOutput {
+            referrer_id: stats.referrer_id,
+            affiliates: stats.affiliates.to_vec(),
+            games_num: stats.games_num,
+            victories_num: stats.victories_num,
+            penalties_num: stats.penalties_num,
+            // TODO Add FT
+            total_reward: U128::from(stats.total_reward.get(&None).unwrap_or(0)),
+            total_affiliate_reward: U128::from(stats.total_affiliate_reward.get(&None).unwrap_or(0)),
+        }
+    }
+}
+
 impl Hockey {
     pub(crate) fn internal_distribute_reward(&mut self, token_balance: &TokenBalance, winner_id: &AccountId) {
         // TODO add for FT
@@ -220,5 +247,13 @@ impl Hockey {
                 (keys.get(index).unwrap(), accounts)
             })
             .collect()
+    }
+
+    pub fn get_stats(&self, account_id: AccountId) -> StatsOutput {
+        self.internal_get_stats(&account_id).into()
+    }
+
+    pub fn get_service_fee(&self) -> U128 {
+        U128::from(self.service_fee)
     }
 }
