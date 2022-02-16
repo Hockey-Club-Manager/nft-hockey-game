@@ -56,6 +56,7 @@ pub struct EventToSave {
     pub(crate) action: ActionTypes,
     pub(crate) zone_number: i8,
     pub(crate) time: Timestamp,
+    pub(crate) player_with_puck: Option<FieldPlayer>,
 }
 
 impl From<Event> for EventToSave {
@@ -64,6 +65,7 @@ impl From<Event> for EventToSave {
             action: event.action,
             zone_number: event.zone_number,
             time: event.time,
+            player_with_puck: event.player_with_puck,
         }
     }
 }

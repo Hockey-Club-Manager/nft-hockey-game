@@ -153,7 +153,7 @@ impl Hockey {
         }
     }
 
-    pub fn generate_event(&mut self, game_id: GameId) -> Event {
+    pub fn generate_event(&mut self, game_id: GameId, number_of_rendered_events: u32) -> Vec<Event> {
         let mut game: Game = self.internal_get_game(&game_id).into();
         assert!(game.winner_index.is_none(), "Game already finished");
 
@@ -203,14 +203,14 @@ impl Hockey {
         };
 
 
-        Event {
+        vec![Event {
             my_team: teams.0,
             opponent_team: teams.1,
             time: game.events[game.events.len() - 1].time,
             zone_number: game.events[game.events.len() - 1].zone_number,
             action: game.events[game.events.len() - 1].action,
             player_with_puck: game.player_with_puck,
-        }
+        }]
     }
 
     // fn get_events(&self, num: u8, my_team: Team, opponent_team: Team, game: &Game) -> Vec<Event> {
