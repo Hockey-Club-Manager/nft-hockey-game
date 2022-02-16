@@ -202,6 +202,7 @@ impl Hockey {
              })
         };
 
+
         Event {
             my_team: teams.0,
             opponent_team: teams.1,
@@ -211,6 +212,22 @@ impl Hockey {
             player_with_puck: game.player_with_puck,
         }
     }
+
+    // fn get_events(&self, num: u8, my_team: Team, opponent_team: Team, game: &Game) -> Vec<Event> {
+    //     let mut result: Vec<Event> = vec![];
+    //     for i in 0..num {
+    //         result.push(Event {
+    //             my_team,
+    //             opponent_team,
+    //             time: game.events[game.events.len() - 1].time,
+    //             zone_number: game.events[game.events.len() - 1].zone_number,
+    //             action: game.events[game.events.len() - 1].action,
+    //             player_with_puck: game.player_with_puck,
+    //         })
+    //     }
+    //
+    //     result
+    // }
 
     fn get_field_player_map(&self, user: &UserInfo) -> HashMap<PlayerPosition, FieldPlayer> {
         let mut field_players: HashMap<PlayerPosition, FieldPlayer> = HashMap::new();

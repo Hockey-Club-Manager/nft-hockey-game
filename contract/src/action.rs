@@ -161,9 +161,10 @@ impl DoAction for ShotAction {
         if has_won(player_stat, opponent_stat as f64) {
             change_morale_after_a_goal(game);
             game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id()).user.score += 1;
-            game.zone_number = 2;
 
             generate_an_event(Goal, game);
+
+            game.zone_number = 2;
         } else {
             generate_an_event(HitThePuck, game);
 
