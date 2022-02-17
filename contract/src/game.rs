@@ -264,3 +264,28 @@ impl Game {
         }
     }
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use crate::{Game, TokenBalance};
+//     use crate::PlayerPosition::Center;
+//
+//     fn get_new_game() -> Game {
+//         Game::new("alice".into(),
+//                   "bob".into(),
+//                   TokenBalance{ token_id: Some("NEAR".into()), balance: 1 }
+//         )
+//     }
+//
+//     #[test]
+//     fn step() {
+//         let mut game = get_new_game();
+//         let player1 = &game.user1.field_players.get(&Center);
+//
+//         let player1_stat = match player1 {
+//             Some(player) => assert_eq!(player.stats.strength, 60.0, "not 60.0"),
+//             _ => panic!("Player not found")
+//         };
+//         //game.step();
+//     }
+// }

@@ -1,4 +1,4 @@
-const CONTRACT_NAME = process.env.CONTRACT_NAME ||'game.nft-hockey-market.testnet'
+const CONTRACT_NAME = process.env.CONTRACT_NAME ||'qwerty20222.testnet'
 
 function getConfig(env) {
   switch (env) {

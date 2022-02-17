@@ -88,6 +88,10 @@ impl Hockey {
         }
     }
 
+    pub fn is_already_in_the_waiting_list(&self, account_id: AccountId) -> bool {
+        !self.available_players.get(&account_id).is_none()
+    }
+
     #[payable]
     pub fn make_available(&mut self, config: GameConfig, referrer_id: Option<AccountId>) {
         let account_id: &AccountId = &env::predecessor_account_id();
