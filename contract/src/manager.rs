@@ -256,4 +256,12 @@ impl Hockey {
     pub fn get_service_fee(&self) -> U128 {
         U128::from(self.service_fee)
     }
+
+    pub fn is_already_in_the_waiting_list(&self, account_id: AccountId) -> bool {
+        !self.available_players.get(&account_id).is_none()
+    }
+
+    pub fn get_game_config(&self, account_id: AccountId) -> GameConfig {
+        self.available_players.get(&account_id).unwrap().into()
+    }
 }
