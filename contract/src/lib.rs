@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+//use std::env;
 use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap};
 use near_sdk::borsh::{self, BorshSerialize, BorshDeserialize};
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, init, PanicOnDefault, setup_alloc, Timestamp};
@@ -21,7 +22,6 @@ type GameId = u64;
 // 0.01 NEAR
 const MIN_DEPOSIT: Balance = 10_000_000_000_000_000_000_000;
 const ONE_YOCTO: Balance = 1;
-const ONE_HOUR: Timestamp = 3_600_000_000_000;
 
 setup_alloc!();
 

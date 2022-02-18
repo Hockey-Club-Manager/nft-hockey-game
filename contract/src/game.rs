@@ -12,11 +12,8 @@ use crate::action::ActionTypes::{Battle, EndOfPeriod, Goal, Save};
 use crate::player::{PlayerPosition, PlayerRole};
 use crate::player::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
 use crate::{StorageKey, TokenBalance};
-
-extern crate rand;
-
-use rand::Rng;
 use crate::player::PlayerRole::{Dangler, Goon, Post2Post, Professor, Shooter, TryHarder, Wall};
+use crate::PlayerPosition::LeftWing;
 use crate::StorageKey::FieldPlayers;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -129,11 +126,11 @@ impl Game {
     }
 
     fn create_field_players_with_random_stats(user_id: usize) -> UnorderedMap<PlayerPosition, FieldPlayer> {
-        let mut field_players = UnorderedMap::new(FieldPlayers);
+        let mut field_players = UnorderedMap::new(StorageKey::FieldPlayers);
 
         let center = Game::create_field_player_with_random_stats(Shooter, Center, user_id);
         let right_wind = Game::create_field_player_with_random_stats(TryHarder, RightWing, user_id);
-        let left_wind = Game::create_field_player_with_random_stats(Dangler, RightWing, user_id);
+        let left_wind = Game::create_field_player_with_random_stats(Dangler, LeftWing, user_id);
         let right_defender = Game::create_field_player_with_random_stats(Goon, RightDefender, user_id);
         let left_defender = Game::create_field_player_with_random_stats(Professor, LeftDefender, user_id);
 
@@ -146,35 +143,35 @@ impl Game {
     }
 
     fn create_field_player_with_random_stats(role: PlayerRole, position: PlayerPosition, user_id: usize) -> FieldPlayer {
-        let mut rng = rand::thread_rng();
-
         FieldPlayer::new(
             position,
             role,
             user_id,
             FieldPlayerStats::new(
-                rng.gen_range(60, 95) as u128,
-                rng.gen_range(60, 95) as u128,
-                rng.gen_range(60.0, 95.0),
-                rng.gen_range(60, 95) as u128,
-                rng.gen_range(60, 95) as u128
+                Game::get_random() as u128,
+                Game::get_random() as u128,
+                Game::get_random() as f64,
+                Game::get_random() as u128,
+                Game::get_random() as u128
             ))
     }
 
     fn create_goalie_with_random_stats(role: PlayerRole, user_id: usize) -> Goalie {
-        let mut rng = rand::thread_rng();
-
         Goalie::new(
             role,
             user_id,
             GoalieStats::new(
-                rng.gen_range(60, 95) as u128,
-                rng.gen_range(60, 95) as u128,
-                rng.gen_range(60, 95) as u128,
-                rng.gen_range(60, 95) as u128,
-                rng.gen_range(60, 95) as u128,
+                Game::get_random()  as u128,
+                Game::get_random()  as u128,
+                Game::get_random() as u128,
+                Game::get_random() as u128,
+                Game::get_random() as u128,
             )
         )
+    }
+
+    fn get_random() -> u8 {
+        *env::random_seed().get(0).unwrap()
     }
 }
 
