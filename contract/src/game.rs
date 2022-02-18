@@ -25,7 +25,7 @@ pub enum GameState {
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct UserInfo {
     pub(crate) user: User,
-    pub(crate) field_players: UnorderedMap<PlayerPosition, FieldPlayer>,
+    pub(crate) field_players: UnorderedMap<String, FieldPlayer>,
     pub(crate) goalie: Goalie,
     pub(crate) account_id: AccountId,
 }
@@ -125,7 +125,7 @@ impl Game {
         )
     }
 
-    fn create_field_players_with_random_stats(user_id: usize) -> UnorderedMap<PlayerPosition, FieldPlayer> {
+    fn create_field_players_with_random_stats(user_id: usize) -> UnorderedMap<String, FieldPlayer> {
         let mut field_players = UnorderedMap::new(StorageKey::FieldPlayers);
 
         let center = Game::create_field_player_with_random_stats(Shooter, Center, user_id);
@@ -134,11 +134,11 @@ impl Game {
         let right_defender = Game::create_field_player_with_random_stats(Goon, RightDefender, user_id);
         let left_defender = Game::create_field_player_with_random_stats(Professor, LeftDefender, user_id);
 
-        field_players.insert(&center.get_player_position(), &center);
-        field_players.insert(&right_wind.get_player_position(), &right_wind);
-        field_players.insert(&left_wind.get_player_position(), &left_wind);
-        field_players.insert(&right_defender.get_player_position(), &right_defender);
-        field_players.insert(&left_defender.get_player_position(), &left_defender);
+        field_players.insert(&center.get_player_position().to_string(), &center);
+        field_players.insert(&right_wind.get_player_position().to_string(), &right_wind);
+        field_players.insert(&left_wind.get_player_position().to_string(), &left_wind);
+        field_players.insert(&right_defender.get_player_position().to_string(), &right_defender);
+        field_players.insert(&left_defender.get_player_position().to_string(), &left_defender);
         field_players
     }
 
@@ -177,7 +177,7 @@ impl Game {
 
 impl Game {
     fn get_center_forward_in_the_zone(&self, user: &UserInfo) -> FieldPlayer {
-        match user.field_players.get(&Center) {
+        match user.field_players.get(&Center.to_string()) {
             Some(player) => player,
             _ => panic!("Player not found")
         }

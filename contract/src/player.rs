@@ -1,3 +1,4 @@
+use std::fmt;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 
@@ -13,6 +14,20 @@ pub enum PlayerPosition {
     RightDefender,
     GoaliePos,
 }
+
+impl fmt::Display for PlayerPosition {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            PlayerPosition::Center => write!(f, "0"),
+            PlayerPosition::LeftWing => write!(f, "1"),
+            PlayerPosition::LeftWing => write!(f, "2"),
+            PlayerPosition::RightDefender => write!(f, "3"),
+            PlayerPosition::GoaliePos => write!(f, "4"),
+            _ => write!(f, "-1")
+        }
+    }
+}
+
 
 #[derive(PartialEq, Clone, Copy, BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]

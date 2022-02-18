@@ -111,7 +111,7 @@ impl DoAction for PassAction {
 
                 let user = &game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id());
 
-                match user.field_players.get(&pass_to) {
+                match user.field_players.get(&pass_to.to_string()) {
                     Some(player) => game.player_with_puck = Option::from(player),
                     None => panic!("Player not found")
                 }
@@ -292,13 +292,13 @@ pub fn get_opponents_field_player(game: &mut Game) -> FieldPlayer {
     let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
 
     return if user_id == 1 {
-        match game.user2.field_players.get(&game.player_with_puck.as_ref().unwrap().position) {
+        match game.user2.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()) {
             Some(player) => player,
             _ => panic!("Player not found")
         }
     } else {
         let user = &game.user1;
-        match user.field_players.get(&game.player_with_puck.as_ref().unwrap().position){
+        match user.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()){
             Some(player) => player,
             _ => panic!("Player not found")
         }
@@ -388,8 +388,8 @@ fn get_random_position_after_rebound() -> PlayerPosition {
 }
 
 fn battle_by_position(pos: PlayerPosition, game: &mut Game) {
-    let player1 = &game.user1.field_players.get(&pos);
-    let player2 = &game.user2.field_players.get(&pos);
+    let player1 = &game.user1.field_players.get(&pos.to_string());
+    let player2 = &game.user2.field_players.get(&pos.to_string());
 
     let player1_stat = match player1 {
         Some(player) => get_relative_field_player_stat(player, player.stats.strength),

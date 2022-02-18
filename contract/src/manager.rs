@@ -5,7 +5,7 @@ use crate::{Game, GameId, Hockey, StorageKey};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use crate::*;
-
+use crate::PlayerPosition::Center;
 
 
 #[derive(BorshSerialize, BorshDeserialize)]
