@@ -38,6 +38,7 @@ pub struct UserInfo {
 pub struct Team {
     pub(crate) field_players: HashMap<String, FieldPlayer>,
     pub(crate) goalie: Goalie,
+    pub(crate) score: u8,
 }
 
 #[derive(Serialize, Deserialize)]

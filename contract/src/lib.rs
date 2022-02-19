@@ -268,20 +268,24 @@ impl Hockey {
         let teams = if game.user1.account_id == env::predecessor_account_id() {
             (Team {
                 field_players: game.user1.field_players.clone(),
-                goalie: game.user1.goalie.clone()
+                goalie: game.user1.goalie.clone(),
+                score: game.user1.user.score,
             },
              Team{
                  field_players: game.user2.field_players.clone(),
-                 goalie: game.user2.goalie.clone()
+                 goalie: game.user2.goalie.clone(),
+                 score: game.user2.user.score,
              })
         } else {
             (Team {
                 field_players: game.user2.field_players.clone(),
-                goalie: game.user2.goalie.clone()
+                goalie: game.user2.goalie.clone(),
+                score: game.user2.user.score,
             },
              Team{
                  field_players: game.user1.field_players.clone(),
-                 goalie: game.user1.goalie.clone()
+                 goalie: game.user1.goalie.clone(),
+                 score: game.user1.user.score,
              })
         };
 
