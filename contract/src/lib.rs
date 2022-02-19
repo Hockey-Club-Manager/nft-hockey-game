@@ -310,7 +310,7 @@ impl Hockey {
         self.next_game_id
     }
 
-    pub fn take_to(&self, game_id: GameId) {
+    pub fn take_to(&mut self, game_id: GameId) {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
@@ -325,7 +325,7 @@ impl Hockey {
                 generate_an_event(Take_TO, &mut game);
             }
         }
-
+        self.games.insert(&game_id, &game);
     }
 
     fn change_stats_take_to(&self, user1: &mut UserInfo, user2: &mut UserInfo) {
@@ -343,7 +343,7 @@ impl Hockey {
         user1.take_to_called = true;
     }
 
-    pub fn coach_speech(&self, game_id: GameId) {
+    pub fn coach_speech(&mut self, game_id: GameId) {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
@@ -358,6 +358,7 @@ impl Hockey {
                 generate_an_event(CoachSpeech, &mut game);
             }
         }
+        self.games.insert(&game_id, &game);
     }
 
     fn change_stats_coach_speech(&self, user: &mut UserInfo) {
@@ -369,7 +370,7 @@ impl Hockey {
         user.coach_speech_called = true;
     }
 
-    pub fn goalie_out(&self, game_id: GameId) {
+    pub fn goalie_out(&mut self, game_id: GameId) {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
@@ -380,9 +381,10 @@ impl Hockey {
             game.user2.is_goalie_out = true;
             generate_an_event(GoalieOut, &mut game);
         }
+        self.games.insert(&game_id, &game);
     }
 
-    pub fn goalie_back(&self, game_id: GameId) {
+    pub fn goalie_back(&mut self, game_id: GameId) {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
@@ -393,6 +395,7 @@ impl Hockey {
             game.user2.is_goalie_out = false;
             generate_an_event(GoalieBack, &mut game);
         }
+        self.games.insert(&game_id, &game);
     }
 
     pub fn get_turns(&self, game_id: GameId) -> usize{
