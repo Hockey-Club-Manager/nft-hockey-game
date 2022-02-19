@@ -10,6 +10,7 @@ use crate::action::ActionTypes::{Battle, Dangle, Goal, HitThePuck, Move, Pass};
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 use near_sdk::serde::{Deserialize, Serialize};
+use crate::UserInfo;
 
 const PROBABILITY_PASS_NOT_HAPPENED: i32 = 20;
 
@@ -146,10 +147,23 @@ impl DoAction for ShotAction {
             (0.7, 1.0)
         };
 
-        let player_stat = get_relative_field_player_stat(&game.player_with_puck.as_ref().unwrap(),
+        let  mut player_stat = get_relative_field_player_stat(&game.player_with_puck.as_ref().unwrap(),
                                                                  game.player_with_puck.as_ref().unwrap().stats.get_shooting() as f64);
 
-        let opponent_stat =  if pass_before_shot {
+        let is_goalie_out = if game.player_with_puck.unwrap().get_user_id() == 1 {
+            &game.user1.is_goalie_out
+        } else {
+            &game.user2.is_goalie_out
+        };
+
+        if *is_goalie_out {
+            player_stat += 20.0;
+        }
+
+        let opponent_user = get_opponent_user(game);
+        let opponent_stat = if opponent_user.is_goalie_out {
+          10.0
+        } else if pass_before_shot {
             (((opponent.stats.stand + opponent.stats.stretch) as f64 * p_w.0) / 2 as f64 +
                 opponent.stats.morale as f64) / 2 as f64
         } else {
@@ -406,5 +420,15 @@ fn battle_by_position(pos: PlayerPosition, game: &mut Game) {
             Some(player) => game.player_with_puck = Option::from(*player),
             _ => panic!("Player not found")
         }
+    }
+}
+
+fn get_opponent_user(game: &Game) -> &UserInfo {
+    let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
+
+    return if user_id == 1 {
+        &game.user2
+    } else {
+        &game.user1
     }
 }
