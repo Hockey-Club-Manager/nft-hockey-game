@@ -393,13 +393,13 @@ fn battle_by_position(pos: PlayerPosition, game: &mut Game) {
     };
 
     if has_won(player1_stat, player2_stat) {
-        match player1 {
-            //Some(player) => game.player_with_puck = Option::from(*player),
+        match *player1 {
+            Some(player) => game.player_with_puck = Option::from(*player),
             _ => panic!("Player not found")
         }
     } else {
-        match player2 {
-            //Some(player) => game.player_with_puck = Option::from(*player),
+        match *player2 {
+            Some(player) => game.player_with_puck = Option::from(*player),
             _ => panic!("Player not found")
         }
     }
