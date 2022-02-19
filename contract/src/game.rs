@@ -91,8 +91,8 @@ impl Game {
         let field_players1 = Game::create_field_players_with_random_stats(user1.id);
         let goalie1 = Game::create_goalie_with_random_stats(Post2Post ,user1.id);
 
-        let field_players2 = Game::create_field_players_with_random_stats(user1.id);
-        let goalie2 = Game::create_goalie_with_random_stats(Wall ,user1.id);
+        let field_players2 = Game::create_field_players_with_random_stats(user2.id);
+        let goalie2 = Game::create_goalie_with_random_stats(Wall ,user2.id);
 
         let user_info1 = UserInfo {
             user: user1,
