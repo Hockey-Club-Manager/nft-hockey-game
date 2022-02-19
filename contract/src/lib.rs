@@ -155,8 +155,8 @@ impl Hockey {
         }
     }
 
-    pub fn generate_event(&mut self, game_id: GameId, number_of_rendered_events: usize) {
-        let mut game: Game = self.internal_get_game(&game_id).into();
+    pub fn generate_event(&mut self, game_id: GameId) {
+        let game: &mut Game = &mut self.internal_get_game(&game_id);
         assert!(game.winner_index.is_none(), "Game already finished");
 
         let time = env::block_timestamp();
@@ -320,6 +320,11 @@ impl Hockey {
             game.user2.is_goalie_out = false;
             generate_an_event(GoalieBack, &mut game);
         }
+    }
+
+    pub fn get_turns(&self, game_id: GameId) -> usize{
+        let game: Game = self.games.get(&game_id).expect("Game not found");
+        game.events.len()
     }
 }
 

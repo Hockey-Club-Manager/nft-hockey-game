@@ -7,8 +7,8 @@ use near_sdk::serde::{Deserialize, Serialize};
 use crate::goalie::{Goalie, GoalieStats};
 use crate::player_field::{FieldPlayer, FieldPlayerStats};
 use crate::user::User;
-use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won};
-use crate::action::ActionTypes::{Battle, EndOfPeriod, Goal, Save};
+use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
+use crate::action::ActionTypes::{Battle, EndOfPeriod, Goal, Move, Save};
 use crate::player::{PlayerPosition, PlayerRole};
 use crate::player::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
 use crate::{StorageKey, TokenBalance};
@@ -210,6 +210,8 @@ impl Game {
 
     fn face_off(&mut self) {
         self.battle();
+        reduce_strength(self);
+
         generate_an_event(Battle, self);
     }
 

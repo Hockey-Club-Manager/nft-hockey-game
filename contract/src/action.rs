@@ -88,9 +88,9 @@ impl Action {
 
         let action = self.get_random_action(is_attack_zone, game.player_with_puck.as_ref().unwrap().get_role());
 
-        action.do_action(game);
-
         reduce_strength(game);
+
+        action.do_action(game);
     }
 }
 
@@ -271,7 +271,7 @@ pub fn has_won(stat: f64, opponents_stat: f64) -> bool {
 fn get_another_random_position(player_pos: PlayerPosition) -> PlayerPosition {
     let player_positions = get_other_positions(player_pos);
 
-    let random_pos = Game::get_random_in_range(0, 5);
+    let random_pos = Game::get_random_in_range(0, 4);
 
     player_positions[random_pos]
 }
@@ -320,7 +320,7 @@ pub fn get_relative_field_player_stat(player: &FieldPlayer, stat: f64) -> f64 {
     (stat as f64 + player.stats.get_morale() as f64 + player.stats.get_strength() as f64) / 3 as f64
 }
 
-fn reduce_strength(game: &mut Game) {
+pub fn reduce_strength(game: &mut Game) {
     let q = 0.99;
     let n = 20;
 
