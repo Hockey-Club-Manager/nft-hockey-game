@@ -9,7 +9,7 @@ pub struct FieldPlayerStats {
     skating: u128,
     shooting: u128,
     pub(crate) strength: f64,
-    iq: u128,
+    pub(crate) iq: u128,
     pub(crate) morale: u128,
 }
 

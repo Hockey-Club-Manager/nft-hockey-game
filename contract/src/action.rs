@@ -26,6 +26,8 @@ pub enum ActionTypes {
     Save,
     HitThePuck,
     EndOfPeriod,
+    Take_TO,
+    CoachSpeech,
 }
 
 trait DoAction {

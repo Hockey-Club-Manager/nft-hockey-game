@@ -28,6 +28,9 @@ pub struct UserInfo {
     pub(crate) field_players: HashMap<String, FieldPlayer>,
     pub(crate) goalie: Goalie,
     pub(crate) account_id: AccountId,
+    pub(crate) take_to_called: bool,
+    pub(crate) coach_speech_called: bool,
+    pub(crate) is_goalie_out: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -95,6 +98,9 @@ impl Game {
             field_players: field_players1,
             goalie: goalie1,
             account_id: account_id_1,
+            take_to_called: false,
+            coach_speech_called: false,
+            is_goalie_out: false,
         };
 
         let user_info2 = UserInfo {
@@ -102,6 +108,9 @@ impl Game {
             field_players: field_players2,
             goalie: goalie2,
             account_id: account_id_2,
+            take_to_called: false,
+            coach_speech_called: false,
+            is_goalie_out: false,
         };
 
         Game {

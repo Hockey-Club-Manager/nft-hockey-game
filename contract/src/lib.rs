@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap};
 use near_sdk::borsh::{self, BorshSerialize, BorshDeserialize};
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, init, PanicOnDefault, setup_alloc, Timestamp};
+use crate::action::ActionTypes::{CoachSpeech, Take_TO};
+use crate::action::generate_an_event;
 
 use crate::game::{Event, Game, GameState, Team, UserInfo};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
@@ -224,22 +226,94 @@ impl Hockey {
         result
     }
 
-    // fn get_field_player_vec(&self, user: &UserInfo) -> Vec<FieldPlayer> {
-    //     let mut field_players = Vec::new();
-    //
-    //     for (player_pos, field_player) in user.field_players.iter() {
-    //         field_players.insert(field_players.len() - 1,field_player);
-    //     }
-    //
-    //     field_players
-    // }
-
+    // TODO make private on release
     pub fn internal_stop_game(&mut self, game_id: GameId) {
         self.available_games.remove(&game_id);
     }
 
     pub fn get_next_game_id(&self) -> GameId {
         self.next_game_id
+    }
+
+    pub fn take_to(&self, game_id: GameId) {
+        let account_id = env::predecessor_account_id();
+        let mut game: Game = self.internal_get_game(&game_id).into();
+
+        if game.user1.account_id == account_id {
+            if !game.user1.take_to_called {
+                self.change_stats_take_to(&mut game.user1, &mut game.user2);
+                generate_an_event(Take_TO, &mut game);
+            }
+        } else if game.user2.account_id == account_id {
+            if !game.user2.take_to_called {
+                self.change_stats_take_to(&mut game.user2, &mut game.user1);
+                generate_an_event(Take_TO, &mut game);
+            }
+        }
+
+    }
+
+    fn change_stats_take_to(&self, user1: &mut UserInfo, user2: &mut UserInfo) {
+        for (_player_pos, field_player) in user1.field_players.iter_mut() {
+            field_player.stats.morale += 5;
+            field_player.stats.strength += 5.0;
+            field_player.stats.iq += 3;
+        }
+
+        for (_player_pos, field_player) in user2.field_players.iter_mut() {
+            field_player.stats.morale += 3;
+            field_player.stats.strength += 3.0;
+        }
+
+        user1.take_to_called = true;
+    }
+
+    pub fn coach_speech(&self, game_id: GameId) {
+        let account_id = env::predecessor_account_id();
+        let mut game: Game = self.internal_get_game(&game_id).into();
+
+        if game.user1.account_id == account_id {
+            if !game.user1.coach_speech_called {
+                self.change_stats_coach_speech(&mut game.user1);
+                generate_an_event(CoachSpeech, &mut game);
+            }
+        } else if game.user2.account_id == account_id {
+            if !game.user2.coach_speech_called {
+                self.change_stats_coach_speech(&mut game.user2);
+                generate_an_event(CoachSpeech, &mut game);
+            }
+        }
+    }
+
+    fn change_stats_coach_speech(&self, user: &mut UserInfo) {
+        for (_player_pos, field_player) in user.field_players.iter_mut() {
+            field_player.stats.morale += 3;
+            field_player.stats.iq += 2;
+        }
+
+        user.coach_speech_called = true;
+    }
+
+    pub fn goalie_out(&self, game_id: GameId) {
+        let account_id = env::predecessor_account_id();
+        let mut game: Game = self.internal_get_game(&game_id).into();
+
+        if game.user1.account_id == account_id {
+            game.user1.is_goalie_out = true;
+        } else if game.user2.account_id == account_id {
+            game.user2.is_goalie_out = true;
+        }
+    }
+
+    pub fn goalie_back(&self, game_id: GameId) {
+        let account_id = env::predecessor_account_id();
+        let mut game: Game = self.internal_get_game(&game_id).into();
+
+        if game.user1.account_id == account_id {
+            game.user1.is_goalie_out = false;
+        } else if game.user2.account_id == account_id {
+            game.user2.is_goalie_out = false;
+        }
     }
 }
 
