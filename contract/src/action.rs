@@ -28,6 +28,8 @@ pub enum ActionTypes {
     EndOfPeriod,
     Take_TO,
     CoachSpeech,
+    GoalieOut,
+    GoalieBack,
 }
 
 trait DoAction {

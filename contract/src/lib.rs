@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap};
 use near_sdk::borsh::{self, BorshSerialize, BorshDeserialize};
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, init, PanicOnDefault, setup_alloc, Timestamp};
-use crate::action::ActionTypes::{CoachSpeech, Take_TO};
+use crate::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, Take_TO};
 use crate::action::generate_an_event;
 
 use crate::game::{Event, Game, GameState, Team, UserInfo};
@@ -298,10 +298,12 @@ impl Hockey {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
-        if game.user1.account_id == account_id {
+        if game.user1.account_id == account_id && !game.user1.is_goalie_out {
             game.user1.is_goalie_out = true;
-        } else if game.user2.account_id == account_id {
+            generate_an_event(GoalieOut, &mut game);
+        } else if game.user2.account_id == account_id && !game.user2.is_goalie_out {
             game.user2.is_goalie_out = true;
+            generate_an_event(GoalieOut, &mut game);
         }
     }
 
@@ -309,10 +311,12 @@ impl Hockey {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
-        if game.user1.account_id == account_id {
+        if game.user1.account_id == account_id  && game.user1.is_goalie_out{
             game.user1.is_goalie_out = false;
-        } else if game.user2.account_id == account_id {
+            generate_an_event(GoalieBack, &mut game);
+        } else if game.user2.account_id == account_id && game.user2.is_goalie_out{
             game.user2.is_goalie_out = false;
+            generate_an_event(GoalieBack, &mut game);
         }
     }
 }
