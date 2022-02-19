@@ -184,21 +184,21 @@ impl Hockey {
 
         let teams = if game.user1.account_id == env::predecessor_account_id() {
             (Team {
-                field_players: self.get_field_player_vec(&game.user1),
-                goalie: game.user1.goalie
+                field_players: game.user1.field_players.clone(),
+                goalie: game.user1.goalie.clone()
             },
              Team{
-                 field_players: self.get_field_player_vec(&game.user2),
-                 goalie: game.user2.goalie
+                 field_players: game.user2.field_players.clone(),
+                 goalie: game.user2.goalie.clone()
              })
         } else {
             (Team {
-                field_players: self.get_field_player_vec(&game.user2),
-                goalie: game.user2.goalie
+                field_players: game.user2.field_players.clone(),
+                goalie: game.user2.goalie.clone()
             },
              Team{
-                 field_players: self.get_field_player_vec(&game.user1),
-                 goalie: game.user1.goalie
+                 field_players: game.user1.field_players.clone(),
+                 goalie: game.user1.goalie.clone()
              })
         };
 
@@ -224,18 +224,22 @@ impl Hockey {
         result
     }
 
-    fn get_field_player_vec(&self, user: &UserInfo) -> Vec<FieldPlayer> {
-        let mut field_players = Vec::new();
-
-        for (player_pos, field_player) in user.field_players.iter() {
-            field_players.insert(field_players.len() - 1,field_player);
-        }
-
-        field_players
-    }
+    // fn get_field_player_vec(&self, user: &UserInfo) -> Vec<FieldPlayer> {
+    //     let mut field_players = Vec::new();
+    //
+    //     for (player_pos, field_player) in user.field_players.iter() {
+    //         field_players.insert(field_players.len() - 1,field_player);
+    //     }
+    //
+    //     field_players
+    // }
 
     pub fn internal_stop_game(&mut self, game_id: GameId) {
         self.available_games.remove(&game_id);
+    }
+
+    pub fn get_next_game_id(&self) -> GameId {
+        self.next_game_id
     }
 }
 

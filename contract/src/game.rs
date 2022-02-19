@@ -25,7 +25,7 @@ pub enum GameState {
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct UserInfo {
     pub(crate) user: User,
-    pub(crate) field_players: UnorderedMap<String, FieldPlayer>,
+    pub(crate) field_players: HashMap<String, FieldPlayer>,
     pub(crate) goalie: Goalie,
     pub(crate) account_id: AccountId,
 }
@@ -33,7 +33,7 @@ pub struct UserInfo {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Team {
-    pub(crate) field_players: Vec<FieldPlayer>,
+    pub(crate) field_players: HashMap<String, FieldPlayer>,
     pub(crate) goalie: Goalie,
 }
 
@@ -125,8 +125,8 @@ impl Game {
         )
     }
 
-    fn create_field_players_with_random_stats(user_id: usize) -> UnorderedMap<String, FieldPlayer> {
-        let mut field_players = UnorderedMap::new(StorageKey::FieldPlayers);
+    fn create_field_players_with_random_stats(user_id: usize) -> HashMap<String, FieldPlayer> {
+        let mut field_players = HashMap::new();
 
         let center = Game::create_field_player_with_random_stats(Shooter, Center, user_id);
         let right_wind = Game::create_field_player_with_random_stats(TryHarder, RightWing, user_id);
@@ -134,11 +134,11 @@ impl Game {
         let right_defender = Game::create_field_player_with_random_stats(Goon, RightDefender, user_id);
         let left_defender = Game::create_field_player_with_random_stats(Professor, LeftDefender, user_id);
 
-        field_players.insert(&center.get_player_position().to_string(), &center);
-        field_players.insert(&right_wind.get_player_position().to_string(), &right_wind);
-        field_players.insert(&left_wind.get_player_position().to_string(), &left_wind);
-        field_players.insert(&right_defender.get_player_position().to_string(), &right_defender);
-        field_players.insert(&left_defender.get_player_position().to_string(), &left_defender);
+        field_players.insert(center.get_player_position().to_string(), center);
+        field_players.insert(right_wind.get_player_position().to_string(), right_wind);
+        field_players.insert(left_wind.get_player_position().to_string(), left_wind);
+        field_players.insert(right_defender.get_player_position().to_string(), right_defender);
+        field_players.insert(left_defender.get_player_position().to_string(), left_defender);
         field_players
     }
 
@@ -148,11 +148,11 @@ impl Game {
             role,
             user_id,
             FieldPlayerStats::new(
-                Game::get_random() as u128,
-                Game::get_random() as u128,
-                Game::get_random() as f64,
-                Game::get_random() as u128,
-                Game::get_random() as u128
+                Game::get_random_in_range(60, 90) as u128,
+                Game::get_random_in_range(60, 90) as u128,
+                Game::get_random_in_range(60, 90) as f64,
+                Game::get_random_in_range(60, 90) as u128,
+                Game::get_random_in_range(60, 90) as u128
             ))
     }
 
@@ -161,23 +161,25 @@ impl Game {
             role,
             user_id,
             GoalieStats::new(
-                Game::get_random()  as u128,
-                Game::get_random()  as u128,
-                Game::get_random() as u128,
-                Game::get_random() as u128,
-                Game::get_random() as u128,
+                Game::get_random_in_range(60, 90)  as u128,
+                Game::get_random_in_range(60, 90)  as u128,
+                Game::get_random_in_range(60, 90) as u128,
+                Game::get_random_in_range(60, 90) as u128,
+                Game::get_random_in_range(60, 90) as u128,
             )
         )
     }
 
-    fn get_random() -> u8 {
-        *env::random_seed().get(0).unwrap()
+    pub fn get_random_in_range(min: usize, max: usize) -> usize {
+        let random = *env::random_seed().get(0).unwrap();
+        let random_in_range = (random as f64 / 256.0) * (max - min) as f64 + min as f64;
+        random_in_range.floor() as usize
     }
 }
 
 impl Game {
     fn get_center_forward_in_the_zone(&self, user: &UserInfo) -> FieldPlayer {
-        match user.field_players.get(&Center.to_string()) {
+        *match user.field_players.get(&Center.to_string()) {
             Some(player) => player,
             _ => panic!("Player not found")
         }

@@ -5,9 +5,6 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::env::panic;
 use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Rock, Shooter, ToughGuy, TryHarder};
 
-extern crate rand;
-
-use rand::Rng;
 use crate::action::ActionTypes::{Battle, Dangle, Goal, HitThePuck, Move, Pass};
 
 use crate::goalie::Goalie;
@@ -62,8 +59,7 @@ impl Action {
     fn get_random_action(&self, is_attack_zone: bool, role: PlayerRole) -> Box<dyn DoAction> {
         let actions = self.get_probability_of_actions(role);
 
-        let mut rng = rand::thread_rng();
-        let rnd = rng.gen_range(0, 10);
+        let rnd = Game::get_random_in_range(0, 10);
 
         let probability_distribution = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4];
 
@@ -98,10 +94,9 @@ impl DoAction for PassAction {
     fn do_action(&self, game: &mut Game) {
         let opponent= get_opponents_field_player(game);
 
-        let mut rng = rand::thread_rng();
-        let random_number = rng.gen_range(1, 101);
+        let random_number = Game::get_random_in_range(1, 101);
 
-        if random_number > PROBABILITY_PASS_NOT_HAPPENED {
+        if random_number as i32 > PROBABILITY_PASS_NOT_HAPPENED {
             let player_stat = get_relative_field_player_stat(&game.player_with_puck.as_ref().unwrap(),
                                                              game.player_with_puck.as_ref().unwrap().stats.get_iq() as f64);
             let opponent_stat = get_relative_field_player_stat(&opponent, opponent.stats.get_iq() as f64);
@@ -112,7 +107,7 @@ impl DoAction for PassAction {
                 let user = &game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id());
 
                 match user.field_players.get(&pass_to.to_string()) {
-                    Some(player) => game.player_with_puck = Option::from(player),
+                    Some(player) => game.player_with_puck = Option::from(*player),
                     None => panic!("Player not found")
                 }
 
@@ -238,8 +233,7 @@ impl DoAction for DangleAction {
 pub fn has_won(stat: f64, opponents_stat: f64) -> bool {
     let sum = stat + opponents_stat;
 
-    let mut rng = rand::thread_rng();
-    let random_number = rng.gen_range(1, sum as i32 + 1);
+    let random_number = Game::get_random_in_range(1, sum.round() as usize + 1);
 
     return if stat > opponents_stat {
         if random_number as f64 > opponents_stat {
@@ -259,8 +253,7 @@ pub fn has_won(stat: f64, opponents_stat: f64) -> bool {
 fn get_another_random_position(player_pos: PlayerPosition) -> PlayerPosition {
     let player_positions = get_other_positions(player_pos);
 
-    let mut rng = rand::thread_rng();
-    let random_pos = rng.gen_range(0, 5);
+    let random_pos = Game::get_random_in_range(0, 5);
 
     player_positions[random_pos]
 }
@@ -292,13 +285,13 @@ pub fn get_opponents_field_player(game: &mut Game) -> FieldPlayer {
     let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
 
     return if user_id == 1 {
-        match game.user2.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()) {
+        *match game.user2.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()) {
             Some(player) => player,
             _ => panic!("Player not found")
         }
     } else {
         let user = &game.user1;
-        match user.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()){
+        *match user.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()){
             Some(player) => player,
             _ => panic!("Player not found")
         }
@@ -314,11 +307,10 @@ fn reduce_strength(game: &mut Game) {
     let n = 20;
 
 
-    // TODO &field_player
-    for (_player_pos, mut field_player) in &mut game.user1.field_players.iter() {
+    for (_player_pos, field_player) in &mut game.user1.field_players.iter_mut() {
         field_player.stats.strength = field_player.stats.strength * f64::powf(q, (n - 1) as f64);
     }
-    for (_player_pos, mut field_player) in &mut game.user2.field_players.iter() {
+    for (_player_pos, field_player) in &mut game.user2.field_players.iter_mut() {
         field_player.stats.strength = field_player.stats.strength * f64::powf(q, (n - 1) as f64);
     }
 }
@@ -329,7 +321,7 @@ fn change_morale_after_a_goal(game: &mut Game) {
     let player_goalie = &mut game.get_user_info(user_id).goalie;
     player_goalie.stats.morale += 2;
 
-    for (_player_pos, mut field_player) in &mut game.get_user_info(user_id).field_players.iter() {
+    for (_player_pos, field_player) in &mut game.get_user_info(user_id).field_players.iter_mut() {
         field_player.stats.morale += 2;
     }
 
@@ -340,7 +332,7 @@ fn change_morale_after_a_goal(game: &mut Game) {
 
     game.get_user_info(opponent_id).goalie.stats.morale -= 1;
 
-    for (_player_pos, mut field_player) in &mut game.get_user_info(opponent_id).field_players.iter() {
+    for (_player_pos, field_player) in &mut game.get_user_info(opponent_id).field_players.iter_mut() {
         field_player.stats.morale -= 1;
     }
 }
@@ -370,8 +362,7 @@ pub fn generate_an_event(action: ActionTypes, game: &mut Game) {
 }
 
 fn get_random_position_after_rebound() -> PlayerPosition {
-    let mut rng = rand::thread_rng();
-    let rnd = rng.gen_range(0, 10);
+    let rnd = Game::get_random_in_range(0, 10);
 
     let probability_distribution = vec![1, 1, 2, 2, 3, 3, 3, 3, 4, 5];
 
