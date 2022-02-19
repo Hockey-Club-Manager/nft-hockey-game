@@ -155,7 +155,7 @@ impl Hockey {
         }
     }
 
-    pub fn generate_event(&mut self, game_id: GameId, number_of_rendered_events: usize) -> Vec<Event> {
+    pub fn generate_event(&mut self, game_id: GameId, number_of_rendered_events: usize) {
         let mut game: Game = self.internal_get_game(&game_id).into();
         assert!(game.winner_index.is_none(), "Game already finished");
 
@@ -183,8 +183,16 @@ impl Hockey {
 
             self.games.insert(&game_id, &game);
         }
+    }
 
-        let teams = if game.user1.account_id == env::predecessor_account_id() {
+    pub fn get_events(&self, number_of_rendered_events: usize, game_id: GameId, account_id: AccountId) -> Vec<Event> {
+        let mut game: Game = self.games.get(&game_id).expect("Game not found");
+
+        let mut result: Vec<Event> = vec![];
+
+        let number_of_events = game.events.len() - number_of_rendered_events;
+
+        let teams = if game.user1.account_id == account_id {
             (Team {
                 field_players: game.user1.field_players.clone(),
                 goalie: game.user1.goalie.clone()
@@ -204,18 +212,12 @@ impl Hockey {
              })
         };
 
-
-        self.get_events(game.events.len() - number_of_rendered_events, teams.0, teams.1, &game)
-    }
-
-    fn get_events(&self, number_of_events: usize, my_team: Team, opponent_team: Team, game: &Game) -> Vec<Event> {
-        let mut result: Vec<Event> = vec![];
         for i in 0..number_of_events {
             let event = game.events[game.events.len() - 1 - i];
 
             result.push(Event {
-                my_team: my_team.clone(),
-                opponent_team: opponent_team.clone(),
+                my_team: teams.0.clone(),
+                opponent_team: teams.1.clone(),
                 time: event.time,
                 zone_number: event.zone_number,
                 action: event.action,
