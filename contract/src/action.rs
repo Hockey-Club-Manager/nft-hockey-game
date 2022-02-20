@@ -32,6 +32,7 @@ pub enum ActionTypes {
     GameFinished,
     PassCatched,
     PuckLose,
+    Overtime,
 
 
     Take_TO,

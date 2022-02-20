@@ -8,7 +8,7 @@ use crate::goalie::{Goalie, GoalieStats};
 use crate::player_field::{FieldPlayer, FieldPlayerStats};
 use crate::user::User;
 use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
-use crate::action::ActionTypes::{Battle, EndOfPeriod, GameFinished, Goal, Move, Save};
+use crate::action::ActionTypes::{Battle, EndOfPeriod, GameFinished, Goal, Move, Overtime, Save};
 use crate::player::{PlayerPosition, PlayerRole};
 use crate::player::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
 use crate::{StorageKey, TokenBalance};
@@ -234,19 +234,22 @@ impl Game {
             self.zone_number = 2;
         }
 
-        if self.turns >= 90 {
+        let state = if self.is_game_over() {
             generate_an_event(GameFinished, self);
-        }
-
-        if self.is_game_over() {
             GameState::GameOver { winner_id: self.get_winner_id() }
         } else {
             GameState::InProgress
+        };
+
+        if state == GameState::InProgress && self.turns == 90 {
+            generate_an_event(Overtime, self);
         }
+
+        state
     }
 
     fn is_game_over(&self) -> bool {
-        if self.turns >= 90 {
+        if self.turns >= 90 && self.user1.user.score != self.user2.user.score {
             true
         } else {
             false
@@ -254,12 +257,10 @@ impl Game {
     }
 
     fn get_winner_id(&self) -> usize {
-         if self.user2.user.score >= self.user1.user.score {
+         if self.user2.user.score > self.user1.user.score {
              2
-         } else if self.user2.user.score <= self.user1.user.score {
-             1
          } else {
-             0
+             1
          }
     }
 
