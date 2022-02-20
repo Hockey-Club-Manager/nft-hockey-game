@@ -5,7 +5,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::env::panic;
 use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Rock, Shooter, ToughGuy, TryHarder};
 
-use crate::action::ActionTypes::{Battle, Dangle, Goal, Hit, HitThePuck, Move, Pass, PokeCheck};
+use crate::action::ActionTypes::{Battle, Dangle, Goal, Hit, Move, Pass, PassCatched, PokeCheck, PuckLose, Rebound};
 
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
@@ -27,9 +27,11 @@ pub enum ActionTypes {
     Battle,
     Goal,
     Save,
-    HitThePuck,
+    Rebound,
     EndOfPeriod,
     GameFinished,
+    PassCatched,
+    PuckLose,
 
 
     Take_TO,
@@ -124,7 +126,7 @@ impl DoAction for PassAction {
                 generate_an_event(Pass, game);
             } else {
                 game.player_with_puck = Option::from(opponent);
-                generate_an_event(Battle, game);
+                generate_an_event(PassCatched, game);
             }
         } else {
             let player_stat = get_relative_field_player_stat(&game.player_with_puck.as_ref().unwrap(),
@@ -135,7 +137,7 @@ impl DoAction for PassAction {
                 game.player_with_puck = Option::from(opponent);
             }
 
-            generate_an_event(Battle, game);
+            generate_an_event(PuckLose, game);
         }
     }
 }
@@ -184,7 +186,7 @@ impl DoAction for ShotAction {
 
             game.zone_number = 2;
         } else {
-            generate_an_event(HitThePuck, game);
+            generate_an_event(Rebound, game);
 
             let player_pos = get_random_position_after_rebound();
             battle_by_position(player_pos, game);
