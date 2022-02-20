@@ -5,7 +5,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::env::panic;
 use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Rock, Shooter, ToughGuy, TryHarder};
 
-use crate::action::ActionTypes::{Battle, Dangle, Goal, HitThePuck, Move, Pass};
+use crate::action::ActionTypes::{Battle, Dangle, Goal, Hit, HitThePuck, Move, Pass, PokeCheck};
 
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
@@ -21,12 +21,17 @@ pub enum ActionTypes {
     Pass,
     Shot,
     Move,
+    Hit,
     Dangle,
+    PokeCheck,
     Battle,
     Goal,
     Save,
     HitThePuck,
     EndOfPeriod,
+    GameFinished,
+
+
     Take_TO,
     CoachSpeech,
     GoalieOut,
@@ -209,7 +214,7 @@ impl DoAction for MoveAction {
             generate_an_event(Move, game);
         } else {
             game.player_with_puck = Option::from(opponent);
-            generate_an_event(Battle, game);
+            generate_an_event(Hit, game);
         }
     }
 }
@@ -235,7 +240,7 @@ impl DoAction for DangleAction {
         } else {
             game.player_with_puck = Option::from(opponent);
 
-            generate_an_event(Battle, game);
+            generate_an_event(PokeCheck, game);
         }
     }
 }
@@ -313,15 +318,11 @@ pub fn get_relative_field_player_stat(player: &FieldPlayer, stat: f64) -> f64 {
 }
 
 pub fn reduce_strength(game: &mut Game) {
-    let q = 0.99;
-    let n = 20;
-
-
     for (_player_pos, field_player) in &mut game.user1.field_players.iter_mut() {
-        field_player.stats.strength = field_player.stats.strength * f64::powf(q, (n - 1) as f64);
+        field_player.stats.strength = field_player.stats.strength * 0.996;
     }
     for (_player_pos, field_player) in &mut game.user2.field_players.iter_mut() {
-        field_player.stats.strength = field_player.stats.strength * f64::powf(q, (n - 1) as f64);
+        field_player.stats.strength = field_player.stats.strength * 0.996;
     }
 }
 

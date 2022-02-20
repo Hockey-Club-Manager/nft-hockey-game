@@ -236,11 +236,8 @@ impl Hockey {
         if time - game.last_event_generation_time >= 1 {
             game.last_event_generation_time = time;
 
-            let mut game_in_progress = true;
-
             match game.step() {
                 GameState::GameOver { winner_id: winner_index} => {
-                    game_in_progress = false;
                     let winner_account = if game.user1.user.id == winner_index {
                         game.user1.account_id.clone()
                     } else {
@@ -257,9 +254,7 @@ impl Hockey {
                 _ => {}
             };
 
-            if game_in_progress {
-                self.games.insert(&game_id, &game);
-            }
+            self.games.insert(&game_id, &game);
         }
 
         self.get_events(number_of_rendered_events, game)
@@ -267,8 +262,6 @@ impl Hockey {
 
     fn get_events(&self, number_of_rendered_events: usize, game: &mut Game) -> Vec<Event> {
         let mut result: Vec<Event> = vec![];
-
-        let number_of_events = game.events.len() - number_of_rendered_events;
 
         let teams = if game.user1.account_id == env::predecessor_account_id() {
             (Team {
@@ -294,8 +287,8 @@ impl Hockey {
              })
         };
 
-        for i in 0..number_of_events {
-            let event = game.events[game.events.len() - 1 - i];
+        for i in number_of_rendered_events..game.events.len() {
+            let event = game.events[i];
 
             result.push(Event {
                 my_team: teams.0.clone(),

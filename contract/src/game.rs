@@ -8,7 +8,7 @@ use crate::goalie::{Goalie, GoalieStats};
 use crate::player_field::{FieldPlayer, FieldPlayerStats};
 use crate::user::User;
 use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
-use crate::action::ActionTypes::{Battle, EndOfPeriod, Goal, Move, Save};
+use crate::action::ActionTypes::{Battle, EndOfPeriod, GameFinished, Goal, Move, Save};
 use crate::player::{PlayerPosition, PlayerRole};
 use crate::player::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
 use crate::{StorageKey, TokenBalance};
@@ -232,6 +232,10 @@ impl Game {
         if [30, 60, 90].contains(&self.turns) {
             generate_an_event(EndOfPeriod, self);
             self.zone_number = 2;
+        }
+
+        if self.turns >= 90 {
+            generate_an_event(GameFinished, self);
         }
 
         if self.is_game_over() {
