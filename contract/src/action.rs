@@ -204,11 +204,7 @@ impl DoAction for MoveAction {
         }
 
         if has_won(player_stat, opponent_stat) {
-            if game.player_with_puck.as_ref().unwrap().get_user_id() == 1 {
-                game.zone_number += relative_side_zone;
-            } else {
-                game.zone_number -= relative_side_zone;
-            }
+            game.zone_number += relative_side_zone;
 
             generate_an_event(Move, game);
         } else {
@@ -233,11 +229,7 @@ impl DoAction for DangleAction {
         }
 
         if has_won(player_stat, opponent_stat) {
-            if game.player_with_puck.as_ref().unwrap().get_user_id() == 1 {
-                game.zone_number += relative_side_zone;
-            } else {
-                game.zone_number -= relative_side_zone;
-            }
+            game.zone_number += relative_side_zone;
 
             generate_an_event(Dangle, game);
         } else {
