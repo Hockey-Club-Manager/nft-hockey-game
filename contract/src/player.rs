@@ -18,11 +18,12 @@ pub enum PlayerPosition {
 impl fmt::Display for PlayerPosition {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            PlayerPosition::Center => write!(f, "0"),
-            PlayerPosition::LeftWing => write!(f, "1"),
-            PlayerPosition::LeftWing => write!(f, "2"),
-            PlayerPosition::RightDefender => write!(f, "3"),
-            PlayerPosition::GoaliePos => write!(f, "4"),
+            PlayerPosition::Center => write!(f, "5"),
+            PlayerPosition::LeftWing => write!(f, "4"),
+            PlayerPosition::RightWing => write!(f, "3"),
+            PlayerPosition::LeftDefender => write!(f, "2"),
+            PlayerPosition::RightDefender => write!(f, "1"),
+            PlayerPosition::GoaliePos => write!(f, "0"),
             _ => write!(f, "-1")
         }
     }
