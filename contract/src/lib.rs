@@ -229,7 +229,13 @@ impl Hockey {
     // }
 
     pub fn generate_event(&mut self, number_of_rendered_events: usize, game_id: GameId) -> Vec<Event> {
+        log!("number_of_rendered_events: {}", number_of_rendered_events);
+
         let game: &mut Game = &mut self.internal_get_game(&game_id);
+
+        if !game.winner_index.is_none() {
+            return self.get_events(number_of_rendered_events, game)
+        }
         assert!(game.winner_index.is_none(), "Game already finished");
 
         let time = env::block_timestamp();
@@ -262,7 +268,6 @@ impl Hockey {
 
     fn get_events(&self, number_of_rendered_events: usize, game: &mut Game) -> Vec<Event> {
         let mut result: Vec<Event> = vec![];
-
         let teams = if game.user1.account_id == env::predecessor_account_id() {
             (Team {
                 field_players: game.user1.field_players.clone(),
