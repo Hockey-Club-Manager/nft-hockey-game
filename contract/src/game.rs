@@ -138,11 +138,11 @@ impl Game {
     fn create_field_players_with_random_stats(user_id: usize) -> HashMap<String, FieldPlayer> {
         let mut field_players = HashMap::new();
 
-        let center = Game::create_field_player_with_random_stats(Shooter, Center, user_id);
-        let right_wind = Game::create_field_player_with_random_stats(TryHarder, RightWing, user_id);
-        let left_wind = Game::create_field_player_with_random_stats(Dangler, LeftWing, user_id);
-        let right_defender = Game::create_field_player_with_random_stats(Goon, RightDefender, user_id);
-        let left_defender = Game::create_field_player_with_random_stats(Professor, LeftDefender, user_id);
+        let center = Game::create_field_player_with_random_stats(Shooter, Center,Center, user_id);
+        let right_wind = Game::create_field_player_with_random_stats(TryHarder, RightWing, RightWing, user_id);
+        let left_wind = Game::create_field_player_with_random_stats(Dangler, LeftWing, LeftWing, user_id);
+        let right_defender = Game::create_field_player_with_random_stats(Goon, RightDefender, RightDefender, user_id);
+        let left_defender = Game::create_field_player_with_random_stats(Professor, LeftDefender, LeftDefender, user_id);
 
         field_players.insert(center.get_player_position().to_string(), center);
         field_players.insert(right_wind.get_player_position().to_string(), right_wind);
@@ -152,8 +152,9 @@ impl Game {
         field_players
     }
 
-    fn create_field_player_with_random_stats(role: PlayerRole, position: PlayerPosition, user_id: usize) -> FieldPlayer {
+    fn create_field_player_with_random_stats(role: PlayerRole, native_position: PlayerPosition,position: PlayerPosition, user_id: usize) -> FieldPlayer {
         FieldPlayer::new(
+            native_position,
             position,
             role,
             user_id,

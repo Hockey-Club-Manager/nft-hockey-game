@@ -41,6 +41,7 @@ impl FieldPlayerStats {
 #[serde(crate = "near_sdk::serde")]
 pub struct FieldPlayer {
     // TODO nft_token
+    pub(crate) native_position: PlayerPosition,
     pub(crate) position: PlayerPosition,
     role: PlayerRole,
     user_id: usize,
@@ -48,11 +49,13 @@ pub struct FieldPlayer {
 }
 
 impl FieldPlayer {
-    pub fn new(position: PlayerPosition,
+    pub fn new(native_position: PlayerPosition,
+               position: PlayerPosition,
                role: PlayerRole,
                user_id: usize,
                stats: FieldPlayerStats) -> FieldPlayer {
         FieldPlayer {
+            native_position,
             position,
             role,
             user_id,
