@@ -317,7 +317,7 @@ pub fn get_opponents_field_player(game: &mut Game) -> FieldPlayer {
 }
 
 pub fn get_relative_field_player_stat(player: &FieldPlayer, stat: f64) -> f64 {
-    (stat as f64 + player.stats.get_morale() as f64 + player.stats.get_strength() as f64) / 3 as f64
+    (stat as f64 + player.stats.get_morale() as f64 + player.stats.get_strength() as f64) * player.position_coefficient as f64 / 3 as f64
 }
 
 pub fn reduce_strength(game: &mut Game) {
