@@ -24,7 +24,7 @@ pub enum GameState {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-#[derive(PartialEq, Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize, Copy, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub enum Tactics {
     SuperDefensive,
