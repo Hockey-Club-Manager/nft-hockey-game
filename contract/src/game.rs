@@ -12,6 +12,7 @@ use crate::action::ActionTypes::{Battle, EndOfPeriod, GameFinished, Goal, Move, 
 use crate::player::{PlayerPosition, PlayerRole};
 use crate::player::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
 use crate::{StorageKey, TokenBalance};
+use crate::game::Tactics::Neutral;
 use crate::player::PlayerRole::{Dangler, Goon, Post2Post, Professor, Shooter, TryHarder, Wall};
 use crate::PlayerPosition::LeftWing;
 use crate::StorageKey::FieldPlayers;
@@ -23,6 +24,17 @@ pub enum GameState {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
+#[derive(PartialEq, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub enum Tactics {
+    SuperDefensive,
+    Defensive,
+    Neutral,
+    Offensive,
+    SupperOffensive,
+}
+
+#[derive(BorshDeserialize, BorshSerialize)]
 pub struct UserInfo {
     pub(crate) user: User,
     pub(crate) field_players: HashMap<String, FieldPlayer>,
@@ -31,6 +43,7 @@ pub struct UserInfo {
     pub(crate) take_to_called: bool,
     pub(crate) coach_speech_called: bool,
     pub(crate) is_goalie_out: bool,
+    pub(crate) tactic: Tactics,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -102,6 +115,7 @@ impl Game {
             take_to_called: false,
             coach_speech_called: false,
             is_goalie_out: false,
+            tactic: Neutral,
         };
 
         let user_info2 = UserInfo {
@@ -112,6 +126,7 @@ impl Game {
             take_to_called: false,
             coach_speech_called: false,
             is_goalie_out: false,
+            tactic: Neutral,
         };
 
         Game {
