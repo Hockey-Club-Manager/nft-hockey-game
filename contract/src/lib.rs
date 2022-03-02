@@ -7,7 +7,7 @@ use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, init
 use crate::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, Take_TO};
 use crate::action::generate_an_event;
 
-use crate::game::{Event, Game, GameState, Team, UserInfo};
+use crate::game::{Event, Game, GameState, Tactics, Team, UserInfo};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
 use crate::player::{PlayerPosition, PlayerRole};
 use crate::player_field::FieldPlayer;
@@ -336,6 +336,19 @@ impl Hockey {
     pub fn get_turns(&self, game_id: GameId) -> usize{
         let game: Game = self.games.get(&game_id).expect("Game not found");
         game.events.len()
+    }
+
+    pub fn change_tactic(&mut self, tactic: Tactics, game_id: GameId) {
+        let account_id = env::predecessor_account_id();
+        let mut game: Game = self.internal_get_game(&game_id).into();
+
+        if game.user1.account_id == account_id  && game.user1.is_goalie_out{
+            game.user1.tactic = tactic;
+        } else if game.user2.account_id == account_id && game.user2.is_goalie_out{
+            game.user2.tactic = tactic;
+        }
+
+        self.games.insert(&game_id, &game);
     }
 }
 
