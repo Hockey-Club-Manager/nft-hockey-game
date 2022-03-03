@@ -41,19 +41,18 @@ pub enum ActionTypes {
     GoalieBack,
 }
 
-trait GetRandomAction {
-    fn get_random_number(&self) -> usize;
-    fn get_probability_distribution(&self) -> Vec<i32>;
+trait DoAction {
+    fn do_action(&self, game: &mut Game);
 }
 
-pub struct Tactic;
-impl Tactic {
+pub struct Action;
+impl Action {
     /*
-    0 - pass_probability
-    1 - shot_probability
-    2 - move_probability
-    3 - dangle_probability
-     */
+0 - pass_probability
+1 - shot_probability
+2 - move_probability
+3 - dangle_probability
+ */
     fn get_probability_of_actions(&self, role: PlayerRole, tactics: Tactics) -> Vec<i32> {
         let mut actions = match role {
             Passer => vec![4, 1, 3, 2],
@@ -85,94 +84,29 @@ impl Tactic {
     }
 
     fn get_random_action(&self, is_attack_zone: bool, role: PlayerRole, tactics: Tactics) -> Box<dyn DoAction> {
-        let tactic: Box<dyn GetRandomAction> = match tactics {
-            Tactics::SuperDefensive => Box::new(SuperDefensive{}),
-            Tactics::Defensive => Box::new(SuperDefensive{}),
-            Tactics::Neutral => Box::new(Neutral{}),
-            Tactics::Offensive => Box::new(Offensive{}),
-            Tactics::SupperOffensive => Box::new(SupperOffensive{}),
-        };
-
         let actions = self.get_probability_of_actions(role, tactics);
 
-        let rnd = tactic.get_random_number();
+        let mut percent = 0;
+        let mut action_probability: Vec<i32> = Vec::new();
+        for i in 0..actions.len() {
+            percent += actions[i];
+            action_probability.push(percent);
+        }
+        percent /= 100;
 
-        let probability_distribution = tactic.get_probability_distribution();
+        let rnd = Game::get_random_in_range(1, 101) as i32;
 
-        return if !is_attack_zone && actions[3] == probability_distribution[rnd] {
+        return if !is_attack_zone && percent * action_probability[0] >= rnd {
             Box::new(DangleAction {})
-        } else if !is_attack_zone && actions[2] == probability_distribution[rnd] {
+        } else if !is_attack_zone && percent * action_probability[1] >= rnd {
             Box::new(MoveAction {})
-        } else if is_attack_zone && actions[1] == probability_distribution[rnd] {
+        } else if is_attack_zone && percent * action_probability[2] >= rnd {
             Box::new(ShotAction{})
         } else {
             Box::new(PassAction {})
         }
     }
-}
 
-pub struct SuperDefensive;
-impl GetRandomAction for SuperDefensive {
-    fn get_random_number(&self) -> usize {
-        todo!()
-    }
-
-    fn get_probability_distribution(&self) -> Vec<i32> {
-        todo!()
-    }
-}
-
-pub struct Defensive;
-impl GetRandomAction for Defensive {
-    fn get_random_number(&self) -> usize {
-        todo!()
-    }
-
-    fn get_probability_distribution(&self) -> Vec<i32> {
-        todo!()
-    }
-}
-
-pub struct Neutral;
-impl GetRandomAction for Neutral {
-    fn get_random_number(&self) -> usize {
-        todo!()
-    }
-
-    fn get_probability_distribution(&self) -> Vec<i32> {
-        todo!()
-    }
-}
-
-pub struct Offensive;
-impl GetRandomAction for Offensive {
-    fn get_random_number(&self) -> usize {
-        todo!()
-    }
-
-    fn get_probability_distribution(&self) -> Vec<i32> {
-        todo!()
-    }
-}
-
-pub struct SupperOffensive;
-impl GetRandomAction for SupperOffensive {
-    fn get_random_number(&self) -> usize {
-        todo!()
-    }
-
-    fn get_probability_distribution(&self) -> Vec<i32> {
-        todo!()
-    }
-}
-
-
-trait DoAction {
-    fn do_action(&self, game: &mut Game);
-}
-
-pub struct Action;
-impl Action {
     pub fn do_random_action(self, game: &mut Game) {
         let mut is_attack_zone = false;
         let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
@@ -186,7 +120,7 @@ impl Action {
             game.user2.tactic
         };
 
-        let action = Tactic.get_random_action(is_attack_zone, game.player_with_puck.as_ref().unwrap().get_role(), tactic);
+        let action = self.get_random_action(is_attack_zone, game.player_with_puck.as_ref().unwrap().get_role(), tactic);
 
         reduce_strength(game);
 
