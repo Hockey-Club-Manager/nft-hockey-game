@@ -2,7 +2,6 @@ use crate::player::{Player, PlayerPosition, PlayerRole};
 use crate::player_field::FieldPlayer;
 use crate::game::{EventToSave, Game};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::env::panic;
 use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Rock, Shooter, ToughGuy, TryHarder};
 
 use crate::action::ActionTypes::{Battle, Dangle, Goal, Hit, Move, Pass, PassCatched, PokeCheck, PuckLose, Rebound};
@@ -10,7 +9,8 @@ use crate::action::ActionTypes::{Battle, Dangle, Goal, Hit, Move, Pass, PassCatc
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 use near_sdk::serde::{Deserialize, Serialize};
-use crate::{Tactics, UserInfo};
+use crate::{Tactics};
+use crate::user::UserInfo;
 
 const PROBABILITY_PASS_NOT_HAPPENED: i32 = 20;
 
@@ -35,7 +35,7 @@ pub enum ActionTypes {
     Overtime,
 
 
-    Take_TO,
+    TakeTO,
     CoachSpeech,
     GoalieOut,
     GoalieBack,
@@ -145,7 +145,7 @@ impl DoAction for PassAction {
 
                 let user = &game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id());
 
-                match user.field_players.get(&pass_to.to_string()) {
+                match user.team.active_five.field_players.get(&pass_to.to_string()) {
                     Some(player) => game.player_with_puck = Option::from(*player),
                     None => panic!("Player not found")
                 }
@@ -207,7 +207,7 @@ impl DoAction for ShotAction {
 
         if has_won(player_stat, opponent_stat as f64) {
             change_morale_after_a_goal(game);
-            game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id()).user.score += 1;
+            game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id()).team.score += 1;
 
             generate_an_event(Goal, game);
 
@@ -319,9 +319,9 @@ fn get_opponents_goalie(game: &Game) -> &Goalie {
     let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
 
     return if user_id == 1 {
-        &game.user2.goalie
+        &game.user2.team.active_goalie
     } else {
-        &game.user1.goalie
+        &game.user1.team.active_goalie
     }
 }
 
@@ -329,13 +329,13 @@ pub fn get_opponents_field_player(game: &mut Game) -> FieldPlayer {
     let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
 
     return if user_id == 1 {
-        *match game.user2.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()) {
+        *match game.user2.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()) {
             Some(player) => player,
             _ => panic!("Player not found")
         }
     } else {
         let user = &game.user1;
-        *match user.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()){
+        *match user.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()){
             Some(player) => player,
             _ => panic!("Player not found")
         }
@@ -347,10 +347,10 @@ pub fn get_relative_field_player_stat(player: &FieldPlayer, stat: f64) -> f64 {
 }
 
 pub fn reduce_strength(game: &mut Game) {
-    for (_player_pos, field_player) in &mut game.user1.field_players.iter_mut() {
+    for (_player_pos, field_player) in &mut game.user1.team.active_five.field_players.iter_mut() {
         field_player.stats.strength = field_player.stats.strength * 0.996;
     }
-    for (_player_pos, field_player) in &mut game.user2.field_players.iter_mut() {
+    for (_player_pos, field_player) in &mut game.user2.team.active_five.field_players.iter_mut() {
         field_player.stats.strength = field_player.stats.strength * 0.996;
     }
 }
@@ -358,10 +358,10 @@ pub fn reduce_strength(game: &mut Game) {
 fn change_morale_after_a_goal(game: &mut Game) {
     let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
 
-    let player_goalie = &mut game.get_user_info(user_id).goalie;
+    let player_goalie = &mut game.get_user_info(user_id).team.active_goalie;
     player_goalie.stats.morale += 2;
 
-    for (_player_pos, field_player) in &mut game.get_user_info(user_id).field_players.iter_mut() {
+    for (_player_pos, field_player) in &mut game.get_user_info(user_id).team.active_five.field_players.iter_mut() {
         field_player.stats.morale += 2;
     }
 
@@ -370,9 +370,9 @@ fn change_morale_after_a_goal(game: &mut Game) {
         opponent_id = 2;
     }
 
-    game.get_user_info(opponent_id).goalie.stats.morale -= 1;
+    game.get_user_info(opponent_id).team.active_goalie.stats.morale -= 1;
 
-    for (_player_pos, field_player) in &mut game.get_user_info(opponent_id).field_players.iter_mut() {
+    for (_player_pos, field_player) in &mut game.get_user_info(opponent_id).team.active_five.field_players.iter_mut() {
         field_player.stats.morale -= 1;
     }
 }
@@ -419,8 +419,8 @@ fn get_random_position_after_rebound() -> PlayerPosition {
 }
 
 fn battle_by_position(pos: PlayerPosition, game: &mut Game) {
-    let player1 = &game.user1.field_players.get(&pos.to_string());
-    let player2 = &game.user2.field_players.get(&pos.to_string());
+    let player1 = &game.user1.team.active_five.field_players.get(&pos.to_string());
+    let player2 = &game.user2.team.active_five.field_players.get(&pos.to_string());
 
     let player1_stat = match player1 {
         Some(player) => get_relative_field_player_stat(player, player.stats.strength),

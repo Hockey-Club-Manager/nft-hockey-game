@@ -1,21 +1,19 @@
 use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LookupMap, UnorderedMap};
-use near_sdk::env::panic;
-use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, PanicOnDefault, setup_alloc, Timestamp};
+use near_sdk::{AccountId, env, Timestamp};
 use near_sdk::serde::{Deserialize, Serialize};
 use crate::goalie::{Goalie, GoalieStats};
 use crate::player_field::{FieldPlayer, FieldPlayerStats};
-use crate::user::User;
+use crate::user::UserInfo;
 use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
-use crate::action::ActionTypes::{Battle, EndOfPeriod, GameFinished, Goal, Move, Overtime, Save};
+use crate::action::ActionTypes::{Battle, EndOfPeriod, GameFinished, Goal, Overtime, Save};
 use crate::player::{PlayerPosition, PlayerRole};
 use crate::player::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
-use crate::{StorageKey, TokenBalance};
+use crate::{TokenBalance};
 use crate::game::Tactics::Neutral;
 use crate::player::PlayerRole::{Dangler, Goon, Post2Post, Professor, Shooter, TryHarder, Wall};
 use crate::PlayerPosition::LeftWing;
-use crate::StorageKey::FieldPlayers;
+use crate::team::{Five, Fives, Goalies, Team};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum GameState {
@@ -32,26 +30,6 @@ pub enum Tactics {
     Neutral,
     Offensive,
     SupperOffensive,
-}
-
-#[derive(BorshDeserialize, BorshSerialize)]
-pub struct UserInfo {
-    pub(crate) user: User,
-    pub(crate) field_players: HashMap<String, FieldPlayer>,
-    pub(crate) goalie: Goalie,
-    pub(crate) account_id: AccountId,
-    pub(crate) take_to_called: bool,
-    pub(crate) coach_speech_called: bool,
-    pub(crate) is_goalie_out: bool,
-    pub(crate) tactic: Tactics,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(crate = "near_sdk::serde")]
-pub struct Team {
-    pub(crate) field_players: HashMap<String, FieldPlayer>,
-    pub(crate) goalie: Goalie,
-    pub(crate) score: u8,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -99,18 +77,12 @@ pub struct Game {
 
 impl Game {
     pub fn new (account_id_1: AccountId, account_id_2: AccountId, reward: TokenBalance) -> Game {
-        let (user1, user2) = Game::create_two_players();
-
-        let field_players1 = Game::create_field_players_with_random_stats(user1.id);
-        let goalie1 = Game::create_goalie_with_random_stats(Post2Post ,user1.id);
-
-        let field_players2 = Game::create_field_players_with_random_stats(user2.id);
-        let goalie2 = Game::create_goalie_with_random_stats(Wall ,user2.id);
+        let team1 = Game::create_team(1);
+        let team2 = Game::create_team(2);
 
         let user_info1 = UserInfo {
-            user: user1,
-            field_players: field_players1,
-            goalie: goalie1,
+            user_id: 1,
+            team: team1,
             account_id: account_id_1,
             take_to_called: false,
             coach_speech_called: false,
@@ -119,9 +91,8 @@ impl Game {
         };
 
         let user_info2 = UserInfo {
-            user: user2,
-            field_players: field_players2,
-            goalie: goalie2,
+            user_id: 1,
+            team: team2,
             account_id: account_id_2,
             take_to_called: false,
             coach_speech_called: false,
@@ -142,12 +113,37 @@ impl Game {
         }
     }
 
-    // creates and returns two players with distinct IDs
-    fn create_two_players() -> (User, User) {
-        (
-            User { id: 1, score: 0 },
-            User { id: 2, score: 0 }
-        )
+    fn create_team(user_id: usize) -> Team {
+        let mut fives = HashMap::new();
+
+        let first_five = Game::create_five(user_id, Fives::First);
+        fives.insert(Fives::First, first_five.clone());
+        fives.insert(Fives::Second, Game::create_five(user_id, Fives::Second));
+        fives.insert(Fives::Third, Game::create_five(user_id, Fives::Third));
+        fives.insert(Fives::Fourth, Game::create_five(user_id, Fives::Fourth));
+        fives.insert(Fives::Fifth, Game::create_five(user_id, Fives::Fifth));
+
+        let mut goalies = HashMap::new();
+
+        let main_goalkeeper = Game::create_goalie_with_random_stats(Wall ,user_id);
+        goalies.insert(Goalies::MainGoalkeeper, main_goalkeeper);
+        goalies.insert(Goalies::SubstituteGoalkeeper, Game::create_goalie_with_random_stats(Post2Post ,user_id));
+
+
+        Team {
+            fives,
+            goalies,
+            active_five: first_five.clone(),
+            active_goalie: main_goalkeeper,
+            score: 0,
+        }
+    }
+
+    fn create_five(user_id: usize, number: Fives) -> Five {
+        Five {
+            field_players: Game::create_field_players_with_random_stats(user_id),
+            number
+        }
     }
 
     fn create_field_players_with_random_stats(user_id: usize) -> HashMap<String, FieldPlayer> {
@@ -206,7 +202,7 @@ impl Game {
 
 impl Game {
     fn get_center_forward_in_the_zone(&self, user: &UserInfo) -> FieldPlayer {
-        *match user.field_players.get(&Center.to_string()) {
+        *match user.team.active_five.field_players.get(&Center.to_string()) {
             Some(player) => player,
             _ => panic!("Player not found")
         }
@@ -266,7 +262,7 @@ impl Game {
     }
 
     fn is_game_over(&self) -> bool {
-        if self.turns >= 90 && self.user1.user.score != self.user2.user.score {
+        if self.turns >= 90 && self.user1.team.score != self.user2.team.score {
             true
         } else {
             false
@@ -274,7 +270,7 @@ impl Game {
     }
 
     fn get_winner_id(&self) -> usize {
-         if self.user2.user.score > self.user1.user.score {
+         if self.user2.team.score > self.user1.team.score {
              2
          } else {
              1
