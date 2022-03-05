@@ -3,6 +3,13 @@ use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use crate::FieldPlayer;
 use crate::goalie::Goalie;
+use crate::team::IceTimePriority::{HighPriority, LowPriority, Normal, SuperHighPriority, SuperLowPriority};
+
+const SUPER_LOW_PRIORITY: u8 = 5;
+const LOW_PRIORITY: u8 = 10;
+const NORMAL: u8 = 15;
+const HIGH_PRIORITY: u8 = 20;
+const SUPER_HIGH_PRIORITY: u8 = 25;
 
 #[derive(Clone, BorshDeserialize, BorshSerialize)]
 pub struct Team {
@@ -12,6 +19,22 @@ pub struct Team {
 
     pub(crate) active_goalie: Goalie,
     pub(crate) score: u8,
+}
+
+impl Team {
+    fn need_change(&self) -> bool {
+        match self.active_five.ice_time_priority {
+            SuperLowPriority => self.active_five.time_field >= SUPER_LOW_PRIORITY,
+            LowPriority => self.active_five.time_field >= LOW_PRIORITY,
+            Normal => self.active_five.time_field >= NORMAL,
+            HighPriority => self.active_five.time_field >= HIGH_PRIORITY,
+            SuperHighPriority => self.active_five.time_field >= SUPER_HIGH_PRIORITY,
+        }
+    }
+
+    pub fn change_active_five(&mut self) {
+
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone)]
