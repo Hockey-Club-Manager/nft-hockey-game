@@ -1,20 +1,20 @@
 use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LookupMap, UnorderedMap};
-use near_sdk::env::panic;
-use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, PanicOnDefault, setup_alloc, Timestamp};
+use near_sdk::{AccountId, env, Timestamp};
 use near_sdk::serde::{Deserialize, Serialize};
 use crate::goalie::{Goalie, GoalieStats};
 use crate::player_field::{FieldPlayer, FieldPlayerStats};
-use crate::user::User;
+use crate::user::UserInfo;
 use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
-use crate::action::ActionTypes::{Battle, EndOfPeriod, GameFinished, Goal, Move, Overtime, Save};
+use crate::action::ActionTypes::{Battle, EndOfPeriod, GameFinished, Goal, Overtime, Save};
 use crate::player::{PlayerPosition, PlayerRole};
 use crate::player::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
-use crate::{StorageKey, TokenBalance};
+use crate::{TokenBalance};
+use crate::game::Tactics::Neutral;
 use crate::player::PlayerRole::{Dangler, Goon, Post2Post, Professor, Shooter, TryHarder, Wall};
 use crate::PlayerPosition::LeftWing;
-use crate::StorageKey::FieldPlayers;
+use crate::team::{Five, Fives, Goalies, IceTimePriority, Team, TeamJson};
+use crate::team::IceTimePriority::{HighPriority, LowPriority, Normal, SuperHighPriority, SuperLowPriority};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum GameState {
@@ -23,22 +23,14 @@ pub enum GameState {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-pub struct UserInfo {
-    pub(crate) user: User,
-    pub(crate) field_players: HashMap<String, FieldPlayer>,
-    pub(crate) goalie: Goalie,
-    pub(crate) account_id: AccountId,
-    pub(crate) take_to_called: bool,
-    pub(crate) coach_speech_called: bool,
-    pub(crate) is_goalie_out: bool,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(PartialEq, Serialize, Deserialize, Copy, Clone)]
 #[serde(crate = "near_sdk::serde")]
-pub struct Team {
-    pub(crate) field_players: HashMap<String, FieldPlayer>,
-    pub(crate) goalie: Goalie,
-    pub(crate) score: u8,
+pub enum Tactics {
+    SuperDefensive,
+    Defensive,
+    Neutral,
+    Offensive,
+    SupperOffensive,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -48,8 +40,8 @@ pub struct Event {
     pub(crate) action: ActionTypes,
     pub(crate) zone_number: i8,
     pub(crate) time: Timestamp,
-    pub(crate) my_team: Team,
-    pub(crate) opponent_team: Team,
+    pub(crate) my_team: TeamJson,
+    pub(crate) opponent_team: TeamJson,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Copy, Clone)]
@@ -86,32 +78,27 @@ pub struct Game {
 
 impl Game {
     pub fn new (account_id_1: AccountId, account_id_2: AccountId, reward: TokenBalance) -> Game {
-        let (user1, user2) = Game::create_two_players();
-
-        let field_players1 = Game::create_field_players_with_random_stats(user1.id);
-        let goalie1 = Game::create_goalie_with_random_stats(Post2Post ,user1.id);
-
-        let field_players2 = Game::create_field_players_with_random_stats(user2.id);
-        let goalie2 = Game::create_goalie_with_random_stats(Wall ,user2.id);
+        let team1 = Game::create_team(1);
+        let team2 = Game::create_team(2);
 
         let user_info1 = UserInfo {
-            user: user1,
-            field_players: field_players1,
-            goalie: goalie1,
+            user_id: 1,
+            team: team1,
             account_id: account_id_1,
             take_to_called: false,
             coach_speech_called: false,
             is_goalie_out: false,
+            tactic: Neutral,
         };
 
         let user_info2 = UserInfo {
-            user: user2,
-            field_players: field_players2,
-            goalie: goalie2,
+            user_id: 1,
+            team: team2,
             account_id: account_id_2,
             take_to_called: false,
             coach_speech_called: false,
             is_goalie_out: false,
+            tactic: Neutral,
         };
 
         Game {
@@ -127,22 +114,47 @@ impl Game {
         }
     }
 
-    // creates and returns two players with distinct IDs
-    fn create_two_players() -> (User, User) {
-        (
-            User { id: 1, score: 0 },
-            User { id: 2, score: 0 }
-        )
+    fn create_team(user_id: usize) -> Team {
+        let mut fives = HashMap::new();
+
+        let first_five = Game::create_five(user_id, Fives::First, SuperHighPriority);
+        fives.insert(Fives::First, first_five.clone());
+        fives.insert(Fives::Second, Game::create_five(user_id, Fives::Second, HighPriority));
+        fives.insert(Fives::Third, Game::create_five(user_id, Fives::Third, Normal));
+        fives.insert(Fives::Fourth, Game::create_five(user_id, Fives::Fourth, LowPriority));
+
+        let mut goalies = HashMap::new();
+
+        let main_goalkeeper = Game::create_goalie_with_random_stats(Wall ,user_id);
+        goalies.insert(Goalies::MainGoalkeeper, main_goalkeeper);
+        goalies.insert(Goalies::SubstituteGoalkeeper, Game::create_goalie_with_random_stats(Post2Post ,user_id));
+
+
+        Team {
+            fives,
+            goalies,
+            active_five: first_five.clone(),
+            active_goalie: main_goalkeeper,
+            score: 0,
+        }
+    }
+
+    fn create_five(user_id: usize, number: Fives, ice_time_priority: IceTimePriority) -> Five {
+        Five {
+            field_players: Game::create_field_players_with_random_stats(user_id),
+            number,
+            ice_time_priority,
+        }
     }
 
     fn create_field_players_with_random_stats(user_id: usize) -> HashMap<String, FieldPlayer> {
         let mut field_players = HashMap::new();
 
-        let center = Game::create_field_player_with_random_stats(Shooter, Center, user_id);
-        let right_wind = Game::create_field_player_with_random_stats(TryHarder, RightWing, user_id);
-        let left_wind = Game::create_field_player_with_random_stats(Dangler, LeftWing, user_id);
-        let right_defender = Game::create_field_player_with_random_stats(Goon, RightDefender, user_id);
-        let left_defender = Game::create_field_player_with_random_stats(Professor, LeftDefender, user_id);
+        let center = Game::create_field_player_with_random_stats(Shooter, Center,Center, 1.0, user_id);
+        let right_wind = Game::create_field_player_with_random_stats(TryHarder, RightWing, RightWing, 1.0, user_id);
+        let left_wind = Game::create_field_player_with_random_stats(Dangler, LeftWing, LeftWing, 1.0, user_id);
+        let right_defender = Game::create_field_player_with_random_stats(Goon, RightDefender, RightDefender, 1.0, user_id);
+        let left_defender = Game::create_field_player_with_random_stats(Professor, LeftDefender, LeftDefender, 1.0, user_id);
 
         field_players.insert(center.get_player_position().to_string(), center);
         field_players.insert(right_wind.get_player_position().to_string(), right_wind);
@@ -152,9 +164,11 @@ impl Game {
         field_players
     }
 
-    fn create_field_player_with_random_stats(role: PlayerRole, position: PlayerPosition, user_id: usize) -> FieldPlayer {
+    fn create_field_player_with_random_stats(role: PlayerRole, native_position: PlayerPosition, position: PlayerPosition, position_coefficient: f32, user_id: usize) -> FieldPlayer {
         FieldPlayer::new(
+            native_position,
             position,
+            position_coefficient,
             role,
             user_id,
             FieldPlayerStats::new(
@@ -189,7 +203,7 @@ impl Game {
 
 impl Game {
     fn get_center_forward_in_the_zone(&self, user: &UserInfo) -> FieldPlayer {
-        *match user.field_players.get(&Center.to_string()) {
+        *match user.team.active_five.field_players.get(&Center.to_string()) {
             Some(player) => player,
             _ => panic!("Player not found")
         }
@@ -249,7 +263,7 @@ impl Game {
     }
 
     fn is_game_over(&self) -> bool {
-        if self.turns >= 90 && self.user1.user.score != self.user2.user.score {
+        if self.turns >= 90 && self.user1.team.score != self.user2.team.score {
             true
         } else {
             false
@@ -257,7 +271,7 @@ impl Game {
     }
 
     fn get_winner_id(&self) -> usize {
-         if self.user2.user.score > self.user1.user.score {
+         if self.user2.team.score > self.user1.team.score {
              2
          } else {
              1

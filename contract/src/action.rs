@@ -2,7 +2,6 @@ use crate::player::{Player, PlayerPosition, PlayerRole};
 use crate::player_field::FieldPlayer;
 use crate::game::{EventToSave, Game};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::env::panic;
 use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Rock, Shooter, ToughGuy, TryHarder};
 
 use crate::action::ActionTypes::{Battle, Dangle, Goal, Hit, Move, Pass, PassCatched, PokeCheck, PuckLose, Rebound};
@@ -10,7 +9,8 @@ use crate::action::ActionTypes::{Battle, Dangle, Goal, Hit, Move, Pass, PassCatc
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 use near_sdk::serde::{Deserialize, Serialize};
-use crate::UserInfo;
+use crate::{Tactics};
+use crate::user::UserInfo;
 
 const PROBABILITY_PASS_NOT_HAPPENED: i32 = 20;
 
@@ -35,7 +35,7 @@ pub enum ActionTypes {
     Overtime,
 
 
-    Take_TO,
+    TakeTO,
     CoachSpeech,
     GoalieOut,
     GoalieBack,
@@ -46,17 +46,15 @@ trait DoAction {
 }
 
 pub struct Action;
-
 impl Action {
     /*
-    0 - pass_probability
-    1 - shot_probability
-    2 - move_probability
-    3 - dangle_probability
-     */
-    fn get_probability_of_actions(&self, role: PlayerRole) -> Vec<i32> {
-
-        match role {
+0 - pass_probability
+1 - shot_probability
+2 - move_probability
+3 - dangle_probability
+ */
+    fn get_probability_of_actions(&self, role: PlayerRole, tactics: Tactics) -> Vec<i32> {
+        let mut actions = match role {
             Passer => vec![4, 1, 3, 2],
             Professor => vec![4, 1, 3, 2],
             Shooter => vec![2, 4, 1, 3],
@@ -66,21 +64,43 @@ impl Action {
             Dangler => vec![1, 3, 2, 4],
             Rock => vec![1, 3, 2, 4],
             _ => panic!("Player has no role")
+        };
+
+        match tactics {
+            Tactics::SuperDefensive => actions[0] += 2,
+            Tactics::Defensive => actions[0] += 1,
+            Tactics::Offensive => {
+                actions[2] += 1;
+                actions[3] += 1;
+            },
+            Tactics::SupperOffensive => {
+                actions[2] += 2;
+                actions[3] += 2;
+            },
+            _ => panic!("Tactic not found")
         }
+
+        actions
     }
 
-    fn get_random_action(&self, is_attack_zone: bool, role: PlayerRole) -> Box<dyn DoAction> {
-        let actions = self.get_probability_of_actions(role);
+    fn get_random_action(&self, is_attack_zone: bool, role: PlayerRole, tactics: Tactics) -> Box<dyn DoAction> {
+        let actions = self.get_probability_of_actions(role, tactics);
 
-        let rnd = Game::get_random_in_range(0, 10);
+        let mut percent = 0;
+        let mut action_probability: Vec<i32> = Vec::new();
+        for i in 0..actions.len() {
+            percent += actions[i];
+            action_probability.push(percent);
+        }
+        percent /= 100;
 
-        let probability_distribution = [1, 2, 2, 3, 3, 3, 4, 4, 4, 4];
+        let rnd = Game::get_random_in_range(1, 101) as i32;
 
-        return if !is_attack_zone && actions[3] == probability_distribution[rnd] {
+        return if !is_attack_zone && percent * action_probability[0] >= rnd {
             Box::new(DangleAction {})
-        } else if !is_attack_zone && actions[2] == probability_distribution[rnd] {
+        } else if !is_attack_zone && percent * action_probability[1] >= rnd {
             Box::new(MoveAction {})
-        } else if is_attack_zone && actions[1] == probability_distribution[rnd] {
+        } else if is_attack_zone && percent * action_probability[2] >= rnd {
             Box::new(ShotAction{})
         } else {
             Box::new(PassAction {})
@@ -94,7 +114,13 @@ impl Action {
             is_attack_zone = true;
         }
 
-        let action = self.get_random_action(is_attack_zone, game.player_with_puck.as_ref().unwrap().get_role());
+        let tactic = if user_id == 1 {
+            game.user1.tactic
+        } else {
+            game.user2.tactic
+        };
+
+        let action = self.get_random_action(is_attack_zone, game.player_with_puck.as_ref().unwrap().get_role(), tactic);
 
         reduce_strength(game);
 
@@ -119,7 +145,7 @@ impl DoAction for PassAction {
 
                 let user = &game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id());
 
-                match user.field_players.get(&pass_to.to_string()) {
+                match user.team.active_five.field_players.get(&pass_to.to_string()) {
                     Some(player) => game.player_with_puck = Option::from(*player),
                     None => panic!("Player not found")
                 }
@@ -181,7 +207,7 @@ impl DoAction for ShotAction {
 
         if has_won(player_stat, opponent_stat as f64) {
             change_morale_after_a_goal(game);
-            game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id()).user.score += 1;
+            game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id()).team.score += 1;
 
             generate_an_event(Goal, game);
 
@@ -293,9 +319,9 @@ fn get_opponents_goalie(game: &Game) -> &Goalie {
     let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
 
     return if user_id == 1 {
-        &game.user2.goalie
+        &game.user2.team.active_goalie
     } else {
-        &game.user1.goalie
+        &game.user1.team.active_goalie
     }
 }
 
@@ -303,13 +329,13 @@ pub fn get_opponents_field_player(game: &mut Game) -> FieldPlayer {
     let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
 
     return if user_id == 1 {
-        *match game.user2.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()) {
+        *match game.user2.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()) {
             Some(player) => player,
             _ => panic!("Player not found")
         }
     } else {
         let user = &game.user1;
-        *match user.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()){
+        *match user.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()){
             Some(player) => player,
             _ => panic!("Player not found")
         }
@@ -317,14 +343,14 @@ pub fn get_opponents_field_player(game: &mut Game) -> FieldPlayer {
 }
 
 pub fn get_relative_field_player_stat(player: &FieldPlayer, stat: f64) -> f64 {
-    (stat as f64 + player.stats.get_morale() as f64 + player.stats.get_strength() as f64) / 3 as f64
+    (stat as f64 + player.stats.get_morale() as f64 + player.stats.get_strength() as f64) * player.position_coefficient as f64 / 3 as f64
 }
 
 pub fn reduce_strength(game: &mut Game) {
-    for (_player_pos, field_player) in &mut game.user1.field_players.iter_mut() {
+    for (_player_pos, field_player) in &mut game.user1.team.active_five.field_players.iter_mut() {
         field_player.stats.strength = field_player.stats.strength * 0.996;
     }
-    for (_player_pos, field_player) in &mut game.user2.field_players.iter_mut() {
+    for (_player_pos, field_player) in &mut game.user2.team.active_five.field_players.iter_mut() {
         field_player.stats.strength = field_player.stats.strength * 0.996;
     }
 }
@@ -332,10 +358,10 @@ pub fn reduce_strength(game: &mut Game) {
 fn change_morale_after_a_goal(game: &mut Game) {
     let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
 
-    let player_goalie = &mut game.get_user_info(user_id).goalie;
+    let player_goalie = &mut game.get_user_info(user_id).team.active_goalie;
     player_goalie.stats.morale += 2;
 
-    for (_player_pos, field_player) in &mut game.get_user_info(user_id).field_players.iter_mut() {
+    for (_player_pos, field_player) in &mut game.get_user_info(user_id).team.active_five.field_players.iter_mut() {
         field_player.stats.morale += 2;
     }
 
@@ -344,9 +370,9 @@ fn change_morale_after_a_goal(game: &mut Game) {
         opponent_id = 2;
     }
 
-    game.get_user_info(opponent_id).goalie.stats.morale -= 1;
+    game.get_user_info(opponent_id).team.active_goalie.stats.morale -= 1;
 
-    for (_player_pos, field_player) in &mut game.get_user_info(opponent_id).field_players.iter_mut() {
+    for (_player_pos, field_player) in &mut game.get_user_info(opponent_id).team.active_five.field_players.iter_mut() {
         field_player.stats.morale -= 1;
     }
 }
@@ -393,8 +419,8 @@ fn get_random_position_after_rebound() -> PlayerPosition {
 }
 
 fn battle_by_position(pos: PlayerPosition, game: &mut Game) {
-    let player1 = &game.user1.field_players.get(&pos.to_string());
-    let player2 = &game.user2.field_players.get(&pos.to_string());
+    let player1 = &game.user1.team.active_five.field_players.get(&pos.to_string());
+    let player2 = &game.user2.team.active_five.field_players.get(&pos.to_string());
 
     let player1_stat = match player1 {
         Some(player) => get_relative_field_player_stat(player, player.stats.strength),

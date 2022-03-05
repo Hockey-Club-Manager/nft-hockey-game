@@ -1,4 +1,4 @@
-use crate::player::{Player, PlayerPosition, PlayerRole};
+use crate::player::{Player, PlayerRole};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 

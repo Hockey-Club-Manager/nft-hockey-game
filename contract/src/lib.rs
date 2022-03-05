@@ -1,15 +1,15 @@
-use std::collections::HashMap;
-//use std::env;
 use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap};
 use near_sdk::borsh::{self, BorshSerialize, BorshDeserialize};
-use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, init, PanicOnDefault, setup_alloc, Timestamp};
-use crate::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, Take_TO};
+use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, PanicOnDefault, setup_alloc};
+use crate::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, TakeTO};
 use crate::action::generate_an_event;
 
-use crate::game::{Event, Game, GameState, Team, UserInfo};
+use crate::game::{Event, Game, GameState, Tactics};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
-use crate::player::{PlayerPosition, PlayerRole};
+use crate::player::{PlayerPosition};
 use crate::player_field::FieldPlayer;
+use crate::team::TeamJson;
+use crate::user::UserInfo;
 
 mod game;
 mod user;
@@ -18,6 +18,7 @@ mod goalie;
 mod player_field;
 mod action;
 mod manager;
+mod team;
 
 type GameId = u64;
 
@@ -155,81 +156,14 @@ impl Hockey {
         }
     }
 
-    // pub fn generate_event(&mut self, game_id: GameId) {
-    //     let game: &mut Game = &mut self.internal_get_game(&game_id);
-    //     assert!(game.winner_index.is_none(), "Game already finished");
-    //
-    //     let time = env::block_timestamp();
-    //     if time - game.last_event_generation_time >= 1 {
-    //         game.last_event_generation_time = time;
-    //
-    //         match game.step() {
-    //             GameState::GameOver { winner_id: winner_index} => {
-    //                 let winner_account = if game.user1.user.id == winner_index {
-    //                     game.user1.account_id.clone()
-    //                 } else {
-    //                     game.user2.account_id.clone()
-    //                 };
-    //
-    //                 self.internal_distribute_reward(&game.reward, &winner_account);
-    //                 game.winner_index = Some(winner_index);
-    //
-    //                 self.internal_stop_game(game_id);
-    //
-    //                 log!("\nGame over! {} won!", winner_account);
-    //             },
-    //             _ => {}
-    //         };
-    //
-    //         self.games.insert(&game_id, &game);
-    //     }
-    // }
-    //
-    // pub fn get_events(&self, number_of_rendered_events: usize, game_id: GameId, account_id: AccountId) -> Vec<Event> {
-    //     let mut game: Game = self.games.get(&game_id).expect("Game not found");
-    //
-    //     let mut result: Vec<Event> = vec![];
-    //
-    //     let number_of_events = game.events.len() - number_of_rendered_events;
-    //
-    //     let teams = if game.user1.account_id == account_id {
-    //         (Team {
-    //             field_players: game.user1.field_players.clone(),
-    //             goalie: game.user1.goalie.clone()
-    //         },
-    //          Team{
-    //              field_players: game.user2.field_players.clone(),
-    //              goalie: game.user2.goalie.clone()
-    //          })
-    //     } else {
-    //         (Team {
-    //             field_players: game.user2.field_players.clone(),
-    //             goalie: game.user2.goalie.clone()
-    //         },
-    //          Team{
-    //              field_players: game.user1.field_players.clone(),
-    //              goalie: game.user1.goalie.clone()
-    //          })
-    //     };
-    //
-    //     for i in 0..number_of_events {
-    //         let event = game.events[game.events.len() - 1 - i];
-    //
-    //         result.push(Event {
-    //             my_team: teams.0.clone(),
-    //             opponent_team: teams.1.clone(),
-    //             time: event.time,
-    //             zone_number: event.zone_number,
-    //             action: event.action,
-    //             player_with_puck: event.player_with_puck,
-    //         })
-    //     }
-    //
-    //     result
-    // }
-
     pub fn generate_event(&mut self, number_of_rendered_events: usize, game_id: GameId) -> Vec<Event> {
+        log!("number_of_rendered_events: {}", number_of_rendered_events);
+
         let game: &mut Game = &mut self.internal_get_game(&game_id);
+
+        if !game.winner_index.is_none() {
+            return self.get_events(number_of_rendered_events, game)
+        }
         assert!(game.winner_index.is_none(), "Game already finished");
 
         let time = env::block_timestamp();
@@ -238,7 +172,7 @@ impl Hockey {
 
             match game.step() {
                 GameState::GameOver { winner_id: winner_index} => {
-                    let winner_account = if game.user1.user.id == winner_index {
+                    let winner_account = if game.user1.user_id == winner_index {
                         game.user1.account_id.clone()
                     } else {
                         game.user2.account_id.clone()
@@ -262,29 +196,26 @@ impl Hockey {
 
     fn get_events(&self, number_of_rendered_events: usize, game: &mut Game) -> Vec<Event> {
         let mut result: Vec<Event> = vec![];
-
         let teams = if game.user1.account_id == env::predecessor_account_id() {
-            (Team {
-                field_players: game.user1.field_players.clone(),
-                goalie: game.user1.goalie.clone(),
-                score: game.user1.user.score,
-            },
-             Team{
-                 field_players: game.user2.field_players.clone(),
-                 goalie: game.user2.goalie.clone(),
-                 score: game.user2.user.score,
-             })
+            (TeamJson {
+                five: game.user1.team.active_five.clone(),
+                goalie: game.user1.team.active_goalie.clone(),
+                score: game.user1.team.score,
+            }, TeamJson {
+                five: game.user2.team.active_five.clone(),
+                goalie: game.user2.team.active_goalie.clone(),
+                score: game.user2.team.score,
+            })
         } else {
-            (Team {
-                field_players: game.user2.field_players.clone(),
-                goalie: game.user2.goalie.clone(),
-                score: game.user2.user.score,
-            },
-             Team{
-                 field_players: game.user1.field_players.clone(),
-                 goalie: game.user1.goalie.clone(),
-                 score: game.user1.user.score,
-             })
+            (TeamJson {
+                five: game.user2.team.active_five.clone(),
+                goalie: game.user2.team.active_goalie.clone(),
+                score: game.user2.team.score,
+            }, TeamJson {
+                five: game.user1.team.active_five.clone(),
+                goalie: game.user1.team.active_goalie.clone(),
+                score: game.user1.team.score,
+            })
         };
 
         for i in number_of_rendered_events..game.events.len() {
@@ -319,25 +250,25 @@ impl Hockey {
         if game.user1.account_id == account_id {
             if !game.user1.take_to_called {
                 self.change_stats_take_to(&mut game.user1, &mut game.user2);
-                generate_an_event(Take_TO, &mut game);
+                generate_an_event(TakeTO, &mut game);
             }
         } else if game.user2.account_id == account_id {
             if !game.user2.take_to_called {
                 self.change_stats_take_to(&mut game.user2, &mut game.user1);
-                generate_an_event(Take_TO, &mut game);
+                generate_an_event(TakeTO, &mut game);
             }
         }
         self.games.insert(&game_id, &game);
     }
 
     fn change_stats_take_to(&self, user1: &mut UserInfo, user2: &mut UserInfo) {
-        for (_player_pos, field_player) in user1.field_players.iter_mut() {
+        for (_player_pos, field_player) in user1.team.active_five.field_players.iter_mut() {
             field_player.stats.morale += 5;
             field_player.stats.strength += 5.0;
             field_player.stats.iq += 3;
         }
 
-        for (_player_pos, field_player) in user2.field_players.iter_mut() {
+        for (_player_pos, field_player) in user2.team.active_five.field_players.iter_mut() {
             field_player.stats.morale += 3;
             field_player.stats.strength += 3.0;
         }
@@ -364,7 +295,7 @@ impl Hockey {
     }
 
     fn change_stats_coach_speech(&self, user: &mut UserInfo) {
-        for (_player_pos, field_player) in user.field_players.iter_mut() {
+        for (_player_pos, field_player) in user.team.active_five.field_players.iter_mut() {
             field_player.stats.morale += 3;
             field_player.stats.iq += 2;
         }
@@ -404,8 +335,22 @@ impl Hockey {
         let game: Game = self.games.get(&game_id).expect("Game not found");
         game.events.len()
     }
+
+    pub fn change_tactic(&mut self, tactic: Tactics, game_id: GameId) {
+        let account_id = env::predecessor_account_id();
+        let mut game: Game = self.internal_get_game(&game_id).into();
+
+        if game.user1.account_id == account_id  && game.user1.is_goalie_out{
+            game.user1.tactic = tactic;
+        } else if game.user2.account_id == account_id && game.user2.is_goalie_out{
+            game.user2.tactic = tactic;
+        }
+
+        self.games.insert(&game_id, &game);
+    }
 }
 
 #[cfg(test)]
 mod tests {
+
 }
