@@ -144,6 +144,7 @@ impl Game {
             field_players: Game::create_field_players_with_random_stats(user_id),
             number,
             ice_time_priority,
+            time_field: 0,
         }
     }
 

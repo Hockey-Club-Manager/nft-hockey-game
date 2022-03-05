@@ -50,4 +50,5 @@ pub struct Five {
     pub(crate) field_players: HashMap<String, FieldPlayer>,
     pub(crate) number: Fives,
     pub(crate) ice_time_priority: IceTimePriority,
+    pub(crate) time_field: u8,
 }
