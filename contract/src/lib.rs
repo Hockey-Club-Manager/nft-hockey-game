@@ -8,7 +8,7 @@ use crate::game::{Event, Game, GameState, Tactics};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
 use crate::player::{PlayerPosition};
 use crate::player_field::FieldPlayer;
-use crate::team::TeamJson;
+use crate::team::{Fives, IceTimePriority, TeamJson};
 use crate::user::UserInfo;
 
 mod game;
@@ -340,10 +340,23 @@ impl Hockey {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
-        if game.user1.account_id == account_id  && game.user1.is_goalie_out{
+        if game.user1.account_id == account_id {
             game.user1.tactic = tactic;
-        } else if game.user2.account_id == account_id && game.user2.is_goalie_out{
+        } else if game.user2.account_id == account_id {
             game.user2.tactic = tactic;
+        }
+
+        self.games.insert(&game_id, &game);
+    }
+
+    pub fn change_ice_priority(&mut self, ice_time_priority: IceTimePriority, five: Fives, game_id: GameId) {
+        let account_id = env::predecessor_account_id();
+        let mut game: Game = self.internal_get_game(&game_id);
+
+        if game.user1.account_id == account_id {
+            game.user1.team.fives.get_mut(&five).unwrap().ice_time_priority = ice_time_priority;
+        } else if game.user2.account_id == account_id {
+            game.user2.team.fives.get_mut(&five).unwrap().ice_time_priority = ice_time_priority;
         }
 
         self.games.insert(&game_id, &game);
