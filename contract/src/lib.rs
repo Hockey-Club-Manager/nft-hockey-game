@@ -8,7 +8,7 @@ use crate::game::{Event, Game, GameState, Tactics};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
 use crate::player::{PlayerPosition};
 use crate::player_field::FieldPlayer;
-use crate::team::{Fives, IceTimePriority, TeamJson};
+use crate::team::{Fives, IceTimePriority, swap_positions, TeamJson};
 use crate::user::UserInfo;
 
 mod game;
@@ -191,6 +191,7 @@ impl Hockey {
             self.games.insert(&game_id, &game);
         }
 
+        log!("get_events");
         self.get_events(number_of_rendered_events, game)
     }
 
@@ -357,6 +358,19 @@ impl Hockey {
             game.user1.team.fives.get_mut(&five).unwrap().ice_time_priority = ice_time_priority;
         } else if game.user2.account_id == account_id {
             game.user2.team.fives.get_mut(&five).unwrap().ice_time_priority = ice_time_priority;
+        }
+
+        self.games.insert(&game_id, &game);
+    }
+
+    pub fn change_positions(&mut self, number_five: Fives, game_id: GameId, position1: String, position2: String) {
+        let account_id = env::predecessor_account_id();
+        let mut game: Game = self.internal_get_game(&game_id);
+
+        if game.user1.account_id == account_id {
+            swap_positions(&mut game.user1, number_five, position1, position2);
+        } else if game.user2.account_id == account_id {
+            swap_positions(&mut game.user2, number_five, position1, position2);
         }
 
         self.games.insert(&game_id, &game);

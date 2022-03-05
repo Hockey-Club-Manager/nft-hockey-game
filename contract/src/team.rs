@@ -1,7 +1,7 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::FieldPlayer;
+use crate::{FieldPlayer, UserInfo};
 use crate::goalie::Goalie;
 use crate::team::Fives::{First, Fourth, Second, Third};
 use crate::team::IceTimePriority::{HighPriority, LowPriority, Normal, SuperHighPriority, SuperLowPriority};
@@ -108,4 +108,21 @@ pub struct Five {
     pub(crate) number: Fives,
     pub(crate) ice_time_priority: IceTimePriority,
     pub(crate) time_field: u8,
+}
+
+pub fn swap_positions(user_info: &mut UserInfo, number_five: Fives, position1: String, position2: String) {
+    let mut five = user_info.team.fives.get_mut(&number_five).unwrap().clone();
+    let mut first_player = five.field_players.get(&position1).unwrap().clone();
+    let mut second_player = five.field_players.get(&position2).unwrap().clone();
+
+    first_player.position = second_player.position;
+    second_player.position = first_player.position;
+
+    first_player.set_position_coefficient();
+    second_player.set_position_coefficient();
+
+    five.field_players.insert(position1, second_player);
+    five.field_players.insert(position2, first_player);
+
+    user_info.team.fives.insert(number_five, five);
 }
