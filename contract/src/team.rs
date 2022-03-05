@@ -4,16 +4,23 @@ use std::collections::HashMap;
 use crate::FieldPlayer;
 use crate::goalie::Goalie;
 
-#[derive(Serialize, Deserialize, Clone, BorshDeserialize, BorshSerialize)]
-#[serde(crate = "near_sdk::serde")]
+#[derive(Clone, BorshDeserialize, BorshSerialize)]
 pub struct Team {
     pub(crate) fives: HashMap<Fives, Five>,
     pub(crate) goalies: HashMap<Goalies, Goalie>,
     pub(crate) active_five: Five,
-    pub(crate) active_goalie: Goalie,
 
+    pub(crate) active_goalie: Goalie,
     pub(crate) score: u8,
 }
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct TeamJson {
+    pub(crate) five: Five,
+    pub(crate) goalie: Goalie,
+    pub(crate) score: u8,
+}
+
 
 #[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Hash, Clone, BorshDeserialize, BorshSerialize)]
 pub enum Goalies {

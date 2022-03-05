@@ -8,6 +8,7 @@ use crate::game::{Event, Game, GameState, Tactics};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
 use crate::player::{PlayerPosition};
 use crate::player_field::FieldPlayer;
+use crate::team::TeamJson;
 use crate::user::UserInfo;
 
 mod game;
@@ -196,9 +197,25 @@ impl Hockey {
     fn get_events(&self, number_of_rendered_events: usize, game: &mut Game) -> Vec<Event> {
         let mut result: Vec<Event> = vec![];
         let teams = if game.user1.account_id == env::predecessor_account_id() {
-            (game.user1.team.clone(), game.user2.team.clone())
+            (TeamJson {
+                five: game.user1.team.active_five.clone(),
+                goalie: game.user1.team.active_goalie.clone(),
+                score: game.user1.team.score,
+            }, TeamJson {
+                five: game.user2.team.active_five.clone(),
+                goalie: game.user2.team.active_goalie.clone(),
+                score: game.user2.team.score,
+            })
         } else {
-            (game.user2.team.clone(), game.user1.team.clone())
+            (TeamJson {
+                five: game.user2.team.active_five.clone(),
+                goalie: game.user2.team.active_goalie.clone(),
+                score: game.user2.team.score,
+            }, TeamJson {
+                five: game.user1.team.active_five.clone(),
+                goalie: game.user1.team.active_goalie.clone(),
+                score: game.user1.team.score,
+            })
         };
 
         for i in number_of_rendered_events..game.events.len() {

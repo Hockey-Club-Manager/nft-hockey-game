@@ -13,7 +13,7 @@ use crate::{TokenBalance};
 use crate::game::Tactics::Neutral;
 use crate::player::PlayerRole::{Dangler, Goon, Post2Post, Professor, Shooter, TryHarder, Wall};
 use crate::PlayerPosition::LeftWing;
-use crate::team::{Five, Fives, Goalies, IceTimePriority, Team};
+use crate::team::{Five, Fives, Goalies, IceTimePriority, Team, TeamJson};
 use crate::team::IceTimePriority::{HighPriority, LowPriority, Normal, SuperHighPriority, SuperLowPriority};
 
 #[derive(Debug, PartialEq, Eq)]
@@ -40,8 +40,8 @@ pub struct Event {
     pub(crate) action: ActionTypes,
     pub(crate) zone_number: i8,
     pub(crate) time: Timestamp,
-    pub(crate) my_team: Team,
-    pub(crate) opponent_team: Team,
+    pub(crate) my_team: TeamJson,
+    pub(crate) opponent_team: TeamJson,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Copy, Clone)]
