@@ -31,7 +31,17 @@ pub enum Fives {
 }
 
 #[derive(Serialize, Deserialize, Clone, BorshDeserialize, BorshSerialize)]
+pub enum IceTimePriority {
+    SuperLowPriority,
+    LowPriority,
+    Normal,
+    HighPriority,
+    SuperHighPriority,
+}
+
+#[derive(Serialize, Deserialize, Clone, BorshDeserialize, BorshSerialize)]
 pub struct Five {
     pub(crate) field_players: HashMap<String, FieldPlayer>,
     pub(crate) number: Fives,
+    pub(crate) ice_time_priority: IceTimePriority,
 }

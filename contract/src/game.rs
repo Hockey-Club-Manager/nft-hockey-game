@@ -13,7 +13,8 @@ use crate::{TokenBalance};
 use crate::game::Tactics::Neutral;
 use crate::player::PlayerRole::{Dangler, Goon, Post2Post, Professor, Shooter, TryHarder, Wall};
 use crate::PlayerPosition::LeftWing;
-use crate::team::{Five, Fives, Goalies, Team};
+use crate::team::{Five, Fives, Goalies, IceTimePriority, Team};
+use crate::team::IceTimePriority::{HighPriority, LowPriority, Normal, SuperHighPriority, SuperLowPriority};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum GameState {
@@ -116,12 +117,12 @@ impl Game {
     fn create_team(user_id: usize) -> Team {
         let mut fives = HashMap::new();
 
-        let first_five = Game::create_five(user_id, Fives::First);
+        let first_five = Game::create_five(user_id, Fives::First, SuperHighPriority);
         fives.insert(Fives::First, first_five.clone());
-        fives.insert(Fives::Second, Game::create_five(user_id, Fives::Second));
-        fives.insert(Fives::Third, Game::create_five(user_id, Fives::Third));
-        fives.insert(Fives::Fourth, Game::create_five(user_id, Fives::Fourth));
-        fives.insert(Fives::Fifth, Game::create_five(user_id, Fives::Fifth));
+        fives.insert(Fives::Second, Game::create_five(user_id, Fives::Second, HighPriority));
+        fives.insert(Fives::Third, Game::create_five(user_id, Fives::Third, Normal));
+        fives.insert(Fives::Fourth, Game::create_five(user_id, Fives::Fourth, LowPriority));
+        fives.insert(Fives::Fifth, Game::create_five(user_id, Fives::Fifth, SuperLowPriority));
 
         let mut goalies = HashMap::new();
 
@@ -139,10 +140,11 @@ impl Game {
         }
     }
 
-    fn create_five(user_id: usize, number: Fives) -> Five {
+    fn create_five(user_id: usize, number: Fives, ice_time_priority: IceTimePriority) -> Five {
         Five {
             field_players: Game::create_field_players_with_random_stats(user_id),
-            number
+            number,
+            ice_time_priority,
         }
     }
 
