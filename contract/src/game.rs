@@ -122,7 +122,6 @@ impl Game {
         fives.insert(Fives::Second, Game::create_five(user_id, Fives::Second, HighPriority));
         fives.insert(Fives::Third, Game::create_five(user_id, Fives::Third, Normal));
         fives.insert(Fives::Fourth, Game::create_five(user_id, Fives::Fourth, LowPriority));
-        fives.insert(Fives::Fifth, Game::create_five(user_id, Fives::Fifth, SuperLowPriority));
 
         let mut goalies = HashMap::new();
 

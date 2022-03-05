@@ -34,7 +34,6 @@ pub enum Fives {
     Second,
     Third,
     Fourth,
-    Fifth,
 }
 
 #[derive(Serialize, Deserialize, Clone, BorshDeserialize, BorshSerialize)]
