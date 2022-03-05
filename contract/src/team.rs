@@ -3,6 +3,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use crate::FieldPlayer;
 use crate::goalie::Goalie;
+use crate::team::Fives::{First, Fourth, Second, Third};
 use crate::team::IceTimePriority::{HighPriority, LowPriority, Normal, SuperHighPriority, SuperLowPriority};
 
 const SUPER_LOW_PRIORITY: u8 = 5;
@@ -33,7 +34,40 @@ impl Team {
     }
 
     pub fn change_active_five(&mut self) {
+        match self.active_five.number {
+            First => {
+                self.fives.insert(First, self.active_five.clone());
 
+                if self.fives.len() > 1 {
+                    self.active_five = self.fives.get(&Second).unwrap().clone()
+                }
+            },
+            Second => {
+                self.fives.insert(Second, self.active_five.clone());
+
+                if self.fives.len() > 2 {
+                    self.active_five = self.fives.get(&Third).unwrap().clone()
+                } else {
+                    self.active_five = self.fives.get(&First).unwrap().clone()
+                }
+            },
+            Third => {
+                self.fives.insert(Third, self.active_five.clone());
+
+                if self.fives.len() > 3 {
+                    self.active_five = self.fives.get(&Fourth).unwrap().clone()
+                } else {
+                    self.active_five = self.fives.get(&First).unwrap().clone()
+                }
+            },
+            Fourth => {
+                self.fives.insert(Fourth, self.active_five.clone());
+
+                self.active_five = self.fives.get(&First).unwrap().clone()
+            },
+        }
+
+        self.active_five.time_field = 0;
     }
 }
 
