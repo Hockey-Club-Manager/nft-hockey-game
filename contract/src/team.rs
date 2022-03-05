@@ -23,7 +23,7 @@ pub struct Team {
 }
 
 impl Team {
-    fn need_change(&self) -> bool {
+    pub fn need_change(&self) -> bool {
         match self.active_five.ice_time_priority {
             SuperLowPriority => self.active_five.time_field >= SUPER_LOW_PRIORITY,
             LowPriority => self.active_five.time_field >= LOW_PRIORITY,

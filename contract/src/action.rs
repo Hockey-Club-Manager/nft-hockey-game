@@ -39,6 +39,9 @@ pub enum ActionTypes {
     CoachSpeech,
     GoalieOut,
     GoalieBack,
+
+    FirstTeamChangeActiveFive,
+    SecondTeamChangeActiveFive,
 }
 
 trait DoAction {

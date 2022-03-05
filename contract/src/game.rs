@@ -6,7 +6,7 @@ use crate::goalie::{Goalie, GoalieStats};
 use crate::player_field::{FieldPlayer, FieldPlayerStats};
 use crate::user::UserInfo;
 use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
-use crate::action::ActionTypes::{Battle, EndOfPeriod, GameFinished, Goal, Overtime, Save};
+use crate::action::ActionTypes::{Battle, EndOfPeriod, FirstTeamChangeActiveFive, GameFinished, Goal, Overtime, Save, SecondTeamChangeActiveFive};
 use crate::player::{PlayerPosition, PlayerRole};
 use crate::player::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
 use crate::{TokenBalance};
@@ -240,9 +240,20 @@ impl Game {
             Save => self.face_off(),
             EndOfPeriod => self.face_off(),
              _ => action.do_random_action(self)
-         };
+        };
 
         self.turns += 1;
+
+        if self.user1.team.need_change() {
+            self.user1.team.change_active_five();
+
+            generate_an_event(FirstTeamChangeActiveFive, self);
+        }
+        if self.user2.team.need_change() {
+            self.user2.team.change_active_five();
+
+            generate_an_event(SecondTeamChangeActiveFive, self);
+        }
 
         if [30, 60, 90].contains(&self.turns) {
             generate_an_event(EndOfPeriod, self);
