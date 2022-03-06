@@ -72,6 +72,7 @@ impl Action {
         match tactics {
             Tactics::SuperDefensive => actions[0] += 2,
             Tactics::Defensive => actions[0] += 1,
+            Tactics::Neutral => {},
             Tactics::Offensive => {
                 actions[2] += 1;
                 actions[3] += 1;
