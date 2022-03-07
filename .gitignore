@@ -6,8 +6,18 @@
 .pnp.js
 /out
 
-contracts/target
-contracts/target/*
+contracts/target/game
+contracts/target/game/*
+
+contracts/target/nft-market/ft
+contracts/target/game/nft-market/ft*
+
+contracts/target/nft-market/nft-simple
+contracts/target/game/nft-market/nft-simple*
+
+contracts/target/nft-market/market-simple
+contracts/target/game/nft-market/market-simple*
+
 
 #keys
 /neardev
