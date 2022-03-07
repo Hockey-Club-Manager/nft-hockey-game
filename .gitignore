@@ -6,8 +6,8 @@
 .pnp.js
 /out
 
-contract/target
-contract/target/*
+contracts/target
+contracts/target/*
 
 #keys
 /neardev
@@ -28,6 +28,6 @@ contract/target/*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-/contract/target/
+/contracts/target/
 dist
 .cache

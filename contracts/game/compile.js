@@ -1,6 +1,6 @@
 // This file does two things:
 //
-// 1. Compile the Rust contract using cargo (see buildCmd below). This will
+// 1. Compile the Rust contracts using cargo (see buildCmd below). This will
 //    create a wasm file in the 'build' folder.
 // 2. Create a symbolic link (symlink) to the generated wasm file in the root
 //    project's `out` folder, for easy use with near-cli.
@@ -35,8 +35,8 @@ const buildCmd = debug
 const { code } = sh.exec(buildCmd)
 
 // Assuming this is compiled from the root project directory, link the compiled
-// contract to the `out` folder –
-// When running commands like `near deploy`, near-cli looks for a contract at
+// contracts to the `out` folder –
+// When running commands like `near deploy`, near-cli looks for a contracts at
 // <CURRENT_DIRECTORY>/out/main.wasm
 if (code === 0 && calledFromDir !== __dirname) {
   const linkDir = `${calledFromDir}/out`

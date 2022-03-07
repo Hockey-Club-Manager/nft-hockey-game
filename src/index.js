@@ -20,7 +20,7 @@ document.querySelector('form').onsubmit = async (event) => {
   fieldset.disabled = true
 
   try {
-    // make an update call to the smart contract
+    // make an update call to the smart contracts
     await window.contract.set_greeting({
       // pass the value that the user entered in the greeting field
       message: greeting.value

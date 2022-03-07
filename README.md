@@ -1,4 +1,4 @@
-nft-hockey-game-console
+NFT-based hockey managers game
 ==================
 
 This app was initialized with [create-near-app]
