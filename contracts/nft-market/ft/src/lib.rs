@@ -94,7 +94,7 @@ impl Contract {
 
     /// only owner can mint
     pub fn mint(&mut self, amount: U128) {
-        assert!(env::predecessor_account_id() == self.owner_id, "must be owner_id");
+        assert_eq!(env::predecessor_account_id(), self.owner_id, "must be owner_id");
         self.total_supply += u128::from(amount);
         let mut balance = self.accounts.get(&self.owner_id).expect("owner should have balance");
         balance += u128::from(amount);
