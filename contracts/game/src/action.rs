@@ -4,7 +4,7 @@ use crate::game::{EventToSave, Game};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Rock, Shooter, ToughGuy, TryHarder};
 
-use crate::action::ActionTypes::{Battle, Dangle, Goal, Hit, Move, Pass, PassCatched, PokeCheck, PuckLose, Rebound};
+use crate::action::ActionTypes::{Battle, Dangle, Goal, Hit, Move, Pass, PassCatched, PokeCheck, PuckLose, Rebound, Shot};
 
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
@@ -178,6 +178,8 @@ impl DoAction for PassAction {
 pub struct ShotAction;
 impl DoAction for ShotAction {
     fn do_action(&self, game: &mut Game) {
+        generate_an_event(Shot, game);
+
         let pass_before_shot = has_pass_before_shot(game);
         let opponent = get_opponents_goalie(game);
 
