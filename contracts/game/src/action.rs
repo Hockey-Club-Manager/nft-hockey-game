@@ -224,16 +224,9 @@ impl DoAction for ShotAction {
         } else {
             if PROBABILITY_SAVE_NOT_HAPPENED >= Game::get_random_in_range(1, 101) {
                 generate_an_event(Rebound, game);
-
-                let player_pos = get_random_position_after_rebound();
-                battle_by_position(player_pos, game);
             } else {
                 generate_an_event(Save, game);
-                battle_by_position(Center, game);
-                generate_an_event(FaceOff, game);
             }
-
-            generate_an_event(Battle, game);
         }
     }
 }
@@ -414,50 +407,6 @@ pub fn generate_an_event(action: ActionTypes, game: &mut Game) {
     };
 
     game.events.push(new_event);
-}
-
-fn get_random_position_after_rebound() -> PlayerPosition {
-    let rnd = Game::get_random_in_range(0, 10);
-
-    let probability_distribution = vec![1, 1, 2, 2, 3, 3, 3, 3, 4, 5];
-
-    let num_player_pos = probability_distribution[rnd];
-
-    match num_player_pos {
-        1 => LeftDefender,
-        2 => RightDefender,
-        3 => Center,
-        4 => LeftWing,
-        5 => RightWing,
-        _ => panic!("Player position not found")
-    }
-}
-
-fn battle_by_position(pos: PlayerPosition, game: &mut Game) {
-    let player1 = &game.user1.team.active_five.field_players.get(&pos.to_string());
-    let player2 = &game.user2.team.active_five.field_players.get(&pos.to_string());
-
-    let player1_stat = match player1 {
-        Some(player) => get_relative_field_player_stat(player, player.stats.strength),
-        _ => panic!("Player not found")
-    };
-
-    let player2_stat = match player2 {
-        Some(player) => get_relative_field_player_stat(player, player.stats.strength),
-        _ => panic!("Player not found")
-    };
-
-    if has_won(player1_stat, player2_stat) {
-        match *player1 {
-            Some(player) => game.player_with_puck = Option::from(*player),
-            _ => panic!("Player not found")
-        }
-    } else {
-        match *player2 {
-            Some(player) => game.player_with_puck = Option::from(*player),
-            _ => panic!("Player not found")
-        }
-    }
 }
 
 fn get_opponent_user(game: &Game) -> &UserInfo {
