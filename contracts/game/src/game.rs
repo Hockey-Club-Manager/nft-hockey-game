@@ -6,7 +6,7 @@ use crate::goalie::{Goalie, GoalieStats};
 use crate::player_field::{FieldPlayer, FieldPlayerStats};
 use crate::user::UserInfo;
 use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
-use crate::action::ActionTypes::{Battle, EndOfPeriod, FirstTeamChangeActiveFive, GameFinished, Goal, Overtime, Save, SecondTeamChangeActiveFive};
+use crate::action::ActionTypes::{Battle, EndOfPeriod, FirstTeamChangeActiveFive, GameFinished, Goal, Overtime, Save, SecondTeamChangeActiveFive, StartGame};
 use crate::player::{PlayerPosition, PlayerRole};
 use crate::player::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
 use crate::{TokenBalance};
@@ -101,7 +101,7 @@ impl Game {
             tactic: Neutral,
         };
 
-        Game {
+        let mut game = Game {
             user1: user_info1,
             user2: user_info2,
             reward,
@@ -111,7 +111,10 @@ impl Game {
             zone_number: 2,
             turns: 0,
             events: vec![],
-        }
+        };
+        generate_an_event(StartGame, &mut game);
+
+        game
     }
 
     fn create_team(user_id: usize) -> Team {
