@@ -4,7 +4,7 @@ use crate::game::{EventToSave, Game};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Rock, Shooter, ToughGuy, TryHarder};
 
-use crate::action::ActionTypes::{Battle, Dangle, Goal, Hit, Move, Pass, PassCatched, PokeCheck, PuckLose, Rebound, Shot};
+use crate::action::ActionTypes::{Battle, Dangle, FaceOff, Goal, Hit, Move, Pass, PassCatched, PokeCheck, PuckLose, Rebound, Save, Shot};
 
 use crate::goalie::Goalie;
 use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
@@ -13,6 +13,7 @@ use crate::{Tactics};
 use crate::user::UserInfo;
 
 const PROBABILITY_PASS_NOT_HAPPENED: i32 = 20;
+const PROBABILITY_SAVE_NOT_HAPPENED: usize = 30;
 
 #[derive(Serialize, Deserialize)]
 #[derive(Clone, Copy, PartialEq, BorshDeserialize, BorshSerialize)]
@@ -221,10 +222,16 @@ impl DoAction for ShotAction {
 
             game.zone_number = 2;
         } else {
-            generate_an_event(Rebound, game);
+            if PROBABILITY_SAVE_NOT_HAPPENED >= Game::get_random_in_range(1, 101) {
+                generate_an_event(Rebound, game);
 
-            let player_pos = get_random_position_after_rebound();
-            battle_by_position(player_pos, game);
+                let player_pos = get_random_position_after_rebound();
+                battle_by_position(player_pos, game);
+            } else {
+                generate_an_event(Save, game);
+                battle_by_position(Center, game);
+                generate_an_event(FaceOff, game);
+            }
 
             generate_an_event(Battle, game);
         }
@@ -462,3 +469,4 @@ fn get_opponent_user(game: &Game) -> &UserInfo {
         &game.user1
     }
 }
+
