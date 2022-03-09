@@ -1,7 +1,8 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use std::collections::HashMap;
-use crate::{Fives, IceTimePriority};
+use crate::{Fives, IceTimePriority, PlayerPosition};
 use crate::goalie::Goalie;
+use crate::player::PlayerRole;
 use crate::team::{Five, Goalies};
 
 pub type TokenId = String;
@@ -22,4 +23,20 @@ pub struct NftFive {
     pub(crate) number: Fives,
     pub(crate) ice_time_priority: IceTimePriority,
     pub(crate) time_field: u8,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum PlayerType {
+    PlayerField,
+    Goalie,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct JsonPlayer {
+    name: String,
+    number: u8,
+    player_type: PlayerType,
+    role: PlayerRole,
+    position: PlayerPosition,
+    stats: vec![],
 }

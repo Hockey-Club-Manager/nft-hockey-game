@@ -22,6 +22,7 @@ mod mint;
 mod nft_core;
 mod token;
 mod enumerable;
+mod burn;
 
 // CUSTOM types
 pub type TokenType = String;
