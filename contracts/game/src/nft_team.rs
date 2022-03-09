@@ -4,6 +4,8 @@ use crate::{Fives, IceTimePriority, PlayerPosition};
 use crate::goalie::Goalie;
 use crate::player::PlayerRole;
 use crate::team::{Five, Goalies};
+use near_sdk::serde::{Deserialize, Serialize};
+
 
 pub type TokenId = String;
 
@@ -33,10 +35,10 @@ pub enum PlayerType {
 
 #[derive(Serialize, Deserialize)]
 pub struct JsonPlayer {
-    name: String,
-    number: u8,
-    player_type: PlayerType,
-    role: PlayerRole,
-    position: PlayerPosition,
-    stats: vec![],
+    pub(crate) name: String,
+    pub(crate) number: u8,
+    pub(crate) player_type: PlayerType,
+    pub(crate) role: PlayerRole,
+    pub(crate) native_position: PlayerPosition,
+    pub(crate) stats: Vec<u8>,
 }

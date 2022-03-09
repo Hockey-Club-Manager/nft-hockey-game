@@ -44,7 +44,7 @@ pub struct Event {
     pub(crate) opponent_team: TeamJson,
 }
 
-#[derive(BorshDeserialize, BorshSerialize, Copy, Clone)]
+#[derive(BorshDeserialize, BorshSerialize, Clone)]
 pub struct EventToSave {
     pub(crate) action: ActionTypes,
     pub(crate) zone_number: i8,
@@ -128,16 +128,16 @@ impl Game {
 
         let mut goalies = HashMap::new();
 
-        let main_goalkeeper = Game::create_goalie_with_random_stats(Wall ,user_id);
-        goalies.insert(Goalies::MainGoalkeeper, main_goalkeeper);
-        goalies.insert(Goalies::SubstituteGoalkeeper, Game::create_goalie_with_random_stats(Post2Post ,user_id));
+        let main_goalkeeper = Game::create_goalie_with_random_stats(String::from("Bakin"), 1, Wall ,user_id);
+        goalies.insert(Goalies::MainGoalkeeper, main_goalkeeper.clone());
+        goalies.insert(Goalies::SubstituteGoalkeeper, Game::create_goalie_with_random_stats(String::from("Noname"), 2, Post2Post ,user_id));
 
 
         Team {
             fives,
             goalies,
             active_five: first_five.clone(),
-            active_goalie: main_goalkeeper,
+            active_goalie: main_goalkeeper.clone(),
             score: 0,
         }
     }
@@ -154,11 +154,11 @@ impl Game {
     fn create_field_players_with_random_stats(user_id: usize) -> HashMap<String, FieldPlayer> {
         let mut field_players = HashMap::new();
 
-        let center = Game::create_field_player_with_random_stats(Shooter, Center,Center, 1.0, user_id);
-        let right_wind = Game::create_field_player_with_random_stats(TryHarder, RightWing, RightWing, 1.0, user_id);
-        let left_wind = Game::create_field_player_with_random_stats(Dangler, LeftWing, LeftWing, 1.0, user_id);
-        let right_defender = Game::create_field_player_with_random_stats(Goon, RightDefender, RightDefender, 1.0, user_id);
-        let left_defender = Game::create_field_player_with_random_stats(Professor, LeftDefender, LeftDefender, 1.0, user_id);
+        let center = Game::create_field_player_with_random_stats(String::from("Schukin"), 10,Shooter, Center,Center, 1.0, user_id);
+        let right_wind = Game::create_field_player_with_random_stats(String::from("Antipov"), 77,TryHarder, RightWing, RightWing, 1.0, user_id);
+        let left_wind = Game::create_field_player_with_random_stats(String::from("Kislyak"), 99, Dangler, LeftWing, LeftWing, 1.0, user_id);
+        let right_defender = Game::create_field_player_with_random_stats(String::from("Ponomarev"), 27,Goon, RightDefender, RightDefender, 1.0, user_id);
+        let left_defender = Game::create_field_player_with_random_stats(String::from("Tsarev"), 31, Professor, LeftDefender, LeftDefender, 1.0, user_id);
 
         field_players.insert(center.get_player_position().to_string(), center);
         field_players.insert(right_wind.get_player_position().to_string(), right_wind);
@@ -168,11 +168,13 @@ impl Game {
         field_players
     }
 
-    fn create_field_player_with_random_stats(role: PlayerRole, native_position: PlayerPosition, position: PlayerPosition, position_coefficient: f32, user_id: usize) -> FieldPlayer {
+    fn create_field_player_with_random_stats(name: String, number: u8, role: PlayerRole, native_position: PlayerPosition, position: PlayerPosition, position_coefficient: f32, user_id: usize) -> FieldPlayer {
         FieldPlayer::new(
             native_position,
             position,
             position_coefficient,
+            name,
+            number,
             role,
             user_id,
             FieldPlayerStats::new(
@@ -184,17 +186,19 @@ impl Game {
             ))
     }
 
-    fn create_goalie_with_random_stats(role: PlayerRole, user_id: usize) -> Goalie {
+    fn create_goalie_with_random_stats(name: String, number: u8, role: PlayerRole, user_id: usize) -> Goalie {
         Goalie::new(
-            role,
-            user_id,
             GoalieStats::new(
                 Game::get_random_in_range(60, 90)  as u128,
                 Game::get_random_in_range(60, 90)  as u128,
                 Game::get_random_in_range(60, 90) as u128,
                 Game::get_random_in_range(60, 90) as u128,
                 Game::get_random_in_range(60, 90) as u128,
-            )
+            ),
+            name,
+            number,
+            role,
+            user_id,
         )
     }
 
@@ -207,8 +211,8 @@ impl Game {
 
 impl Game {
     fn get_center_forward_in_the_zone(&self, user: &UserInfo) -> FieldPlayer {
-        *match user.team.active_five.field_players.get(&Center.to_string()) {
-            Some(player) => player,
+        match user.team.active_five.field_players.get(&Center.to_string()) {
+            Some(player) => player.clone(),
             _ => panic!("Player not found")
         }
     }
@@ -351,12 +355,12 @@ fn battle_by_position(pos: PlayerPosition, game: &mut Game) {
 
     if has_won(player1_stat, player2_stat) {
         match *player1 {
-            Some(player) => game.player_with_puck = Option::from(*player),
+            Some(player) => game.player_with_puck = Option::from(player.clone()),
             _ => panic!("Player not found")
         }
     } else {
         match *player2 {
-            Some(player) => game.player_with_puck = Option::from(*player),
+            Some(player) => game.player_with_puck = Option::from(player.clone()),
             _ => panic!("Player not found")
         }
     }

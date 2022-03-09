@@ -8,11 +8,12 @@ use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, Right
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FieldPlayerStats {
-    skating: u128,
-    shooting: u128,
     pub(crate) strength: f64,
     pub(crate) iq: u128,
     pub(crate) morale: u128,
+
+    skating: u128,
+    shooting: u128,
 }
 
 impl FieldPlayerStats {
@@ -38,33 +39,39 @@ impl FieldPlayerStats {
     pub fn get_morale(&self) -> u128 { self.morale }
 }
 
-#[derive(Clone, Copy, BorshDeserialize, BorshSerialize)]
+#[derive(Clone, BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FieldPlayer {
-    // TODO nft_token
+    pub(crate) stats: FieldPlayerStats,
     pub(crate) native_position: PlayerPosition,
     pub(crate) position: PlayerPosition,
     pub(crate) position_coefficient: f32,
+
+    name: String,
+    number: u8,
     role: PlayerRole,
     user_id: usize,
-    pub(crate) stats: FieldPlayerStats,
 }
 
 impl FieldPlayer {
     pub fn new(native_position: PlayerPosition,
                position: PlayerPosition,
                position_coefficient: f32,
+               name: String,
+               number: u8,
                role: PlayerRole,
                user_id: usize,
                stats: FieldPlayerStats) -> FieldPlayer {
         FieldPlayer {
+            stats,
             native_position,
             position,
             position_coefficient,
+            name,
+            number,
             role,
             user_id,
-            stats,
         }
     }
 

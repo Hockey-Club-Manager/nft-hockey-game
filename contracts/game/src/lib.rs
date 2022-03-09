@@ -227,7 +227,7 @@ impl Hockey {
         };
 
         for i in number_of_rendered_events..game.events.len() {
-            let event = game.events[i];
+            let event = game.events[i].clone();
 
             result.push(Event {
                 my_team: teams.0.clone(),

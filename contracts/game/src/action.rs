@@ -153,7 +153,7 @@ impl DoAction for PassAction {
                 let user = &game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id());
 
                 match user.team.active_five.field_players.get(&pass_to.to_string()) {
-                    Some(player) => game.player_with_puck = Option::from(*player),
+                    Some(player) => game.player_with_puck = Option::from(player.clone()),
                     None => panic!("Player not found")
                 }
 
@@ -193,7 +193,7 @@ impl DoAction for ShotAction {
         let  mut player_stat = get_relative_field_player_stat(&game.player_with_puck.as_ref().unwrap(),
                                                                  game.player_with_puck.as_ref().unwrap().stats.get_shooting() as f64);
 
-        let is_goalie_out = if game.player_with_puck.unwrap().get_user_id() == 1 {
+        let is_goalie_out = if game.player_with_puck.as_ref().unwrap().get_user_id() == 1 {
             &game.user1.is_goalie_out
         } else {
             &game.user2.is_goalie_out
@@ -337,14 +337,14 @@ pub fn get_opponents_field_player(game: &mut Game) -> FieldPlayer {
     let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
 
     return if user_id == 1 {
-        *match game.user2.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()) {
-            Some(player) => player,
+        match game.user2.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()) {
+            Some(player) => player.clone(),
             _ => panic!("Player not found")
         }
     } else {
         let user = &game.user1;
-        *match user.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()){
-            Some(player) => player,
+        match user.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()){
+            Some(player) => player.clone(),
             _ => panic!("Player not found")
         }
     }
@@ -401,9 +401,9 @@ pub fn has_pass_before_shot(game: &Game) -> bool {
 pub fn generate_an_event(action: ActionTypes, game: &mut Game) {
     let new_event = EventToSave {
         action,
-        time: game.last_event_generation_time,
-        zone_number: game.zone_number,
-        player_with_puck: game.player_with_puck,
+        time: game.last_event_generation_time.clone(),
+        zone_number: game.zone_number.clone(),
+        player_with_puck: game.player_with_puck.clone(),
     };
 
     game.events.push(new_event);

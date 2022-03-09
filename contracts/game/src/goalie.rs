@@ -36,23 +36,30 @@ impl GoalieStats {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-#[derive(Serialize, Deserialize, Copy, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Goalie {
-    // TODO nft_token
+    pub(crate) stats: GoalieStats,
+
+    name: String,
+    number: u8,
     role: PlayerRole,
     user_id: usize,
-    pub(crate) stats: GoalieStats,
 }
 
 impl Goalie {
-    pub fn new(role: PlayerRole,
+    pub fn new(stats: GoalieStats,
+               name: String,
+               number: u8,
+               role: PlayerRole,
                user_id: usize,
-               stats: GoalieStats) -> Goalie {
+              ) -> Goalie {
         Goalie {
+            stats,
+            name,
+            number,
             role,
             user_id,
-            stats,
         }
     }
 }
