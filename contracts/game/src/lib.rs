@@ -6,6 +6,7 @@ use crate::action::generate_an_event;
 
 use crate::game::{Event, Game, GameState, Tactics};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
+use crate::nft_team::NftTeam;
 use crate::player::{PlayerPosition};
 use crate::player_field::FieldPlayer;
 use crate::team::{Fives, IceTimePriority, swap_positions, TeamJson};
@@ -19,6 +20,7 @@ mod player_field;
 mod action;
 mod manager;
 mod team;
+mod nft_team;
 
 type GameId = u64;
 
@@ -39,6 +41,7 @@ enum StorageKey {
     TotalAffiliateRewards{ account_id: AccountId},
     WhitelistedTokens,
     FieldPlayers,
+    NftTeamPerOwner,
 }
 
 #[near_bindgen]
@@ -49,6 +52,8 @@ struct Hockey {
     stats: UnorderedMap<AccountId, VStats>,
     available_games: UnorderedMap<GameId, (AccountId, AccountId)>,
     whitelisted_tokens: LookupSet<AccountId>,
+
+    nft_team_per_owner: LookupMap<AccountId, NftTeam>,
 
     next_game_id: GameId,
     service_fee: Balance,
@@ -64,6 +69,8 @@ impl Hockey {
             stats: UnorderedMap::new(StorageKey::Stats),
             available_games: UnorderedMap::new(StorageKey::AvailableGames),
             whitelisted_tokens: LookupSet::new(StorageKey::WhitelistedTokens),
+
+            nft_team_per_owner: LookupMap::new(StorageKey::NftTeamPerOwner),
 
             next_game_id: 0,
             service_fee: 0,
