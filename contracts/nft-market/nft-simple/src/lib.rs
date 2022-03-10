@@ -6,7 +6,7 @@ use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap, UnorderedSet};
 use near_sdk::json_types::{Base64VecU8, ValidAccountId, U64, U128};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{
-    env, near_bindgen, AccountId, Balance, CryptoHash, PanicOnDefault, Promise, PromiseOrValue, StorageUsage,
+    env, near_bindgen, AccountId, Balance, CryptoHash, PanicOnDefault, Promise, PromiseOrValue, StorageUsage, BorshStorageKey,
 };
 
 use crate::internal::*;
@@ -15,6 +15,7 @@ pub use crate::mint::*;
 pub use crate::nft_core::*;
 pub use crate::token::*;
 pub use crate::enumerable::*;
+use crate::nft_team::NftTeam;
 
 mod internal;
 mod metadata;
@@ -23,6 +24,7 @@ mod nft_core;
 mod token;
 mod enumerable;
 mod burn;
+mod nft_team;
 
 // CUSTOM types
 pub type TokenType = String;
@@ -35,6 +37,8 @@ near_sdk::setup_alloc!();
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
+    pub nft_team_per_owner: LookupMap<AccountId, NftTeam>,
+
     pub tokens_per_owner: LookupMap<AccountId, UnorderedSet<TokenId>>,
 
     pub tokens_by_id: LookupMap<TokenId, Token>,
@@ -56,7 +60,7 @@ pub struct Contract {
 }
 
 /// Helper structure to for keys of the persistent collections.
-#[derive(BorshSerialize)]
+#[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKey {
     TokensPerOwner,
     TokenPerOwnerInner { account_id_hash: CryptoHash },
@@ -66,6 +70,7 @@ pub enum StorageKey {
     TokensPerType,
     TokensPerTypeInner { token_type_hash: CryptoHash },
     TokenTypesLocked,
+    NftTeamPerOwner,
 }
 
 #[near_bindgen]
@@ -73,6 +78,8 @@ impl Contract {
     #[init]
     pub fn new(owner_id: ValidAccountId, metadata: NFTContractMetadata, supply_cap_by_type: TypeSupplyCaps, locked: Option<bool>) -> Self {
         let mut this = Self {
+            nft_team_per_owner: LookupMap::new(StorageKey::NftTeamPerOwner),
+
             tokens_per_owner: LookupMap::new(StorageKey::TokensPerOwner.try_to_vec().unwrap()),
             tokens_by_id: LookupMap::new(StorageKey::TokensById.try_to_vec().unwrap()),
             token_metadata_by_id: UnorderedMap::new(

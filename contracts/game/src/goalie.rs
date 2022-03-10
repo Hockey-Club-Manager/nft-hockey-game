@@ -1,5 +1,5 @@
+use crate::*;
 use crate::player::{Player, PlayerRole};
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -39,8 +39,8 @@ impl GoalieStats {
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Goalie {
+    pub(crate) img: SRC,
     pub(crate) stats: GoalieStats,
-
     name: String,
     number: u8,
     role: PlayerRole,
@@ -53,8 +53,10 @@ impl Goalie {
                number: u8,
                role: PlayerRole,
                user_id: usize,
-              ) -> Goalie {
+               img: SRC
+                ) -> Goalie {
         Goalie {
+            img,
             stats,
             name,
             number,

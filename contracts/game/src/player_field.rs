@@ -1,7 +1,6 @@
-use crate::player::{Player, PlayerRole};
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
-use crate::PlayerPosition;
+use crate::player::{Player, PlayerRole};
 use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
 #[derive(Clone, Copy, BorshDeserialize, BorshSerialize)]
@@ -43,6 +42,7 @@ impl FieldPlayerStats {
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FieldPlayer {
+    pub(crate) img: SRC,
     pub(crate) stats: FieldPlayerStats,
     pub(crate) native_position: PlayerPosition,
     pub(crate) position: PlayerPosition,
@@ -62,8 +62,10 @@ impl FieldPlayer {
                number: u8,
                role: PlayerRole,
                user_id: usize,
-               stats: FieldPlayerStats) -> FieldPlayer {
+               stats: FieldPlayerStats,
+               img: SRC) -> FieldPlayer {
         FieldPlayer {
+            img,
             stats,
             native_position,
             position,

@@ -1,3 +1,4 @@
+use crate::*;
 use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, env, Timestamp};
@@ -128,9 +129,9 @@ impl Game {
 
         let mut goalies = HashMap::new();
 
-        let main_goalkeeper = Game::create_goalie_with_random_stats(String::from("Bakin"), 1, Wall ,user_id);
+        let main_goalkeeper = Game::create_goalie_with_random_stats(String::from("Bakin"), 1, Wall ,user_id, String::from(""));
         goalies.insert(Goalies::MainGoalkeeper, main_goalkeeper.clone());
-        goalies.insert(Goalies::SubstituteGoalkeeper, Game::create_goalie_with_random_stats(String::from("Noname"), 2, Post2Post ,user_id));
+        goalies.insert(Goalies::SubstituteGoalkeeper, Game::create_goalie_with_random_stats(String::from("Noname"), 2, Post2Post ,user_id, String::from("")));
 
 
         Team {
@@ -154,11 +155,11 @@ impl Game {
     fn create_field_players_with_random_stats(user_id: usize) -> HashMap<String, FieldPlayer> {
         let mut field_players = HashMap::new();
 
-        let center = Game::create_field_player_with_random_stats(String::from("Schukin"), 10,Shooter, Center,Center, 1.0, user_id);
-        let right_wind = Game::create_field_player_with_random_stats(String::from("Antipov"), 77,TryHarder, RightWing, RightWing, 1.0, user_id);
-        let left_wind = Game::create_field_player_with_random_stats(String::from("Kislyak"), 99, Dangler, LeftWing, LeftWing, 1.0, user_id);
-        let right_defender = Game::create_field_player_with_random_stats(String::from("Ponomarev"), 27,Goon, RightDefender, RightDefender, 1.0, user_id);
-        let left_defender = Game::create_field_player_with_random_stats(String::from("Tsarev"), 31, Professor, LeftDefender, LeftDefender, 1.0, user_id);
+        let center = Game::create_field_player_with_random_stats(String::from("Schukin"), 10,Shooter, Center,Center, 1.0, user_id, String::from(""));
+        let right_wind = Game::create_field_player_with_random_stats(String::from("Antipov"), 77,TryHarder, RightWing, RightWing, 1.0, user_id, String::from(""));
+        let left_wind = Game::create_field_player_with_random_stats(String::from("Kislyak"), 99, Dangler, LeftWing, LeftWing, 1.0, user_id, String::from(""));
+        let right_defender = Game::create_field_player_with_random_stats(String::from("Ponomarev"), 27,Goon, RightDefender, RightDefender, 1.0, user_id, String::from(""));
+        let left_defender = Game::create_field_player_with_random_stats(String::from("Tsarev"), 31, Professor, LeftDefender, LeftDefender, 1.0, user_id, String::from(""));
 
         field_players.insert(center.get_player_position().to_string(), center);
         field_players.insert(right_wind.get_player_position().to_string(), right_wind);
@@ -168,7 +169,9 @@ impl Game {
         field_players
     }
 
-    fn create_field_player_with_random_stats(name: String, number: u8, role: PlayerRole, native_position: PlayerPosition, position: PlayerPosition, position_coefficient: f32, user_id: usize) -> FieldPlayer {
+    fn create_field_player_with_random_stats(name: String, number: u8, role: PlayerRole,
+                                             native_position: PlayerPosition, position: PlayerPosition,
+                                             position_coefficient: f32, user_id: usize, img: SRC) -> FieldPlayer {
         FieldPlayer::new(
             native_position,
             position,
@@ -183,10 +186,12 @@ impl Game {
                 Game::get_random_in_range(60, 90) as f64,
                 Game::get_random_in_range(60, 90) as u128,
                 Game::get_random_in_range(60, 90) as u128
-            ))
+            ),
+            img,
+        )
     }
 
-    fn create_goalie_with_random_stats(name: String, number: u8, role: PlayerRole, user_id: usize) -> Goalie {
+    fn create_goalie_with_random_stats(name: String, number: u8, role: PlayerRole, user_id: usize, img: SRC) -> Goalie {
         Goalie::new(
             GoalieStats::new(
                 Game::get_random_in_range(60, 90)  as u128,
@@ -199,6 +204,7 @@ impl Game {
             number,
             role,
             user_id,
+            img,
         )
     }
 
