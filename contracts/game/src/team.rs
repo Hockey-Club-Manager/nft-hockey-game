@@ -1,8 +1,10 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::{FieldPlayer, UserInfo};
+use near_sdk::json_types::Base64VecU8;
+use crate::{FieldPlayer, PlayerPosition, UserInfo};
 use crate::goalie::Goalie;
+use crate::player::PlayerRole;
 use crate::team::Fives::{First, Fourth, Second, Third};
 use crate::team::IceTimePriority::{HighPriority, LowPriority, Normal, SuperHighPriority, SuperLowPriority};
 
@@ -108,6 +110,56 @@ pub struct Five {
     pub(crate) number: Fives,
     pub(crate) ice_time_priority: IceTimePriority,
     pub(crate) time_field: u8,
+}
+
+#[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct TokenMetadata {
+    pub title: Option<String>, // ex. "Arch Nemesis: Mail Carrier" or "Parcel #5055"
+    pub description: Option<String>, // free-form description
+    pub media: Option<String>, // URL to associated media, preferably to decentralized, content-addressed storage
+    pub media_hash: Option<Base64VecU8>, // Base64-encoded sha256 hash of content referenced by the `media` field. Required if `media` is included.
+    pub issued_at: Option<u64>, // When token was issued or minted, Unix epoch in milliseconds
+    pub expires_at: Option<u64>, // When token expires, Unix epoch in milliseconds
+    pub starts_at: Option<u64>, // When token starts being valid, Unix epoch in milliseconds
+    pub updated_at: Option<u64>, // When token was last updated, Unix epoch in milliseconds
+    pub extra: Option<String>, // anything extra the NFT wants to store on-chain. Can be stringified JSON.
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct TeamMetadata {
+    pub(crate) fives: HashMap<Fives, FiveMetadata>,
+    pub(crate) goalies: HashMap<Goalies, TokenMetadata>,
+    pub(crate) active_five: FiveMetadata,
+
+    pub(crate) active_goalie: TokenMetadata,
+    pub(crate) score: u8,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub struct FiveMetadata {
+    pub(crate) field_players: HashMap<String, TokenMetadata>,
+    pub(crate) number: Fives,
+    pub(crate) ice_time_priority: IceTimePriority,
+    pub(crate) time_field: u8,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum PlayerType {
+    PlayerField,
+    Goalie,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct JsonPlayer {
+    pub(crate) name: String,
+    pub(crate) number: u8,
+    pub(crate) player_type: PlayerType,
+    pub(crate) role: PlayerRole,
+    pub(crate) native_position: PlayerPosition,
+    pub(crate) stats: Vec<u8>,
 }
 
 pub fn swap_positions(user_info: &mut UserInfo, number_five: Fives, position1: String, position2: String) {

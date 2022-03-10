@@ -6,7 +6,6 @@ use crate::action::generate_an_event;
 
 use crate::game::{Event, Game, GameState, Tactics};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
-use crate::nft_team::{NftTeam, TokenId};
 use crate::player::{PlayerPosition};
 use crate::player_field::FieldPlayer;
 use crate::team::{Fives, IceTimePriority, swap_positions, TeamJson};
@@ -20,7 +19,6 @@ mod player_field;
 mod action;
 mod manager;
 mod team;
-mod nft_team;
 
 type GameId = u64;
 type SRC = String;
@@ -378,10 +376,6 @@ impl Hockey {
         }
 
         self.games.insert(&game_id, &game);
-    }
-
-    pub fn set_position(&mut self, token_id: TokenId) {
-
     }
 }
 

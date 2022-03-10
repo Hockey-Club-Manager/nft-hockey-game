@@ -59,7 +59,7 @@ pub struct TeamMetadata {
     pub(crate) goalies: HashMap<Goalies, TokenMetadata>,
     pub(crate) active_five: FiveMetadata,
 
-    pub(crate) active_goalie: TokenId,
+    pub(crate) active_goalie: TokenMetadata,
     pub(crate) score: u8,
 }
 
