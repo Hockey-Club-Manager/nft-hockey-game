@@ -34,7 +34,7 @@ impl fmt::Display for PlayerPosition {
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub enum PlayerRole {
-    // Winger
+    // Forward
     Passer,
     Shooter,
     TryHarder,
