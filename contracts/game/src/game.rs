@@ -251,6 +251,7 @@ impl Game {
         let action = Action;
 
         match action_type {
+            StartGame => self.face_off(),
             Goal => self.face_off(),
             Save => self.face_off(),
             EndOfPeriod => self.face_off(),
