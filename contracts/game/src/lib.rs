@@ -193,7 +193,6 @@ impl Hockey {
             self.games.insert(&game_id, &game);
         }
 
-        log!("get_events");
         self.get_events(number_of_rendered_events, game)
     }
 

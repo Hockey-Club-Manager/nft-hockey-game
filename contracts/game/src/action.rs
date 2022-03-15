@@ -99,7 +99,7 @@ impl Action {
             percent += actions[i];
             action_probability.push(percent);
         }
-        percent = percent / 100;
+        percent = 100 / percent;
 
         let rnd = Game::get_random_in_range(1, 101) as i32;
 
@@ -245,10 +245,9 @@ impl DoAction for MoveAction {
             relative_side_zone = -1;
         }
 
+        generate_an_event(Move, game);
         if has_won(player_stat, opponent_stat) {
             game.zone_number += relative_side_zone;
-
-            generate_an_event(Move, game);
         } else {
             game.player_with_puck = Option::from(opponent);
             generate_an_event(Hit, game);
@@ -270,10 +269,10 @@ impl DoAction for DangleAction {
             relative_side_zone = -1;
         }
 
+        generate_an_event(Dangle, game);
+
         if has_won(player_stat, opponent_stat) {
             game.zone_number += relative_side_zone;
-
-            generate_an_event(Dangle, game);
         } else {
             game.player_with_puck = Option::from(opponent);
 

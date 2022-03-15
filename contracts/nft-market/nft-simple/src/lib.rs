@@ -15,7 +15,7 @@ pub use crate::mint::*;
 pub use crate::nft_core::*;
 pub use crate::token::*;
 pub use crate::enumerable::*;
-use crate::nft_team::NftTeam;
+use crate::nft_team::{NftTeam, TeamMetadata};
 
 mod internal;
 mod metadata;
@@ -37,6 +37,7 @@ near_sdk::setup_alloc!();
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
+    pub free_team_per_owner: LookupMap<AccountId, TeamMetadata>,
     pub nft_team_per_owner: LookupMap<AccountId, NftTeam>,
 
     pub tokens_per_owner: LookupMap<AccountId, UnorderedSet<TokenId>>,
@@ -70,6 +71,7 @@ pub enum StorageKey {
     TokensPerType,
     TokensPerTypeInner { token_type_hash: CryptoHash },
     TokenTypesLocked,
+    FreeTeamPerOwner,
     NftTeamPerOwner,
 }
 
@@ -78,6 +80,7 @@ impl Contract {
     #[init]
     pub fn new(owner_id: ValidAccountId, metadata: NFTContractMetadata, supply_cap_by_type: TypeSupplyCaps, locked: Option<bool>) -> Self {
         let mut this = Self {
+            free_team_per_owner: LookupMap::new(StorageKey::FreeTeamPerOwner),
             nft_team_per_owner: LookupMap::new(StorageKey::NftTeamPerOwner),
 
             tokens_per_owner: LookupMap::new(StorageKey::TokensPerOwner.try_to_vec().unwrap()),
