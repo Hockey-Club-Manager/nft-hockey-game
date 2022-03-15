@@ -93,10 +93,6 @@ pub enum Goalies {
 pub struct NftTeam {
     pub(crate) fives: HashMap<Fives, NftFive>,
     pub(crate) goalies: HashMap<Goalies, TokenId>,
-    pub(crate) active_five: NftFive,
-
-    pub(crate) active_goalie: TokenId,
-    pub(crate) score: u8,
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -104,7 +100,6 @@ pub struct NftFive {
     pub(crate) field_players: HashMap<PlayerPosition, TokenId>,
     pub(crate) number: Fives,
     pub(crate) ice_time_priority: IceTimePriority,
-    pub(crate) time_field: u8,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -113,10 +108,6 @@ pub struct NftFive {
 pub struct TeamMetadata {
     pub(crate) fives: HashMap<Fives, FiveMetadata>,
     pub(crate) goalies: HashMap<Goalies, TokenMetadata>,
-    pub(crate) active_five: FiveMetadata,
-
-    pub(crate) active_goalie: TokenMetadata,
-    pub(crate) score: u8,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -126,18 +117,59 @@ pub struct FiveMetadata {
     pub(crate) field_players: HashMap<PlayerPosition, TokenMetadata>,
     pub(crate) number: Fives,
     pub(crate) ice_time_priority: IceTimePriority,
-    pub(crate) time_field: u8,
 }
 
 #[near_bindgen]
 impl Contract {
-    pub fn get_owner_team(&mut self) {
+    pub fn get_owner_team(&mut self) -> TeamMetadata {
         let account_id = env::predecessor_account_id();
 
-        let free_team = match self.free_team_per_owner.get(&account_id) {
+        let mut team = match self.free_team_per_owner.get(&account_id) {
             Some(team) => team,
-            None => self.create_free_team(account_id),
+            None => self.create_free_team(account_id.clone()),
         };
+
+        let nft_team = match self.nft_team_per_owner.get(&account_id) {
+            Some(nft_team) => nft_team,
+            None => {
+                let team = NftTeam {
+                    fives: HashMap::new(),
+                    goalies: HashMap::new(),
+                };
+                self.nft_team_per_owner.insert(&account_id, &team);
+                team
+            }
+        };
+
+        for (fives, five) in nft_team.fives {
+            match team.fives.get_mut(&fives)  {
+                Some(free_five) => {
+                    free_five.ice_time_priority = five.ice_time_priority;
+                    free_five.number = five.number;
+
+                    for (player_position, toke_id) in five.field_players {
+                        match self.token_metadata_by_id.get(&toke_id){
+                            Some(token_metadata) => {
+                                free_five.field_players.insert(player_position, token_metadata);
+                            },
+                            None => {}
+                        };
+                    }
+                }
+                None => {}
+            };
+        }
+
+        for (goalies, toke_id) in nft_team.goalies {
+            match self.token_metadata_by_id.get(&toke_id) {
+                Some(token_metadata) => {
+                    team.goalies.insert(goalies, token_metadata);
+                },
+                None => {}
+            };
+        }
+
+        team
     }
 
     fn create_free_team(&mut self, account_id: AccountId) -> TeamMetadata {
@@ -159,9 +191,6 @@ impl Contract {
         let free_team = TeamMetadata {
             fives,
             goalies,
-            active_five: first_five.clone(),
-            active_goalie: main_goalkeeper.clone(),
-            score: 0,
         };
 
         self.free_team_per_owner.insert(&account_id, &free_team);
@@ -174,7 +203,6 @@ impl Contract {
             field_players: self.create_field_players_with_random_stats(),
             number,
             ice_time_priority,
-            time_field: 0,
         }
     }
 
