@@ -121,6 +121,20 @@ pub struct FiveMetadata {
 
 #[near_bindgen]
 impl Contract {
+    pub fn insert_nft_field_player_to_nft_team(&mut self, five: Fives, player_position: PlayerPosition, token_id: TokenId) {
+        let account_id = env::predecessor_account_id();
+
+        match &mut self.nft_team_per_owner.get(&account_id) {
+            Some(nft_team) => {
+               match nft_team.fives.get_mut(&five) {
+                   Some(five) => five.field_players.insert(player_position, token_id),
+                   None => panic!("Five not found")
+               }
+            },
+            None => panic!("Team not found")
+        };
+    }
+
     pub fn get_owner_team(&mut self) -> TeamMetadata {
         let account_id = env::predecessor_account_id();
 
@@ -183,9 +197,9 @@ impl Contract {
 
         let mut goalies = HashMap::new();
 
-        let main_goalkeeper = self.create_goalie_with_random_stats(String::from("Bakin"), 1, Wall, 67, 76, 86, 81, 90);
+        let main_goalkeeper = self.create_goalie(String::from("Bakin"), 1, Wall, 67, 76, 86, 81, 90);
         goalies.insert(Goalies::MainGoalkeeper, main_goalkeeper.clone());
-        goalies.insert(Goalies::SubstituteGoalkeeper, self.create_goalie_with_random_stats(String::from("Noname"), 2, Post2Post, 83, 75, 88, 75, 67));
+        goalies.insert(Goalies::SubstituteGoalkeeper, self.create_goalie(String::from("Noname"), 2, Post2Post, 83, 75, 88, 75, 67));
 
 
         let free_team = TeamMetadata {
@@ -200,24 +214,24 @@ impl Contract {
 
     fn create_five(&self, number: Fives, ice_time_priority: IceTimePriority, strength: u128, iq: u128, morale: u128, skating: u128, shooting: u128) -> FiveMetadata {
         FiveMetadata {
-            field_players: self.create_field_players_with_random_stats(strength, iq, morale, skating, shooting),
+            field_players: self.create_field_players(strength, iq, morale, skating, shooting),
             number,
             ice_time_priority,
         }
     }
 
-    fn create_field_players_with_random_stats(&self, strength: u128, iq: u128, morale: u128, skating: u128, shooting: u128) -> HashMap<PlayerPosition, TokenMetadata> {
+    fn create_field_players(&self, strength: u128, iq: u128, morale: u128, skating: u128, shooting: u128) -> HashMap<PlayerPosition, TokenMetadata> {
         let mut field_players = HashMap::new();
 
-        let center = self.create_field_player_with_random_stats(String::from("Schukin"), 10,Shooter, Center,
+        let center = self.create_field_player(String::from("Schukin"), 10,Shooter, Center,
                                                                 strength, iq, morale, skating, shooting);
-        let right_wind = self.create_field_player_with_random_stats(String::from("Antipov"), 77,TryHarder, RightWing,
+        let right_wind = self.create_field_player(String::from("Antipov"), 77,TryHarder, RightWing,
                                                                     strength, iq, morale, skating, shooting);
-        let left_wind = self.create_field_player_with_random_stats(String::from("Kislyak"), 99, Dangler, LeftWing,
+        let left_wind = self.create_field_player(String::from("Kislyak"), 99, Dangler, LeftWing,
                                                                    strength, iq, morale, skating, shooting);
-        let right_defender = self.create_field_player_with_random_stats(String::from("Ponomarev"), 27,Goon, RightDefender,
+        let right_defender = self.create_field_player(String::from("Ponomarev"), 27,Goon, RightDefender,
                                                                         strength, iq, morale, skating, shooting);
-        let left_defender = self.create_field_player_with_random_stats(String::from("Tsarev"), 31, Professor, LeftDefender,
+        let left_defender = self.create_field_player(String::from("Tsarev"), 31, Professor, LeftDefender,
                                                                        strength, iq, morale, skating, shooting);
 
         field_players.insert(Center, center);
@@ -228,7 +242,7 @@ impl Contract {
         field_players
     }
 
-    fn create_field_player_with_random_stats(&self, name: String, number: u8, role: PlayerRole, position: PlayerPosition,
+    fn create_field_player(&self, name: String, number: u8, role: PlayerRole, position: PlayerPosition,
                                              strength: u128, iq: u128, morale: u128, skating: u128, shooting: u128) -> TokenMetadata {
         let stats = vec![strength, iq, skating, shooting, morale];
 
@@ -244,7 +258,7 @@ impl Contract {
                                  Option::from(serde_json::to_string(&extra).unwrap()))
     }
 
-    fn create_goalie_with_random_stats(&self, name: String, number: u8, role: PlayerRole,
+    fn create_goalie(&self, name: String, number: u8, role: PlayerRole,
                                        glove_and_blocker: u128, pads:u128, stand: u128, stretch: u128, morale: u128) -> TokenMetadata {
         let stats = vec![glove_and_blocker, pads, stand, stretch, morale];
 
