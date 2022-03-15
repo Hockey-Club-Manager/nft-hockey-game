@@ -175,17 +175,17 @@ impl Contract {
     fn create_free_team(&mut self, account_id: AccountId) -> TeamMetadata {
         let mut fives = HashMap::new();
 
-        let first_five = self.create_five(Fives::First, SuperHighPriority);
+        let first_five = self.create_five(Fives::First, SuperHighPriority, 65, 75, 88, 76, 69);
         fives.insert(Fives::First, first_five.clone());
-        fives.insert(Fives::Second, self.create_five(Fives::Second, HighPriority));
-        fives.insert(Fives::Third, self.create_five(Fives::Third, Normal));
-        fives.insert(Fives::Fourth, self.create_five(Fives::Fourth, LowPriority));
+        fives.insert(Fives::Second, self.create_five(Fives::Second, HighPriority, 71, 73, 68, 90, 72));
+        fives.insert(Fives::Third, self.create_five(Fives::Third, Normal, 66, 81, 84, 67, 69));
+        fives.insert(Fives::Fourth, self.create_five(Fives::Fourth, LowPriority, 87, 75, 89, 65, 81));
 
         let mut goalies = HashMap::new();
 
-        let main_goalkeeper = self.create_goalie_with_random_stats(String::from("Bakin"), 1, Wall);
+        let main_goalkeeper = self.create_goalie_with_random_stats(String::from("Bakin"), 1, Wall, 67, 76, 86, 81, 90);
         goalies.insert(Goalies::MainGoalkeeper, main_goalkeeper.clone());
-        goalies.insert(Goalies::SubstituteGoalkeeper, self.create_goalie_with_random_stats(String::from("Noname"), 2, Post2Post));
+        goalies.insert(Goalies::SubstituteGoalkeeper, self.create_goalie_with_random_stats(String::from("Noname"), 2, Post2Post, 83, 75, 88, 75, 67));
 
 
         let free_team = TeamMetadata {
@@ -198,22 +198,27 @@ impl Contract {
         free_team
     }
 
-    fn create_five(&self, number: Fives, ice_time_priority: IceTimePriority) -> FiveMetadata {
+    fn create_five(&self, number: Fives, ice_time_priority: IceTimePriority, strength: u128, iq: u128, morale: u128, skating: u128, shooting: u128) -> FiveMetadata {
         FiveMetadata {
-            field_players: self.create_field_players_with_random_stats(),
+            field_players: self.create_field_players_with_random_stats(strength, iq, morale, skating, shooting),
             number,
             ice_time_priority,
         }
     }
 
-    fn create_field_players_with_random_stats(&self) -> HashMap<PlayerPosition, TokenMetadata> {
+    fn create_field_players_with_random_stats(&self, strength: u128, iq: u128, morale: u128, skating: u128, shooting: u128) -> HashMap<PlayerPosition, TokenMetadata> {
         let mut field_players = HashMap::new();
 
-        let center = self.create_field_player_with_random_stats(String::from("Schukin"), 10,Shooter, Center);
-        let right_wind = self.create_field_player_with_random_stats(String::from("Antipov"), 77,TryHarder, RightWing);
-        let left_wind = self.create_field_player_with_random_stats(String::from("Kislyak"), 99, Dangler, LeftWing);
-        let right_defender = self.create_field_player_with_random_stats(String::from("Ponomarev"), 27,Goon, RightDefender);
-        let left_defender = self.create_field_player_with_random_stats(String::from("Tsarev"), 31, Professor, LeftDefender);
+        let center = self.create_field_player_with_random_stats(String::from("Schukin"), 10,Shooter, Center,
+                                                                strength, iq, morale, skating, shooting);
+        let right_wind = self.create_field_player_with_random_stats(String::from("Antipov"), 77,TryHarder, RightWing,
+                                                                    strength, iq, morale, skating, shooting);
+        let left_wind = self.create_field_player_with_random_stats(String::from("Kislyak"), 99, Dangler, LeftWing,
+                                                                   strength, iq, morale, skating, shooting);
+        let right_defender = self.create_field_player_with_random_stats(String::from("Ponomarev"), 27,Goon, RightDefender,
+                                                                        strength, iq, morale, skating, shooting);
+        let left_defender = self.create_field_player_with_random_stats(String::from("Tsarev"), 31, Professor, LeftDefender,
+                                                                       strength, iq, morale, skating, shooting);
 
         field_players.insert(Center, center);
         field_players.insert(RightWing, right_wind);
@@ -223,13 +228,8 @@ impl Contract {
         field_players
     }
 
-    fn create_field_player_with_random_stats(&self, name: String, number: u8, role: PlayerRole, position: PlayerPosition) -> TokenMetadata {
-        let strength = self.get_random_in_range(60, 90)  as u128;
-        let iq = self.get_random_in_range(60, 90)  as u128;
-        let morale = self.get_random_in_range(60, 90) as u128;
-        let skating = self.get_random_in_range(60, 90) as u128;
-        let shooting = self.get_random_in_range(60, 90) as u128;
-
+    fn create_field_player_with_random_stats(&self, name: String, number: u8, role: PlayerRole, position: PlayerPosition,
+                                             strength: u128, iq: u128, morale: u128, skating: u128, shooting: u128) -> TokenMetadata {
         let stats = vec![strength, iq, skating, shooting, morale];
 
         let extra = Extra {
@@ -244,13 +244,8 @@ impl Contract {
                                  Option::from(serde_json::to_string(&extra).unwrap()))
     }
 
-    fn create_goalie_with_random_stats(&self, name: String, number: u8, role: PlayerRole) -> TokenMetadata {
-        let glove_and_blocker = self.get_random_in_range(60, 90)  as u128;
-        let pads = self.get_random_in_range(60, 90)  as u128;
-        let stand = self.get_random_in_range(60, 90) as u128;
-        let stretch = self.get_random_in_range(60, 90) as u128;
-        let morale = self.get_random_in_range(60, 90) as u128;
-
+    fn create_goalie_with_random_stats(&self, name: String, number: u8, role: PlayerRole,
+                                       glove_and_blocker: u128, pads:u128, stand: u128, stretch: u128, morale: u128) -> TokenMetadata {
         let stats = vec![glove_and_blocker, pads, stand, stretch, morale];
 
         let extra = Extra {
@@ -277,11 +272,5 @@ impl Contract {
             starts_at: None,
             updated_at: None,
         }
-    }
-
-    fn get_random_in_range(&self, min: usize, max: usize) -> usize {
-        let random = *env::random_seed().get(0).unwrap();
-        let random_in_range = (random as f64 / 256.0) * (max - min) as f64 + min as f64;
-        random_in_range.floor() as usize
     }
 }
