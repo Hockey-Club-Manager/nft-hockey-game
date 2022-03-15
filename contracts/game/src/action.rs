@@ -99,7 +99,7 @@ impl Action {
             percent += actions[i];
             action_probability.push(percent);
         }
-        percent /= 100;
+        percent = percent / 100;
 
         let rnd = Game::get_random_in_range(1, 101) as i32;
 
