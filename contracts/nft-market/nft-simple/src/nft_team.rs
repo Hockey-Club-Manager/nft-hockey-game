@@ -135,6 +135,17 @@ impl Contract {
         };
     }
 
+    pub fn insert_nft_goalie_to_nft_team(&mut self, priority: Goalies, token_id: TokenId) {
+        let account_id = env::predecessor_account_id();
+
+        match &mut self.nft_team_per_owner.get(&account_id) {
+            Some(nft_team) => {
+                nft_team.goalies.insert(priority, token_id);
+            },
+            None => panic!("Team not found")
+        };
+    }
+
     pub fn get_owner_team(&mut self) -> TeamMetadata {
         let account_id = env::predecessor_account_id();
 
