@@ -218,7 +218,7 @@ impl Game {
 
 impl Game {
     fn get_center_forward_in_the_zone(&self, user: &UserInfo) -> FieldPlayer {
-        match user.team.active_five.field_players.get(&Center.to_string()) {
+        match user.team.active_five.field_players.get(&Center) {
             Some(player) => player.clone(),
             _ => panic!("Player not found")
         }
@@ -348,8 +348,8 @@ fn get_random_position_after_rebound() -> PlayerPosition {
 }
 
 fn battle_by_position(pos: PlayerPosition, game: &mut Game) {
-    let player1 = &game.user1.team.active_five.field_players.get(&pos.to_string());
-    let player2 = &game.user2.team.active_five.field_players.get(&pos.to_string());
+    let player1 = &game.user1.team.active_five.field_players.get(&pos);
+    let player2 = &game.user2.team.active_five.field_players.get(&pos);
 
     let player1_stat = match player1 {
         Some(player) => get_relative_field_player_stat(player, player.stats.strength),

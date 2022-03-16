@@ -152,7 +152,7 @@ impl DoAction for PassAction {
 
                 let user = &game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id());
 
-                match user.team.active_five.field_players.get(&pass_to.to_string()) {
+                match user.team.active_five.field_players.get(&pass_to) {
                     Some(player) => game.player_with_puck = Option::from(player.clone()),
                     None => panic!("Player not found")
                 }
@@ -336,13 +336,13 @@ pub fn get_opponents_field_player(game: &mut Game) -> FieldPlayer {
     let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
 
     return if user_id == 1 {
-        match game.user2.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()) {
+        match game.user2.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position) {
             Some(player) => player.clone(),
             _ => panic!("Player not found")
         }
     } else {
         let user = &game.user1;
-        match user.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position.to_string()){
+        match user.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position){
             Some(player) => player.clone(),
             _ => panic!("Player not found")
         }

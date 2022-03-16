@@ -387,7 +387,7 @@ impl Hockey {
         self.games.insert(&game_id, &game);
     }
 
-    pub fn change_positions(&mut self, number_five: Fives, game_id: GameId, position1: String, position2: String) {
+    pub fn change_positions(&mut self, number_five: Fives, game_id: GameId, position1: PlayerPosition, position2: PlayerPosition) {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id);
 

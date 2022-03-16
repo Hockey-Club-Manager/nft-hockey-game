@@ -38,7 +38,7 @@ pub struct TeamMetadata {
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FiveMetadata {
-    pub(crate) field_players: HashMap<String, TokenMetadata>,
+    pub(crate) field_players: HashMap<PlayerPosition, TokenMetadata>,
     pub(crate) number: Fives,
     pub(crate) ice_time_priority: IceTimePriority,
 }
@@ -78,7 +78,7 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
     }
 
     Team {
-        fives,
+        fives: fives.clone(),
         goalies: goalies.clone(),
         active_five: fives.get(&Fives::First).unwrap().clone(),
         active_goalie: goalies.get(&Goalies::MainGoalkeeper).unwrap().clone(),
@@ -86,7 +86,7 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
     }
 }
 
-fn to_field_player(field_player_metadata: TokenMetadata, position: String, user_id: usize) -> FieldPlayer {
+fn to_field_player(field_player_metadata: TokenMetadata, position: PlayerPosition, user_id: usize) -> FieldPlayer {
     let extra: Extra = match field_player_metadata.extra {
         Some(extra) => serde_json::from_str(&extra).unwrap(),
         None => panic!("Extra not found"),
@@ -105,7 +105,7 @@ fn to_field_player(field_player_metadata: TokenMetadata, position: String, user_
 
     FieldPlayer::new(
         extra.player_position,
-        position.into(),
+        position,
         field_player_metadata.title.unwrap(),
         extra.number,
         extra.player_role,

@@ -29,7 +29,7 @@ pub enum Goalies {
     SubstituteGoalkeeper,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Clone, BorshDeserialize, BorshSerialize)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Clone, Copy, BorshDeserialize, BorshSerialize)]
 pub enum Fives {
     First,
     Second,
@@ -48,7 +48,7 @@ pub enum IceTimePriority {
 
 #[derive(Serialize, Deserialize, Clone, BorshDeserialize, BorshSerialize)]
 pub struct Five {
-    pub(crate) field_players: HashMap<String, FieldPlayer>,
+    pub(crate) field_players: HashMap<PlayerPosition, FieldPlayer>,
     pub(crate) number: Fives,
     pub(crate) ice_time_priority: IceTimePriority,
     pub(crate) time_field: u8,
@@ -110,7 +110,7 @@ pub struct TeamJson {
     pub(crate) score: u8,
 }
 
-pub fn swap_positions(user_info: &mut UserInfo, number_five: Fives, position1: String, position2: String) {
+pub fn swap_positions(user_info: &mut UserInfo, number_five: Fives, position1: PlayerPosition, position2: PlayerPosition) {
     let mut five = user_info.team.fives.get_mut(&number_five).unwrap().clone();
     let mut first_player = five.field_players.get(&position1).unwrap().clone();
     let mut second_player = five.field_players.get(&position2).unwrap().clone();
