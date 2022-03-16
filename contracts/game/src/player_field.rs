@@ -57,24 +57,26 @@ pub struct FieldPlayer {
 impl FieldPlayer {
     pub fn new(native_position: PlayerPosition,
                position: PlayerPosition,
-               position_coefficient: f32,
                name: String,
                number: u8,
                role: PlayerRole,
                user_id: usize,
                stats: FieldPlayerStats,
                img: SRC) -> FieldPlayer {
-        FieldPlayer {
+        let mut player = FieldPlayer {
             img,
             stats,
             native_position,
             position,
-            position_coefficient,
+            position_coefficient: 1.0,
             name,
             number,
             role,
             user_id,
-        }
+        };
+
+        player.set_position_coefficient();
+        player
     }
 
     pub fn get_player_position(&self) -> PlayerPosition { self.position }

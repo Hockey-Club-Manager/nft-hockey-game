@@ -1,8 +1,7 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use near_sdk::json_types::Base64VecU8;
-use crate::{FieldPlayer, PlayerPosition, UserInfo};
+use crate::{FieldPlayer, PlayerPosition, TeamMetadata, UserInfo};
 use crate::goalie::Goalie;
 use crate::player::PlayerRole;
 use crate::team::Fives::{First, Fourth, Second, Third};

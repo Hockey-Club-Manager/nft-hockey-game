@@ -13,6 +13,7 @@ pub struct TokenBalance {
     pub(crate) balance: Balance,
 }
 
+#[derive(Clone)]
 #[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct GameConfig {
