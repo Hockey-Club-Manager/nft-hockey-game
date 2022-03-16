@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde_json;
 use crate::{TokenId, TokenMetadata};
+use crate::nft_team::Fives::{First, Fourth, Second, Third};
 use crate::nft_team::IceTimePriority::{HighPriority, LowPriority, Normal, SuperHighPriority};
 use crate::nft_team::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 use crate::nft_team::PlayerRole::{Dangler, Goon, Post2Post, Professor, Shooter, TryHarder, Wall};
@@ -157,10 +158,7 @@ impl Contract {
         let nft_team = match self.nft_team_per_owner.get(&account_id) {
             Some(nft_team) => nft_team,
             None => {
-                let team = NftTeam {
-                    fives: HashMap::new(),
-                    goalies: HashMap::new(),
-                };
+                let team = self.create_empty_nft_team();
                 self.nft_team_per_owner.insert(&account_id, &team);
                 team
             }
@@ -195,6 +193,28 @@ impl Contract {
         }
 
         team
+    }
+
+    fn create_empty_nft_team(&self) -> NftTeam {
+        let mut empty_fives = HashMap::new();
+
+        empty_fives.insert(First, self.create_empty_five(First));
+        empty_fives.insert(Second, self.create_empty_five(Second));
+        empty_fives.insert(Third, self.create_empty_five(Third));
+        empty_fives.insert(Fourth, self.create_empty_five(Fourth));
+
+        NftTeam {
+            fives: empty_fives,
+            goalies: HashMap::new()
+        }
+    }
+
+    fn create_empty_five(&self, number: Fives) -> NftFive {
+        NftFive {
+            field_players: HashMap::new(),
+            number,
+            ice_time_priority: IceTimePriority::Normal
+        }
     }
 
     fn create_free_team(&mut self, account_id: AccountId) -> TeamMetadata {
