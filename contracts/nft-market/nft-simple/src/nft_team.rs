@@ -147,9 +147,11 @@ impl Contract {
         };
     }
 
-    pub fn get_owner_team(&mut self) -> TeamMetadata {
-        let account_id = env::predecessor_account_id();
+    pub fn get_teams(&mut self, account_id_1: AccountId, account_id_2: AccountId) -> (TeamMetadata, TeamMetadata) {
+        (self.get_owner_team(account_id_1), self.get_owner_team(account_id_2))
+    }
 
+    pub fn get_owner_team(&mut self, account_id: AccountId) -> TeamMetadata {
         let mut team = match self.free_team_per_owner.get(&account_id) {
             Some(team) => team,
             None => self.create_free_team(account_id.clone()),

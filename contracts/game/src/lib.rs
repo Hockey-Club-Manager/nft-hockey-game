@@ -1,4 +1,5 @@
 use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap};
+use near_sdk::{ext_contract, Promise, PromiseResult};
 use near_sdk::borsh::{self, BorshSerialize, BorshDeserialize};
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, PanicOnDefault, setup_alloc};
 use crate::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, TakeTO};
@@ -6,6 +7,7 @@ use crate::action::generate_an_event;
 
 use crate::game::{Event, Game, GameState, Tactics};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
+use crate::nft_team::TeamMetadata;
 use crate::player::{PlayerPosition};
 use crate::player_field::FieldPlayer;
 use crate::team::{Fives, IceTimePriority, swap_positions, TeamJson};
@@ -19,6 +21,9 @@ mod player_field;
 mod action;
 mod manager;
 mod team;
+mod nft_team;
+
+const NFT_CONTRACT: &str = "new_new_nft.testnet";
 
 type GameId = u64;
 type SRC = String;
@@ -29,6 +34,17 @@ const MIN_DEPOSIT: Balance = 10_000_000_000_000_000_000_000;
 const ONE_YOCTO: Balance = 1;
 
 setup_alloc!();
+
+
+#[ext_contract(teams)]
+pub trait ExtTeams{
+    fn get_teams(&mut self, account_id_1: AccountId, account_id_2: AccountId) -> (TeamMetadata, TeamMetadata);
+}
+
+#[ext_contract(ext_self)]
+pub trait ExtThis {
+    fn on_get_teams(&mut self, #[callback] teams: (TeamMetadata, TeamMetadata)) -> GameId;
+}
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKey {
