@@ -23,7 +23,7 @@ mod manager;
 mod team;
 mod nft_team;
 
-const NFT_CONTRACT: &str = "new_new_nft.testnet";
+const NFT_CONTRACT: &str = "nft_0_0.testnet";
 
 type GameId = u64;
 type SRC = String;
@@ -144,8 +144,8 @@ impl Hockey {
 
             self.internal_add_referral(&account_id, &referrer_id);
 
-            teams::get_teams(account_id.clone(), opponent_id.clone(), &NFT_CONTRACT, 0, 25_000_000_000_000)
-                .then(ext_self::on_get_teams(opponent_id, account_id, config.clone(), &env::current_account_id(), 0, 25_000_000_000_000))
+            teams::get_teams(account_id.clone(), opponent_id.clone(), &NFT_CONTRACT, 0, 100_000_000_000_000)
+                .then(ext_self::on_get_teams(opponent_id, account_id, config.clone(), &env::current_account_id(), 0, 100_000_000_000_000))
         } else {
             panic!("Your opponent is not ready");
         }

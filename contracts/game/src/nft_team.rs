@@ -24,7 +24,7 @@ pub struct TokenMetadata {
 
 #[derive(Serialize, Deserialize)]
 pub enum PlayerType {
-    PlayerField,
+    FieldPlayer,
     Goalie,
 }
 
