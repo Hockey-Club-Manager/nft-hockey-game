@@ -124,12 +124,17 @@ pub struct FiveMetadata {
 impl Contract {
     pub fn insert_nft_field_players(&mut self, five: Fives, players: Vec<(PlayerPosition, TokenId)>) {
         let account_id = env::predecessor_account_id();
+        let user_tokens = self.tokens_per_owner.get(&account_id).unwrap();
 
         match &mut self.nft_team_per_owner.get(&account_id) {
             Some(nft_team) => {
                match nft_team.fives.get_mut(&five) {
                    Some(five) => {
                        for (player_position, token_id) in players {
+                           if !user_tokens.contains(&token_id){
+                               panic!("Token id not found");
+                           }
+
                            five.field_players.insert(player_position, token_id);
                        }
 
@@ -144,9 +149,14 @@ impl Contract {
 
     pub fn insert_nft_goalie(&mut self, priority: Goalies, token_id: TokenId) {
         let account_id = env::predecessor_account_id();
+        let user_tokens = self.tokens_per_owner.get(&account_id).unwrap();
 
         match &mut self.nft_team_per_owner.get(&account_id) {
             Some(nft_team) => {
+                if !user_tokens.contains(&token_id){
+                    panic!("Token id not found");
+                }
+
                 nft_team.goalies.insert(priority, token_id);
             },
             None => panic!("Team not found")
