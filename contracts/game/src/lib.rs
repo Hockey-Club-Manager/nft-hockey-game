@@ -4,6 +4,8 @@ use near_sdk::borsh::{self, BorshSerialize, BorshDeserialize};
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, PanicOnDefault, setup_alloc};
 use crate::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, TakeTO};
 use crate::action::generate_an_event;
+use crate::external::ext_manage_team;
+use crate::external::ext_self;
 
 use crate::game::{Event, Game, GameState, Tactics};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
@@ -22,11 +24,14 @@ mod action;
 mod manager;
 mod team;
 mod nft_team;
+mod external;
+mod manage_team;
 
 const NFT_CONTRACT: &str = "nft_0_0.testnet";
 
 type GameId = u64;
 type SRC = String;
+pub type TokenId = String;
 
 
 // 0.01 NEAR
@@ -35,16 +40,6 @@ const ONE_YOCTO: Balance = 1;
 
 setup_alloc!();
 
-
-#[ext_contract(teams)]
-pub trait ExtTeams{
-    fn get_teams(&mut self, account_id_1: AccountId, account_id_2: AccountId) -> (TeamMetadata, TeamMetadata);
-}
-
-#[ext_contract(ext_self)]
-pub trait ExtThis {
-    fn on_get_teams(&mut self, opponent_id: AccountId, account_id: AccountId, config: GameConfig, #[callback] teams: (TeamMetadata, TeamMetadata)) -> GameId;
-}
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKey {
@@ -144,7 +139,7 @@ impl Hockey {
 
             self.internal_add_referral(&account_id, &referrer_id);
 
-            teams::get_teams(account_id.clone(), opponent_id.clone(), &NFT_CONTRACT, 0, 100_000_000_000_000)
+            ext_manage_team::get_teams(account_id.clone(), opponent_id.clone(), &NFT_CONTRACT, 0, 100_000_000_000_000)
                 .then(ext_self::on_get_teams(opponent_id, account_id, config.clone(), &env::current_account_id(), 0, 100_000_000_000_000))
         } else {
             panic!("Your opponent is not ready");
