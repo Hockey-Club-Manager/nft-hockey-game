@@ -91,12 +91,16 @@ pub enum Goalies {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct NftTeam {
     pub(crate) fives: HashMap<Fives, NftFive>,
     pub(crate) goalies: HashMap<Goalies, TokenId>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct NftFive {
     pub(crate) field_players: HashMap<PlayerPosition, TokenId>,
     pub(crate) number: Fives,
@@ -211,6 +215,13 @@ impl Contract {
         }
 
         team
+    }
+
+    pub fn get_owner_nft_team(&self, account_id: AccountId) -> NftTeam {
+        match self.nft_team_per_owner.get(&account_id) {
+            Some(nft_team) => nft_team,
+            None => panic!("Team not found")
+        }
     }
 
     fn create_empty_nft_team(&self) -> NftTeam {
