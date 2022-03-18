@@ -126,26 +126,28 @@ pub struct FiveMetadata {
 
 #[near_bindgen]
 impl Contract {
-    pub fn insert_nft_field_players(&mut self, five: Fives, players: Vec<(PlayerPosition, TokenId)>) {
+    pub fn insert_nft_field_players(&mut self, fives: Vec<(Fives, Vec<(PlayerPosition, TokenId)>)>) {
         let account_id = env::predecessor_account_id();
         let user_tokens = self.tokens_per_owner.get(&account_id).unwrap();
 
         match &mut self.nft_team_per_owner.get(&account_id) {
             Some(nft_team) => {
-               match nft_team.fives.get_mut(&five) {
-                   Some(five) => {
-                       for (player_position, token_id) in players {
-                           if !user_tokens.contains(&token_id){
-                               panic!("Token id not found");
-                           }
+                for (num, five) in fives {
+                    match nft_team.fives.get_mut(&num) {
+                        Some(nft_five) => {
+                            for (player_position, token_id) in five {
+                                if !user_tokens.contains(&token_id){
+                                    panic!("Token id not found");
+                                }
 
-                           five.field_players.insert(player_position, token_id);
-                       }
+                                nft_five.field_players.insert(player_position, token_id);
+                            }
+                        },
+                        None => panic!("Five not found")
+                    }
+                }
 
-                       self.nft_team_per_owner.insert(&account_id, nft_team);
-                   },
-                   None => panic!("Five not found")
-               }
+                self.nft_team_per_owner.insert(&account_id, nft_team);
             },
             None => panic!("Team not found")
         };
