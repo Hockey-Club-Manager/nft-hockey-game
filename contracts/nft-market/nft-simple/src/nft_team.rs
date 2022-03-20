@@ -153,17 +153,19 @@ impl Contract {
         };
     }
 
-    pub fn insert_nft_goalie(&mut self, priority: Goalies, token_id: TokenId) {
+    pub fn insert_nft_goalie(&mut self, goalies: Vec<(Goalies, TokenId)>) {
         let account_id = env::predecessor_account_id();
         let user_tokens = self.tokens_per_owner.get(&account_id).unwrap();
 
         match &mut self.nft_team_per_owner.get(&account_id) {
             Some(nft_team) => {
-                if !user_tokens.contains(&token_id){
-                    panic!("Token id not found");
-                }
+                for (priority, token_id) in goalies {
+                    if !user_tokens.contains(&token_id){
+                        panic!("Token id not found");
+                    }
 
-                nft_team.goalies.insert(priority, token_id);
+                    nft_team.goalies.insert(priority, token_id);
+                }
             },
             None => panic!("Team not found")
         };

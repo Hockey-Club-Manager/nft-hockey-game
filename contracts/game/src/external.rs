@@ -9,11 +9,9 @@ pub trait ExtManageTeam{
 
     fn get_owner_team(&mut self, account_id: AccountId) -> TeamMetadata;
 
-    fn insert_nft_field_players(&mut self,
-                                five: Fives,
-                                players: Vec<(PlayerPosition, TokenId)>);
+    fn insert_nft_field_players(&mut self, fives: Vec<(Fives, Vec<(PlayerPosition, TokenId)>)>);
 
-    fn insert_nft_goalie(&mut self, priority: Goalies, token_id: TokenId);
+    fn insert_nft_goalie(&mut self, goalies: Vec<(Goalies, TokenId)>);
 }
 
 #[ext_contract(ext_self)]
