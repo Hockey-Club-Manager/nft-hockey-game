@@ -11,7 +11,7 @@ impl Hockey {
         ext_manage_team::insert_nft_field_players(fives, &NFT_CONTRACT, 0, 50_000_000_000_000)
     }
 
-    pub fn insert_nft_goalie(&mut self, goalies: Vec<(Goalies, TokenId)>) -> Promise {
-        ext_manage_team::insert_nft_goalie(goalies, &NFT_CONTRACT, 0, 50_000_000_000_000)
+    pub fn insert_nft_goalies(&mut self, goalies: Vec<(Goalies, TokenId)>) -> Promise {
+        ext_manage_team::insert_nft_goalies(goalies, &NFT_CONTRACT, 0, 50_000_000_000_000)
     }
 }

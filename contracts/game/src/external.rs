@@ -11,7 +11,7 @@ pub trait ExtManageTeam{
 
     fn insert_nft_field_players(&mut self, fives: Vec<(Fives, Vec<(PlayerPosition, TokenId)>)>);
 
-    fn insert_nft_goalie(&mut self, goalies: Vec<(Goalies, TokenId)>);
+    fn insert_nft_goalies(&mut self, goalies: Vec<(Goalies, TokenId)>);
 }
 
 #[ext_contract(ext_self)]

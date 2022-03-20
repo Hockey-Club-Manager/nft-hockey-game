@@ -153,7 +153,7 @@ impl Contract {
         };
     }
 
-    pub fn insert_nft_goalie(&mut self, goalies: Vec<(Goalies, TokenId)>) {
+    pub fn insert_nft_goalies(&mut self, goalies: Vec<(Goalies, TokenId)>) {
         let account_id = env::predecessor_account_id();
         let user_tokens = self.tokens_per_owner.get(&account_id).unwrap();
 
