@@ -166,6 +166,8 @@ impl Contract {
 
                     nft_team.goalies.insert(priority, token_id);
                 }
+
+                self.nft_team_per_owner.insert(&account_id, nft_team);
             },
             None => panic!("Team not found")
         };
