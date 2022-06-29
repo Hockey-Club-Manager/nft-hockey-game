@@ -23,7 +23,7 @@ jobs:
         node-version: 14
 
     - run: yarn install
-    - run: yarn install --global near-cli
+    - run: yarn global add near-cli
     - run: near generate-key ${{ secrets.GAME_ACCOUNT_ID }} --seedPhrase="${{ secrets.GAME_ACCOUNT_SEED_PHRASE }}"
     - run: yarn build
     - run: near deploy --accountId ${{ secrets.GAME_ACCOUNT_ID }} --wasmFile out/main.wasm
