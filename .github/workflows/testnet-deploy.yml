@@ -26,6 +26,8 @@ jobs:
       with:
         node-version: 14
     - uses: actions-rs/cargo@v1
+    
+    - run: rustup target add wasm32-unknown-unknown
 
     - run: yarn install
     - run: yarn global add near-cli
