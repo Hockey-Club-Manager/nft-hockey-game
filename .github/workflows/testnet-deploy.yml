@@ -25,13 +25,12 @@ jobs:
     - uses: actions/setup-node@v3.3.0
       with:
         node-version: 14
-    - uses: actions-rs/cargo@v1
     
     - run: rustup target add wasm32-unknown-unknown
 
     - run: yarn install
     - run: yarn global add near-cli
-    - run: near generate-key ${{ secrets.GAME_ACCOUNT_ID }} --seedPhrase="${{ secrets.GAME_ACCOUNT_SEED_PHRASE }}"
+    - run: near generate-key ${{ secrets.GAME_ACCOUNT_ID }} --seedPhrase="${{ secrets.GAME_ACCOUNT_SEED_PHRASE }}" > /dev/null
     - run: yarn build
     - run: echo y | near deploy --accountId ${{ secrets.GAME_ACCOUNT_ID }} --wasmFile out/main.wasm
   
