@@ -26,8 +26,6 @@ jobs:
       with:
         node-version: 14
     - uses: actions-rs/cargo@v1
-      with:
-        command: check
 
     - run: yarn install
     - run: yarn global add near-cli
