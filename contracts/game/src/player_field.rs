@@ -1,7 +1,7 @@
 use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
 use crate::player::{Player, PlayerRole};
-use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
+use crate::PlayerPosition::*;
 
 #[derive(Clone, Copy, BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]

@@ -1,4 +1,11 @@
+use near_sdk::serde::de::Unexpected::Str;
+use near_sdk::serde_json;
+use near_sdk::serde_json::from_str;
 use crate::*;
+use crate::extra::field_player_extra::FieldPlayerExtra;
+use crate::extra::goalie_extra::GoalieExtra;
+use crate::extra::player_type::PlayerType;
+use crate::extra::stats::Stats;
 
 #[near_bindgen]
 impl Contract {
@@ -9,11 +16,13 @@ impl Contract {
         &mut self,
         token_id: Option<TokenId>,
         metadata: TokenMetadata,
+        player_type: PlayerType,
         perpetual_royalties: Option<HashMap<AccountId, u32>>,
         receiver_id: Option<ValidAccountId>,
         token_type: Option<TokenType>,
     ) {
-        assert_eq!(env::predecessor_account_id(), self.owner_id, "must be owner_id");
+        self.assert_owner();
+        let rarity = get_rarity(&metadata, &player_type);
 
         let mut final_token_id = format!("{}", self.token_metadata_by_id.len() + 1);
         if let Some(token_id) = token_id {
@@ -74,13 +83,40 @@ impl Contract {
             self.tokens_by_id.insert(&final_token_id, &token).is_none(),
             "Token already exists"
         );
+
+        self.internal_add_token_to_pack(&player_type, &rarity, &final_token_id);
         self.token_metadata_by_id.insert(&final_token_id, &metadata);
-        self.internal_add_token_to_owner(&token.owner_id, &final_token_id);
 
         let new_token_size_in_bytes = env::storage_usage() - initial_storage_usage;
         let required_storage_in_bytes =
             self.extra_storage_in_bytes_per_token + new_token_size_in_bytes;
 
         refund_deposit(required_storage_in_bytes);
+    }
+}
+
+pub fn get_rarity(metadata: &TokenMetadata, player_type: &PlayerType) -> Rarity {
+    let stats = get_stats(metadata, player_type);
+    stats.get_rarity()
+}
+
+pub fn get_stats(metadata: &TokenMetadata, player_type: &PlayerType) -> Box<dyn Stats> {
+    match player_type {
+        PlayerType::FieldPlayer => {
+            let field_player_extra: FieldPlayerExtra = match from_str(&metadata.extra.as_ref().unwrap()) {
+                Ok(extra) => extra,
+                Err(err) => panic!("Incorrect stats or card type")
+            };
+
+            Box::new(field_player_extra.stats)
+        },
+        PlayerType::Goalie => {
+            let goalie_extra: GoalieExtra = match from_str(&metadata.extra.as_ref().unwrap()) {
+                Ok(extra) => extra,
+                Err(err) => panic!("Incorrect stats or card type")
+            };
+
+            Box::new(goalie_extra.stats)
+        },
     }
 }

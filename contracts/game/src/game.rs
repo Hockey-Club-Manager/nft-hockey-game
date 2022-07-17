@@ -7,16 +7,16 @@ use crate::goalie::{Goalie, GoalieStats};
 use crate::player_field::{FieldPlayer, FieldPlayerStats};
 use crate::user::UserInfo;
 use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
-use crate::action::ActionTypes::{Battle, EndOfPeriod, FaceOff, FirstTeamChangeActiveFive, GameFinished, Goal, Overtime, Rebound, Save, SecondTeamChangeActiveFive, StartGame};
+use crate::action::ActionTypes::*;
 use crate::player::{PlayerPosition, PlayerRole};
-use crate::player::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
+use crate::player::PlayerPosition::*;
 use crate::{TokenBalance};
 use crate::game::Tactics::Neutral;
 use crate::nft_team::team_metadata_to_team;
-use crate::player::PlayerRole::{Dangler, Goon, Post2Post, Professor, Shooter, TryHarder, Wall};
+use crate::player::PlayerRole::*;
 use crate::PlayerPosition::LeftWing;
-use crate::team::{Five, Fives, Goalies, IceTimePriority, Team, TeamJson};
-use crate::team::IceTimePriority::{HighPriority, LowPriority, Normal, SuperHighPriority, SuperLowPriority};
+use crate::team::*;
+use crate::team::IceTimePriority::*;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum GameState {
@@ -118,96 +118,6 @@ impl Game {
 
         game
     }
-
-    // fn create_team(user_id: usize) -> Team {
-    //     let mut fives = HashMap::new();
-    //
-    //     let first_five = Game::create_five(user_id, Fives::First, SuperHighPriority);
-    //     fives.insert(Fives::First, first_five.clone());
-    //     fives.insert(Fives::Second, Game::create_five(user_id, Fives::Second, HighPriority));
-    //     fives.insert(Fives::Third, Game::create_five(user_id, Fives::Third, Normal));
-    //     fives.insert(Fives::Fourth, Game::create_five(user_id, Fives::Fourth, LowPriority));
-    //
-    //     let mut goalies = HashMap::new();
-    //
-    //     let main_goalkeeper = Game::create_goalie_with_random_stats(String::from("Bakin"), 1, Wall ,user_id, String::from(""));
-    //     goalies.insert(Goalies::MainGoalkeeper, main_goalkeeper.clone());
-    //     goalies.insert(Goalies::SubstituteGoalkeeper, Game::create_goalie_with_random_stats(String::from("Noname"), 2, Post2Post ,user_id, String::from("")));
-    //
-    //
-    //     Team {
-    //         fives,
-    //         goalies,
-    //         active_five: first_five.clone(),
-    //         active_goalie: main_goalkeeper.clone(),
-    //         score: 0,
-    //     }
-    // }
-    //
-    // fn create_five(user_id: usize, number: Fives, ice_time_priority: IceTimePriority) -> Five {
-    //     Five {
-    //         field_players: Game::create_field_players_with_random_stats(user_id),
-    //         number,
-    //         ice_time_priority,
-    //         time_field: 0,
-    //     }
-    // }
-    //
-    // fn create_field_players_with_random_stats(user_id: usize) -> HashMap<String, FieldPlayer> {
-    //     let mut field_players = HashMap::new();
-    //
-    //     let center = Game::create_field_player_with_random_stats(String::from("Schukin"), 10,Shooter, Center,Center, 1.0, user_id, String::from(""));
-    //     let right_wind = Game::create_field_player_with_random_stats(String::from("Antipov"), 77,TryHarder, RightWing, RightWing, 1.0, user_id, String::from(""));
-    //     let left_wind = Game::create_field_player_with_random_stats(String::from("Kislyak"), 99, Dangler, LeftWing, LeftWing, 1.0, user_id, String::from(""));
-    //     let right_defender = Game::create_field_player_with_random_stats(String::from("Ponomarev"), 27,Goon, RightDefender, RightDefender, 1.0, user_id, String::from(""));
-    //     let left_defender = Game::create_field_player_with_random_stats(String::from("Tsarev"), 31, Professor, LeftDefender, LeftDefender, 1.0, user_id, String::from(""));
-    //
-    //     field_players.insert(center.get_player_position().to_string(), center);
-    //     field_players.insert(right_wind.get_player_position().to_string(), right_wind);
-    //     field_players.insert(left_wind.get_player_position().to_string(), left_wind);
-    //     field_players.insert(right_defender.get_player_position().to_string(), right_defender);
-    //     field_players.insert(left_defender.get_player_position().to_string(), left_defender);
-    //     field_players
-    // }
-    //
-    // fn create_field_player_with_random_stats(name: String, number: u8, role: PlayerRole,
-    //                                          native_position: PlayerPosition, position: PlayerPosition,
-    //                                          position_coefficient: f32, user_id: usize, img: SRC) -> FieldPlayer {
-    //     FieldPlayer::new(
-    //         native_position,
-    //         position,
-    //         position_coefficient,
-    //         name,
-    //         number,
-    //         role,
-    //         user_id,
-    //         FieldPlayerStats::new(
-    //             Game::get_random_in_range(60, 90) as u128,
-    //             Game::get_random_in_range(60, 90) as u128,
-    //             Game::get_random_in_range(60, 90) as f64,
-    //             Game::get_random_in_range(60, 90) as u128,
-    //             Game::get_random_in_range(60, 90) as u128
-    //         ),
-    //         img,
-    //     )
-    // }
-    //
-    // fn create_goalie_with_random_stats(name: String, number: u8, role: PlayerRole, user_id: usize, img: SRC) -> Goalie {
-    //     Goalie::new(
-    //         GoalieStats::new(
-    //             Game::get_random_in_range(60, 90)  as u128,
-    //             Game::get_random_in_range(60, 90)  as u128,
-    //             Game::get_random_in_range(60, 90) as u128,
-    //             Game::get_random_in_range(60, 90) as u128,
-    //             Game::get_random_in_range(60, 90) as u128,
-    //         ),
-    //         name,
-    //         number,
-    //         role,
-    //         user_id,
-    //         img,
-    //     )
-    // }
 
     pub fn get_random_in_range(min: usize, max: usize) -> usize {
         let random = *env::random_seed().get(0).unwrap();

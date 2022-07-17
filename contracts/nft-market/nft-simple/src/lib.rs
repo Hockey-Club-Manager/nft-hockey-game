@@ -1,30 +1,33 @@
-use std::collections::HashMap;
 use std::cmp::min;
+use std::collections::HashMap;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LazyOption, LookupMap, UnorderedMap, UnorderedSet};
-use near_sdk::json_types::{Base64VecU8, ValidAccountId, U64, U128};
+use near_sdk::json_types::{Base64VecU8, U128, U64, ValidAccountId};
 use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::{
-    env, near_bindgen, AccountId, Balance, CryptoHash, PanicOnDefault, Promise, PromiseOrValue, StorageUsage, BorshStorageKey,
+    AccountId, Balance, BorshStorageKey, CryptoHash, env, near_bindgen, PanicOnDefault, Promise,
+    PromiseOrValue, StorageUsage,
 };
 
+pub use crate::enumerable::*;
 use crate::internal::*;
 pub use crate::metadata::*;
 pub use crate::mint::*;
 pub use crate::nft_core::*;
+use team::nft_team::{NftTeam, TeamMetadata};
 pub use crate::token::*;
-pub use crate::enumerable::*;
-use crate::nft_team::{NftTeam, TeamMetadata};
 
+mod burn;
+mod enumerable;
 mod internal;
 mod metadata;
 mod mint;
 mod nft_core;
 mod token;
-mod enumerable;
-mod burn;
-mod nft_team;
+mod extra;
+mod team;
+mod pack;
 
 // CUSTOM types
 pub type TokenType = String;
@@ -37,10 +40,15 @@ near_sdk::setup_alloc!();
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
-    pub free_team_per_owner: LookupMap<AccountId, TeamMetadata>,
     pub nft_team_per_owner: LookupMap<AccountId, NftTeam>,
 
     pub tokens_per_owner: LookupMap<AccountId, UnorderedSet<TokenId>>,
+
+    pub goalies: LookupMap<Rarity, UnorderedSet<TokenId>>,
+
+    pub field_players: LookupMap<Rarity, UnorderedSet<TokenId>>,
+
+    pub registered_accounts: UnorderedSet<AccountId>,
 
     pub tokens_by_id: LookupMap<TokenId, Token>,
 
@@ -71,19 +79,39 @@ pub enum StorageKey {
     TokensPerType,
     TokensPerTypeInner { token_type_hash: CryptoHash },
     TokenTypesLocked,
-    FreeTeamPerOwner,
     NftTeamPerOwner,
+    GoaliesInner { goalies_hash: CryptoHash },
+    Goalies,
+    FieldPlayersInner { field_player_hash: CryptoHash },
+    FieldPlayers,
+    RegisterAccounts,
 }
 
 #[near_bindgen]
 impl Contract {
     #[init]
-    pub fn new(owner_id: ValidAccountId, metadata: NFTContractMetadata, supply_cap_by_type: TypeSupplyCaps, locked: Option<bool>) -> Self {
+    pub fn new(
+        owner_id: ValidAccountId,
+        metadata: NFTContractMetadata,
+        supply_cap_by_type: TypeSupplyCaps,
+        locked: Option<bool>,
+    ) -> Self {
         let mut this = Self {
-            free_team_per_owner: LookupMap::new(StorageKey::FreeTeamPerOwner),
-            nft_team_per_owner: LookupMap::new(StorageKey::NftTeamPerOwner),
-
-            tokens_per_owner: LookupMap::new(StorageKey::TokensPerOwner.try_to_vec().unwrap()),
+            nft_team_per_owner: LookupMap::new(
+                StorageKey::NftTeamPerOwner.try_to_vec().unwrap()
+            ),
+            tokens_per_owner: LookupMap::new(
+                StorageKey::TokensPerOwner.try_to_vec().unwrap()
+            ),
+            goalies: LookupMap::new(
+                StorageKey::Goalies.try_to_vec().unwrap()
+            ),
+            field_players: LookupMap::new(
+                StorageKey::FieldPlayers.try_to_vec().unwrap()
+            ),
+            registered_accounts: UnorderedSet::new(
+                StorageKey::RegisterAccounts.try_to_vec().unwrap(),
+            ),
             tokens_by_id: LookupMap::new(StorageKey::TokensById.try_to_vec().unwrap()),
             token_metadata_by_id: UnorderedMap::new(
                 StorageKey::TokenMetadataById.try_to_vec().unwrap(),
@@ -96,7 +124,9 @@ impl Contract {
             ),
             supply_cap_by_type,
             tokens_per_type: LookupMap::new(StorageKey::TokensPerType.try_to_vec().unwrap()),
-            token_types_locked: UnorderedSet::new(StorageKey::TokenTypesLocked.try_to_vec().unwrap()),
+            token_types_locked: UnorderedSet::new(
+                StorageKey::TokenTypesLocked.try_to_vec().unwrap(),
+            ),
             contract_royalty: 0,
         };
 
@@ -119,8 +149,8 @@ impl Contract {
             StorageKey::TokenPerOwnerInner {
                 account_id_hash: hash_account_id(&tmp_account_id),
             }
-            .try_to_vec()
-            .unwrap(),
+                .try_to_vec()
+                .unwrap(),
         );
         self.tokens_per_owner.insert(&tmp_account_id, &u);
 

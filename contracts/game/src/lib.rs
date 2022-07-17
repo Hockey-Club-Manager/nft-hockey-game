@@ -97,7 +97,7 @@ impl Hockey {
     pub(crate) fn internal_add_referral(&mut self, account_id: &AccountId, referrer_id: &Option<AccountId>) {
         if self.stats.get(account_id).is_none() && self.is_account_exists(referrer_id) {
             if let Some(referrer_id_unwrapped) = referrer_id.clone() {
-                self.internal_update_stats(account_id, UpdateStatsAction::AddReferral, referrer_id.clone(), None);
+                self.internal_update_stats(account_id, UpdateStatsAction::AddReferral, (*referrer_id).clone(), None);
                 self.internal_update_stats(&referrer_id_unwrapped, UpdateStatsAction::AddAffiliate, Some(account_id.clone()), None);
                 log!("Referrer {} added for {}", referrer_id_unwrapped, account_id);
             }

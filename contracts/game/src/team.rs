@@ -4,8 +4,8 @@ use std::collections::HashMap;
 use crate::{FieldPlayer, PlayerPosition, TeamMetadata, UserInfo};
 use crate::goalie::Goalie;
 use crate::player::PlayerRole;
-use crate::team::Fives::{First, Fourth, Second, Third};
-use crate::team::IceTimePriority::{HighPriority, LowPriority, Normal, SuperHighPriority, SuperLowPriority};
+use crate::team::Fives::*;
+use crate::team::IceTimePriority::*;
 
 const SUPER_LOW_PRIORITY: u8 = 5;
 const LOW_PRIORITY: u8 = 10;

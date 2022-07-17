@@ -1,6 +1,9 @@
 use crate::*;
 use near_sdk::{log, CryptoHash};
 use std::mem::size_of;
+use near_sdk::env::{attached_deposit, predecessor_account_id};
+use crate::extra::player_type::PlayerType;
+use crate::pack::*;
 
 pub(crate) fn royalty_to_payout(a: u32, b: Balance) -> U128 {
     U128(a as u128 * b / 10_000u128)
@@ -53,8 +56,8 @@ pub(crate) fn refund_approved_account_ids_iter<'a, I>(
     account_id: AccountId,
     approved_account_ids: I,
 ) -> Promise
-where
-    I: Iterator<Item = &'a AccountId>,
+    where
+        I: Iterator<Item = &'a AccountId>,
 {
     let storage_released: u64 = approved_account_ids
         .map(bytes_for_approved_account_id)
@@ -78,6 +81,108 @@ impl Contract {
         );
     }
 
+    pub(crate) fn internal_add_token_to_pack(
+        &mut self,
+        player_type: &PlayerType,
+        rarity: &Rarity,
+        token_id: &TokenId
+    ) {
+        match player_type {
+            PlayerType::FieldPlayer => {
+                let mut token_set = self.get_field_players_set(rarity);;
+
+                token_set.insert(token_id);
+                self.field_players.insert(rarity, &token_set);
+            }
+            PlayerType::Goalie => {
+                let mut token_set = self.get_goalies_set(rarity);
+
+                token_set.insert(token_id);
+                self.goalies.insert(rarity, &token_set);
+            }
+            _ => panic!("Player type not found!")
+        };
+    }
+
+    pub(crate) fn internal_remove_token_from_pack(
+        &mut self,
+        player_type: &PlayerType,
+        rarity: &Rarity,
+        token_id: &TokenId
+    ) {
+        match player_type {
+            PlayerType::FieldPlayer => {
+                let mut token_set = self.get_field_players_set(rarity);
+
+                token_set.remove(token_id);
+                self.field_players.insert(rarity, &token_set);
+            }
+            PlayerType::Goalie => {
+                let mut token_set = self.get_goalies_set(rarity);
+
+                token_set.remove(token_id);
+                self.goalies.insert(rarity, &token_set);
+            }
+            _ => panic!("Player type not found!")
+        };
+    }
+
+    fn get_field_players_set(&self, rarity: &Rarity) -> UnorderedSet<TokenId> {
+        self.field_players.get(rarity).unwrap_or_else(|| {
+            UnorderedSet::new(
+                StorageKey::FieldPlayersInner {
+                    field_player_hash: hash_account_id(&"FieldPlayer".into()),
+                }
+                    .try_to_vec()
+                    .unwrap(),
+            )
+        })
+    }
+
+    fn get_goalies_set(&self, rarity: &Rarity) -> UnorderedSet<TokenId> {
+        self.goalies.get(rarity).unwrap_or_else(|| {
+            UnorderedSet::new(
+                StorageKey::GoaliesInner {
+                    goalies_hash: hash_account_id(&"Goalie".into()),
+                }
+                    .try_to_vec()
+                    .unwrap(),
+            )
+        })
+    }
+
+    pub(crate) fn internal_transfer_token_from_pack(
+        &mut self,
+        receiver_id: &AccountId,
+        token_id: &TokenId,
+        player_type: &PlayerType,
+        rarity: &Rarity,
+    ) -> TokenMetadata {
+        let token = self.tokens_by_id.get(token_id).expect("No token");
+        assert_ne!(
+            &token.owner_id, receiver_id,
+            "The token owner and the receiver should be different"
+        );
+        assert_eq!(&token.owner_id, &self.owner_id, "contract owner does not have a token");
+
+        self.internal_remove_token_from_pack(player_type, rarity, token_id);
+        self.internal_add_token_to_owner(receiver_id, token_id);
+
+        let new_token = Token {
+            owner_id: receiver_id.clone(),
+            approved_account_ids: Default::default(),
+            next_approval_id: token.next_approval_id,
+            royalty: token.royalty.clone(),
+            token_type: token.token_type.clone(),
+        };
+        self.tokens_by_id.insert(token_id, &new_token);
+
+        match self.token_metadata_by_id.get(token_id) {
+            Some(token_metadata) => token_metadata,
+            _ => panic!("Token metadata not found")
+        }
+    }
+
     pub(crate) fn internal_add_token_to_owner(
         &mut self,
         account_id: &AccountId,
@@ -88,8 +193,8 @@ impl Contract {
                 StorageKey::TokenPerOwnerInner {
                     account_id_hash: hash_account_id(&account_id),
                 }
-                .try_to_vec()
-                .unwrap(),
+                    .try_to_vec()
+                    .unwrap(),
             )
         });
         tokens_set.insert(token_id);
@@ -128,26 +233,24 @@ impl Contract {
             assert_eq!(self.token_types_locked.contains(&token.token_type.clone().unwrap()), false, "Token transfers are locked");
         }
 
-        
+        if sender_id != &token.owner_id {
+            if !token.approved_account_ids.contains_key(sender_id) {
+                env::panic(b"Unauthorized");
+            }
+            // If they included an enforce_approval_id, check the receiver approval id
+            if let Some(enforced_approval_id) = approval_id {
+                let actual_approval_id = token
+                    .approved_account_ids
+                    .get(sender_id)
+                    .expect("Sender is not approved account");
+                assert_eq!(
+                    actual_approval_id, &enforced_approval_id,
+                    "The actual approval_id {} is different from the given approval_id {}",
+                    actual_approval_id, enforced_approval_id,
+                );
+            }
+        }
 
-		if sender_id != &token.owner_id {
-			if !token.approved_account_ids.contains_key(sender_id) {
-				env::panic(b"Unauthorized");
-			}
-			// If they included an enforce_approval_id, check the receiver approval id
-			if let Some(enforced_approval_id) = approval_id {
-				let actual_approval_id = token
-					.approved_account_ids
-					.get(sender_id)
-					.expect("Sender is not approved account");
-				assert_eq!(
-					actual_approval_id, &enforced_approval_id,
-					"The actual approval_id {} is different from the given approval_id {}",
-					actual_approval_id, enforced_approval_id,
-				);
-			}
-		}
-        
 
         assert_ne!(
             &token.owner_id, receiver_id,
@@ -178,5 +281,23 @@ impl Contract {
         }
 
         token
+    }
+
+    pub(crate) fn internal_get_pack_probabilities(&self) -> Vec<u8> {
+        let deposit = attached_deposit();
+
+        if deposit == BRILLIANT_PACK_COST {
+            get_pack_probabilities(Pack::Brilliant)
+        } else if deposit == PLATINUM_PACK_COST {
+            get_pack_probabilities(Pack::Platinum)
+        } else if deposit == GOLD_PACK_COST {
+            get_pack_probabilities(Pack::Gold)
+        } else if deposit == SILVER_PACK_COST {
+            get_pack_probabilities(Pack::Silver)
+        } else if deposit == BRONZE_PACK_COST {
+            get_pack_probabilities(Pack::Bronze)
+        } else {
+            panic!("Wrong attached deposit")
+        }
     }
 }

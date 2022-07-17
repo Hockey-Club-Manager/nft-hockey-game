@@ -2,12 +2,12 @@ use crate::player::{Player, PlayerPosition, PlayerRole};
 use crate::player_field::FieldPlayer;
 use crate::game::{EventToSave, Game};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use crate::player::PlayerRole::{Dangler, Goon, Passer, Post2Post, Professor, Rock, Shooter, ToughGuy, TryHarder};
+use crate::player::PlayerRole::*;
 
-use crate::action::ActionTypes::{Battle, Dangle, FaceOff, Goal, Hit, Move, Pass, PassCatched, PokeCheck, PuckLose, Rebound, Save, Shot};
+use crate::action::ActionTypes::*;
 
 use crate::goalie::Goalie;
-use crate::player::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
+use crate::player::PlayerPosition::*;
 use near_sdk::serde::{Deserialize, Serialize};
 use crate::{Tactics};
 use crate::user::UserInfo;

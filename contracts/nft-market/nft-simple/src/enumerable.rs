@@ -23,7 +23,7 @@ impl Contract {
         }
         tmp
     }
-    
+
     pub fn nft_supply_for_type(
         &self,
         token_type: &String,
@@ -57,7 +57,7 @@ impl Contract {
         }
         tmp
     }
-    
+
     pub fn nft_supply_for_owner(
         &self,
         account_id: AccountId,

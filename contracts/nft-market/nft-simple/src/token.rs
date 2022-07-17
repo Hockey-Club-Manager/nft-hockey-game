@@ -3,6 +3,17 @@ use crate::*;
 pub type TokenId = String;
 pub type Payout = HashMap<AccountId, U128>;
 
+#[derive(Serialize, Deserialize, Copy, Clone)]
+#[serde(crate = "near_sdk::serde")]
+#[derive(BorshDeserialize, BorshSerialize)]
+pub enum  Rarity {
+    Usual,
+    Rare,
+    SuperRare,
+    Myth,
+    Exclusive,
+}
+
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Token {
     pub owner_id: AccountId,
