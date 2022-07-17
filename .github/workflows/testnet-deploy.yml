@@ -1,0 +1,35 @@
+name: Build & deploy testnet contracts
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    environment: 
+      name: testnet
+
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+        target: wasm32-unknown-unknown
+    - uses: actions/setup-node@v3.3.0
+      with:
+        node-version: 14
+
+    - run: yarn install
+    - run: yarn global add near-cli
+    - run: near generate-key ${{ secrets.GAME_ACCOUNT_ID }} --seedPhrase="${{ secrets.GAME_ACCOUNT_SEED_PHRASE }}" > /dev/null
+    - run: yarn build
+    - run: echo y | near deploy --accountId ${{ secrets.GAME_ACCOUNT_ID }} --wasmFile out/main.wasm
+  
