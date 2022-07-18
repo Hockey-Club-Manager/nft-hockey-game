@@ -8,7 +8,6 @@ impl Contract {
         &mut self,
         token_id: Option<TokenId>,
     ) {
-        assert_eq!(self.is_token_locked(token_id.unwrap()), true, "Token must be locked");
         //TODO burn token
     }
 }

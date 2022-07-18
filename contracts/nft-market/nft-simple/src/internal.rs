@@ -228,11 +228,6 @@ impl Contract {
     ) -> Token {
         let token = self.tokens_by_id.get(token_id).expect("No token");
 
-        // CUSTOM - token_type can be locked until unlocked by owner
-        if token.token_type.is_some() {
-            assert_eq!(self.token_types_locked.contains(&token.token_type.clone().unwrap()), false, "Token transfers are locked");
-        }
-
         if sender_id != &token.owner_id {
             if !token.approved_account_ids.contains_key(sender_id) {
                 env::panic(b"Unauthorized");

@@ -3,18 +3,8 @@
   "version": "0.0.1",
   "license": "UNLICENSED",
   "scripts": {
-    "build": "npm run build:contracts && npm run build:web",
-    "build:contracts": "node contracts/game/compile.js && cd contracts/nft-market/nft-simple && ./build.sh && cd ../.. && cd nft-market/market-simple && ./build.sh && cd ../.. && cd nft-market/ft && ./build.sh && cd ../..",
-    "build:contract:debug": "node contracts/game/compile.js --debug",
-    "build:web": "parcel build src/index.html --public-url ./",
-    "dev:deploy:contract": "near dev-deploy",
-    "deploy:contract": "near deploy",
-    "deploy:pages": "gh-pages -d dist/",
-    "deploy": "npm run build && npm run deploy:contract && npm run deploy:pages",
-    "prestart": "npm run build:contract:debug && npm run dev:deploy:contract",
-    "start": "echo The app is starting! It will automatically open in your browser when ready && env-cmd -f ./neardev/dev-account.env parcel src/index.html --open",
-    "dev": "nodemon --watch contracts/src -e rs --exec \\\"npm run start\\\"",
-    "test": "npm run build:contract:debug && cd contracts && cargo test -- --nocapture && cd .. && jest test --runInBand"
+    "build": "npm run build:contracts",
+    "build:contracts": "node contracts/game/compile.js && cd contracts/nft-market/nft-simple && ./build.sh && cd ../.. && cd nft-market/market-simple && ./build.sh && cd ../.. && cd nft-market/ft && ./build.sh && cd ../.."
   },
   "devDependencies": {
     "env-cmd": "~10.1.0",
