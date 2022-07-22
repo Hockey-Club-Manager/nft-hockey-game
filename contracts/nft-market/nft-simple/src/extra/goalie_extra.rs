@@ -51,45 +51,45 @@ pub struct GoalieStats {
 
 impl Stats for GoalieStats {
     fn get_rarity(&self) -> Rarity {
-        let average_stats = self.get_stats_sum() as f32 / 20 as f32;
+        let average_stats = self.get_stats_avg();
 
         calculate_rarity(average_stats)
     }
 }
 
 impl GoalieStats {
-    fn get_stats_sum(&self) -> u16 {
+    fn get_stats_avg(&self) -> f32 {
         self.get_reflexes() +
             self.get_puck_control() +
-            self.get_strength()
+            self.get_strength() / 3 as f32
     }
 
-    fn get_reflexes(&self) -> u16 {
-        self.angles as u16 +
-            self.breakaway as u16 +
-            self.five_hole as u16 +
-            self.glove_side_high as u16 +
-            self.glove_side_low as u16 +
-            self.stick_side_high as u16 +
-            self.stick_side_low as u16
+    fn get_reflexes(&self) -> f32 {
+        (self.angles as f32 +
+            self.breakaway as f32 +
+            self.five_hole as f32 +
+            self.glove_side_high as f32+
+            self.glove_side_low as f32 +
+            self.stick_side_high as f32 +
+            self.stick_side_low as f32) / 7 as f32
     }
 
-    fn get_puck_control(&self) -> u16 {
-        self.passing as u16 +
-            self.poise as u16 +
-            self.poke_check as u16 +
-            self.puck_playing as u16 +
-            self.rebound_control as u16 +
-            self.recover as u16
+    fn get_puck_control(&self) -> f32 {
+        (self.passing as f32 +
+            self.poise as f32 +
+            self.poke_check as f32 +
+            self.puck_playing as f32 +
+            self.rebound_control as f32 +
+            self.recover as f32) / 6 as f32
     }
 
-    fn get_strength(&self) -> u16 {
-        self.aggressiveness as u16 +
-            self.agility as u16 +
-            self.durability as u16 +
-            self.endurance as u16 +
-            self.speed as u16 +
-            self.vision as u16 +
-            self.morale as u16
+    fn get_strength(&self) -> f32 {
+        (self.aggressiveness as f32 +
+            self.agility as f32 +
+            self.durability as f32 +
+            self.endurance as f32 +
+            self.speed as f32 +
+            self.vision as f32 +
+            self.morale as f32) / 7 as f32
     }
 }

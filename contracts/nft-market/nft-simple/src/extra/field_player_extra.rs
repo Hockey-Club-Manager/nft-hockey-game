@@ -72,56 +72,56 @@ impl Stats for FieldPlayerStats {
 }
 
 impl FieldPlayerStats {
-    fn get_stats_sum(&self) -> u16 {
-        self.get_skating() +
+    fn get_stats_sum(&self) -> f32 {
+        (self.get_skating() +
             self.get_shooting() +
             self.get_stick_handling() +
             self.get_strength() +
             self.get_iq() +
-            self.get_defense()
+            self.get_defense()) / 6 as f32
     }
 
-    fn get_skating(&self) -> u16 {
-        self.acceleration as u16 +
-            self.agility as u16 +
-            self.balance as u16 +
-            self.endurance as u16 +
-            self.speed as u16
+    fn get_skating(&self) -> f32 {
+        (self.acceleration as f32 +
+            self.agility as f32 +
+            self.balance as f32 +
+            self.endurance as f32 +
+            self.speed as f32) / 5 as f32
     }
 
-    fn get_shooting(&self) -> u16 {
-        self.slap_shot_accuracy as u16 +
-            self.slap_shot_power as u16 +
-            self.wrist_shot_accuracy as u16 +
-            self.wrist_shot_power as u16
+    fn get_shooting(&self) -> f32 {
+        (self.slap_shot_accuracy as f32 +
+            self.slap_shot_power as f32 +
+            self.wrist_shot_accuracy as f32 +
+            self.wrist_shot_power as f32) / 4 as f32
     }
 
-    fn get_stick_handling(&self) -> u16 {
-        self.deking as u16 +
-            self.hand_eye as u16 +
-            self.passing as u16 +
-            self.puck_control as u16
+    fn get_stick_handling(&self) -> f32 {
+        (self.deking as f32 +
+            self.hand_eye as f32 +
+            self.passing as f32 +
+            self.puck_control as f32) / 4 as f32
     }
 
-    fn get_strength(&self) -> u16 {
-        self.aggressiveness as u16 +
-            self.body_checking as u16 +
-            self.durability as u16 +
-            self.fighting_skill as u16 +
-            self.strength as u16
+    fn get_strength(&self) -> f32 {
+        (self.aggressiveness as f32 +
+            self.body_checking as f32 +
+            self.durability as f32 +
+            self.fighting_skill as f32 +
+            self.strength as f32) / 5 as f32
     }
 
-    fn get_iq(&self) -> u16 {
-        self.discipline as u16 +
-            self.offensive as u16 +
-            self.poise as u16 +
-            self.morale as u16
+    fn get_iq(&self) -> f32 {
+        (self.discipline as f32 +
+            self.offensive as f32 +
+            self.poise as f32 +
+            self.morale as f32) / 4 as f32
     }
 
-    fn get_defense(&self) -> u16 {
-        self.defensive_awareness as u16 +
-            self.face_offs as u16 +
-            self.shot_blocking as u16 +
-            self.stick_checking as u16
+    fn get_defense(&self) -> f32 {
+        (self.defensive_awareness as f32 +
+            self.face_offs as f32 +
+            self.shot_blocking as f32 +
+            self.stick_checking as f32) / 4 as f32
     }
 }
