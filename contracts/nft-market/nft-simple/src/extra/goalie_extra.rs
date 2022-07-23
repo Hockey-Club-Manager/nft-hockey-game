@@ -11,6 +11,7 @@ pub struct GoalieExtra {
     pub reality: bool,
     pub nationality: String,
     pub birthday: u64,
+    pub player_type: String,
 
     pub number: u8,
     pub hand: Hand,
