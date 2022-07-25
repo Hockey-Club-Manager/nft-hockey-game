@@ -16,6 +16,7 @@ pub use crate::metadata::*;
 pub use crate::mint::*;
 pub use crate::nft_core::*;
 use team::nft_team::{NftTeam, TeamMetadata};
+use crate::extra::hand::Hand;
 pub use crate::token::*;
 
 mod burn;
@@ -123,6 +124,33 @@ impl Contract {
         this.measure_min_token_storage_cost();
 
         this
+    }
+
+    // TODO: remove on release
+    pub fn delete_data(&mut self) {
+        self.assert_owner();
+        self.nft_team_per_owner = LookupMap::new(
+            StorageKey::NftTeamPerOwner.try_to_vec().unwrap()
+        );
+        self.tokens_per_owner = LookupMap::new(
+            StorageKey::TokensPerOwner.try_to_vec().unwrap()
+        );
+        self.goalies = LookupMap::new(
+            StorageKey::Goalies.try_to_vec().unwrap()
+        );
+        self.field_players = LookupMap::new(
+            StorageKey::FieldPlayers.try_to_vec().unwrap()
+        );
+        self.registered_accounts =  UnorderedSet::new(
+            StorageKey::RegisterAccounts.try_to_vec().unwrap(),
+        );
+        self.tokens_by_id = LookupMap::new(StorageKey::TokensById.try_to_vec().unwrap());
+        self.token_metadata_by_id =  UnorderedMap::new(
+            StorageKey::TokenMetadataById.try_to_vec().unwrap(),
+        );
+        self.extra_storage_in_bytes_per_token = 0;
+
+        self.contract_royalty = 0;
     }
 
     fn measure_min_token_storage_cost(&mut self) {

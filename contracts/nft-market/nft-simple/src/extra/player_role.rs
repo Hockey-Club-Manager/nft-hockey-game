@@ -4,18 +4,21 @@ use crate::*;
 #[serde(crate = "near_sdk::serde")]
 pub enum PlayerRole {
     // Forward
-    Passer,
+    Playmaker,
+    Enforcer,
     Shooter,
     TryHarder,
-    Dangler,
+    DefensiveForward,
+    Grinder,
 
-    // Defender
-    Rock,
-    Goon,
-    Professor,
+    // Defenseman
+    DefensiveDefenseman,
+    OffensiveDefenseman,
+    TwoWay,
     ToughGuy,
 
     // goalie
-    Wall,
-    Post2Post,
+    Standup,
+    Butterfly,
+    Hybrid,
 }

@@ -1,16 +1,21 @@
-use crate::player::{Player, PlayerPosition, PlayerRole};
-use crate::player_field::FieldPlayer;
-use crate::game::{EventToSave, Game};
+use crate::team::players::player::{PlayerPosition, PlayerRole};
+use crate::team::players::field_player::FieldPlayer;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use crate::player::PlayerRole::*;
+use crate::team::players::player::PlayerRole::*;
 
-use crate::action::ActionTypes::*;
+use crate::game::actions::action::ActionTypes::*;
 
-use crate::goalie::Goalie;
-use crate::player::PlayerPosition::*;
+use crate::team::players::player::PlayerPosition::*;
 use near_sdk::serde::{Deserialize, Serialize};
-use crate::{Tactics};
-use crate::user::UserInfo;
+use crate::game::actions::shot::ShotAction;
+use crate::game::actions::dangle::DangleAction;
+use crate::game::actions::move_action::MoveAction;
+use crate::game::actions::pass::PassAction;
+
+use crate::game::game::{EventToSave, Game};
+use crate::team::five::{GoalieNumber, Tactics};
+use crate::team::numbers::GoalieNumber;
+use crate::user_info::UserInfo;
 
 const PROBABILITY_PASS_NOT_HAPPENED: i32 = 20;
 const PROBABILITY_SAVE_NOT_HAPPENED: usize = 30;
@@ -47,7 +52,7 @@ pub enum ActionTypes {
     SecondTeamChangeActiveFive,
 }
 
-trait DoAction {
+pub trait DoAction {
     fn do_action(&self, game: &mut Game);
 }
 
@@ -58,33 +63,40 @@ impl Action {
 1 - shot_probability
 2 - move_probability
 3 - dangle_probability
+4 - dump_probability
  */
     fn get_probability_of_actions(&self, role: PlayerRole, tactics: Tactics) -> Vec<i32> {
         let mut actions = match role {
-            Passer => vec![4, 1, 3, 2],
-            Professor => vec![4, 1, 3, 2],
-            Shooter => vec![2, 4, 1, 3],
-            ToughGuy => vec![2, 4, 1, 3],
-            TryHarder => vec![3, 2, 4, 1],
-            Goon => vec![3, 2, 4, 1],
-            Dangler => vec![1, 3, 2, 4],
-            Rock => vec![1, 3, 2, 4],
+            Playmaker => vec![2, 2, 3, 3, 1],
+            Enforcer => vec![3, 2, 1, 1, 4],
+            Shooter => vec![1, 4, 3, 2, 1],
+            TryHarder => vec![3, 1, 4, 1, 2],
+            DefensiveForward => vec![3, 2, 1, 1, 4],
+            Grinder => vec![1, 1, 4, 1, 4],
+            DefensiveDefenseman => vec![3, 2, 1, 1, 4],
+            OffensiveDefenseman => vec![1, 4, 2, 3, 1],
+            TwoWay => vec![2, 3, 3, 2, 1],
+            ToughGuy => vec![1, 1, 4, 1, 3],
             _ => panic!("Player has no role")
         };
 
         match tactics {
-            Tactics::SuperDefensive => actions[0] += 2,
-            Tactics::Defensive => actions[0] += 1,
+            Tactics::Safe => actions[4] += 2,
+            Tactics::Defensive => {
+                actions[4] += 1;
+                actions[0] += 1;
+            },
             Tactics::Neutral => {},
             Tactics::Offensive => {
+                actions[1] += 1;
                 actions[2] += 1;
                 actions[3] += 1;
             },
-            Tactics::SupperOffensive => {
+            Tactics::Aggressive => {
+                actions[1] += 2;
                 actions[2] += 2;
                 actions[3] += 2;
             },
-            _ => panic!("Tactic not found")
         }
 
         actions
@@ -135,152 +147,6 @@ impl Action {
     }
 }
 
-pub struct PassAction;
-impl DoAction for PassAction {
-    fn do_action(&self, game: &mut Game) {
-        let opponent= get_opponents_field_player(game);
-
-        let random_number = Game::get_random_in_range(1, 101);
-
-        if random_number as i32 > PROBABILITY_PASS_NOT_HAPPENED {
-            let player_stat = get_relative_field_player_stat(&game.player_with_puck.as_ref().unwrap(),
-                                                             game.player_with_puck.as_ref().unwrap().stats.get_iq() as f64);
-            let opponent_stat = get_relative_field_player_stat(&opponent, opponent.stats.get_iq() as f64);
-
-            if has_won(player_stat, opponent_stat) {
-                let pass_to = get_another_random_position(game.player_with_puck.as_ref().unwrap().get_player_position());
-
-                let user = &game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id());
-
-                match user.team.active_five.field_players.get(&pass_to) {
-                    Some(player) => game.player_with_puck = Option::from(player.clone()),
-                    None => panic!("Player not found")
-                }
-
-                generate_an_event(Pass, game);
-            } else {
-                game.player_with_puck = Option::from(opponent);
-                generate_an_event(PassCatched, game);
-            }
-        } else {
-            let player_stat = get_relative_field_player_stat(&game.player_with_puck.as_ref().unwrap(),
-                                                             game.player_with_puck.as_ref().unwrap().stats.get_strength());
-            let opponent_stat = get_relative_field_player_stat(&opponent, opponent.stats.get_strength());
-
-            if !has_won(player_stat, opponent_stat) {
-                game.player_with_puck = Option::from(opponent);
-            }
-
-            generate_an_event(PuckLose, game);
-        }
-    }
-}
-
-pub struct ShotAction;
-impl DoAction for ShotAction {
-    fn do_action(&self, game: &mut Game) {
-        generate_an_event(Shot, game);
-
-        let pass_before_shot = has_pass_before_shot(game);
-        let opponent = get_opponents_goalie(game);
-
-        let p_w: (f64, f64) = if opponent.get_role() == Post2Post {
-            (1.0, 0.7)
-        } else {
-            (0.7, 1.0)
-        };
-
-        let  mut player_stat = get_relative_field_player_stat(&game.player_with_puck.as_ref().unwrap(),
-                                                                 game.player_with_puck.as_ref().unwrap().stats.get_shooting() as f64);
-
-        let is_goalie_out = if game.player_with_puck.as_ref().unwrap().get_user_id() == 1 {
-            &game.user1.is_goalie_out
-        } else {
-            &game.user2.is_goalie_out
-        };
-
-        if *is_goalie_out {
-            player_stat += 20.0;
-        }
-
-        let opponent_user = get_opponent_user(game);
-        let opponent_stat = if opponent_user.is_goalie_out {
-          10.0
-        } else if pass_before_shot {
-            (((opponent.stats.stand + opponent.stats.stretch) as f64 * p_w.0) / 2 as f64 +
-                opponent.stats.morale as f64) / 2 as f64
-        } else {
-            (((opponent.stats.glove_and_blocker + opponent.stats.pads) as f64 * p_w.1) / 2 as f64 +
-                opponent.stats.morale as f64) / 2 as f64
-        };
-
-        if has_won(player_stat, opponent_stat as f64) {
-            change_morale_after_a_goal(game);
-            game.get_user_info(game.player_with_puck.as_ref().unwrap().get_user_id()).team.score += 1;
-
-            generate_an_event(Goal, game);
-
-            game.zone_number = 2;
-        } else {
-            if PROBABILITY_SAVE_NOT_HAPPENED >= Game::get_random_in_range(1, 101) {
-                generate_an_event(Rebound, game);
-            } else {
-                generate_an_event(Save, game);
-            }
-        }
-    }
-}
-
-pub struct MoveAction;
-impl DoAction for MoveAction {
-    fn do_action(&self, game: &mut Game) {
-        let opponent = get_opponents_field_player(game);
-
-        let player_stat = get_relative_field_player_stat(&game.player_with_puck.as_ref().unwrap(),
-                                                         game.player_with_puck.as_ref().unwrap().stats.get_skating() as f64);
-        let opponent_stat = get_relative_field_player_stat(&opponent, opponent.stats.get_strength());
-
-        let mut relative_side_zone: i8 = 1;
-        if game.player_with_puck.as_ref().unwrap().get_user_id() == 2 {
-            relative_side_zone = -1;
-        }
-
-        generate_an_event(Move, game);
-        if has_won(player_stat, opponent_stat) {
-            game.zone_number += relative_side_zone;
-        } else {
-            game.player_with_puck = Option::from(opponent);
-            generate_an_event(Hit, game);
-        }
-    }
-}
-
-pub struct DangleAction;
-impl DoAction for DangleAction {
-    fn do_action(&self, game: &mut Game) {
-        let opponent = get_opponents_field_player(game);
-
-        let player_stat = get_relative_field_player_stat(&game.player_with_puck.as_ref().unwrap(),
-                                                                 game.player_with_puck.as_ref().unwrap().stats.get_iq() as f64);
-        let opponent_stat = get_relative_field_player_stat(&opponent, opponent.stats.get_strength());
-
-        let mut relative_side_zone: i8 = 1;
-        if game.player_with_puck.as_ref().unwrap().get_user_id() == 2 {
-            relative_side_zone = -1;
-        }
-
-        generate_an_event(Dangle, game);
-
-        if has_won(player_stat, opponent_stat) {
-            game.zone_number += relative_side_zone;
-        } else {
-            game.player_with_puck = Option::from(opponent);
-
-            generate_an_event(PokeCheck, game);
-        }
-    }
-}
-
 pub fn has_won(stat: f64, opponents_stat: f64) -> bool {
     let sum = stat + opponents_stat;
 
@@ -322,7 +188,7 @@ fn get_other_positions(player_pos: PlayerPosition) -> Vec<PlayerPosition> {
     player_positions
 }
 
-fn get_opponents_goalie(game: &Game) -> &Goalie {
+fn get_opponents_goalie(game: &Game) -> &GoalieNumber {
     let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
 
     return if user_id == 1 {

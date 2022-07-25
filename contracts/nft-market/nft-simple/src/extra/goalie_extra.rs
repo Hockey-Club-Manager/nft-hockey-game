@@ -16,7 +16,7 @@ pub struct GoalieExtra {
     pub number: u8,
     pub hand: Hand,
     pub player_role: PlayerRole,
-    pub player_position: PlayerPosition,
+    pub native_position: PlayerPosition,
     pub stats: GoalieStats,
 }
 

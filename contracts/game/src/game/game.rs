@@ -1,38 +1,22 @@
 use crate::*;
-use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountId, env, Metadata, Timestamp};
+use near_sdk::{AccountId, env, Timestamp};
 use near_sdk::serde::{Deserialize, Serialize};
-use crate::goalie::{Goalie, GoalieStats};
-use crate::player_field::{FieldPlayer, FieldPlayerStats};
-use crate::user::UserInfo;
-use crate::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
-use crate::action::ActionTypes::*;
-use crate::player::{PlayerPosition, PlayerRole};
-use crate::player::PlayerPosition::*;
+use crate::team::players::field_player::{FieldPlayer};
+use crate::user_info::UserInfo;
+use crate::game::actions::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
+use crate::game::actions::action::ActionTypes::*;
+use crate::team::players::player::{PlayerPosition};
+use crate::team::players::player::PlayerPosition::*;
 use crate::{TokenBalance};
-use crate::game::Tactics::Neutral;
-use crate::nft_team::team_metadata_to_team;
-use crate::player::PlayerRole::*;
 use crate::PlayerPosition::LeftWing;
-use crate::team::*;
-use crate::team::IceTimePriority::*;
+use crate::team::five::Tactics::Neutral;
+use crate::team::team_metadata::team_metadata_to_team;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum GameState {
     InProgress,
     GameOver { winner_id: usize },
-}
-
-#[derive(BorshDeserialize, BorshSerialize)]
-#[derive(PartialEq, Serialize, Deserialize, Copy, Clone)]
-#[serde(crate = "near_sdk::serde")]
-pub enum Tactics {
-    SuperDefensive,
-    Defensive,
-    Neutral,
-    Offensive,
-    SupperOffensive,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -138,8 +122,8 @@ impl Game {
         let player1 = self.get_center_forward_in_the_zone(&self.user1);
         let player2 = self.get_center_forward_in_the_zone(&self.user2);
 
-        let player1_stat = get_relative_field_player_stat(&player1, player1.stats.strength);
-        let player2_stat = get_relative_field_player_stat(&player2, player2.stats.strength);
+        let player1_stat = get_relative_field_player_stat(&player1, player1.stats.strength as f64);
+        let player2_stat = get_relative_field_player_stat(&player2, player2.stats.strength as f64);
 
         if has_won(player1_stat, player2_stat) {
             self.player_with_puck = Option::from(player1);
@@ -283,27 +267,3 @@ fn battle_by_position(pos: PlayerPosition, game: &mut Game) {
         }
     }
 }
-// #[cfg(test)]
-// mod tests {
-//     use crate::{Game, TokenBalance};
-//     use crate::PlayerPosition::Center;
-//
-//     fn get_new_game() -> Game {
-//         Game::new("alice".into(),
-//                   "bob".into(),
-//                   TokenBalance{ token_id: Some("NEAR".into()), balance: 1 }
-//         )
-//     }
-//
-//     #[test]
-//     fn step() {
-//         let mut game = get_new_game();
-//         let player1 = &game.user1.field_players.get(&Center);
-//
-//         let player1_stat = match player1 {
-//             Some(player) => assert_eq!(player.stats.strength, 60.0, "not 60.0"),
-//             _ => panic!("Player not found")
-//         };
-//         //game.step();
-//     }
-// }

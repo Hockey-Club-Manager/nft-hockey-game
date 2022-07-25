@@ -1,17 +1,57 @@
 use std::fmt;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::json_types::Base64VecU8;
 use near_sdk::serde::{Deserialize, Serialize};
 
+
+#[derive(Serialize, Deserialize)]
+pub struct PlayerMetadata {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub media: Option<String>,
+    pub media_hash: Option<Base64VecU8>,
+    pub issued_at: Option<u64>,
+    pub expires_at: Option<u64>,
+    pub starts_at: Option<u64>,
+    pub updated_at: Option<u64>,
+    pub extra: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum PlayerType {
+    FieldPlayer,
+    Goalie,
+}
+
+#[derive(Copy, Clone, Serialize, Deserialize, BorshDeserialize, BorshSerialize)]
+#[serde(crate = "near_sdk::serde")]
+pub enum Hand {
+    #[serde(alias = "L")]
+    Left,
+    #[serde(alias = "R")]
+    Right,
+}
 
 #[derive(PartialEq, Clone, Copy, Eq, PartialOrd, Hash, BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub enum PlayerPosition {
+    #[serde(alias = "C")]
     Center,
+
+    #[serde(alias = "LW")]
     LeftWing,
+
+    #[serde(alias = "RW")]
     RightWing,
+
+    #[serde(alias = "LD")]
     LeftDefender,
+
+    #[serde(alias = "RD")]
     RightDefender,
+
+    #[serde(alias = "G")]
     GoaliePos,
 }
 
@@ -35,24 +75,21 @@ impl fmt::Display for PlayerPosition {
 #[serde(crate = "near_sdk::serde")]
 pub enum PlayerRole {
     // Forward
-    Passer,
+    Playmaker,
+    Enforcer,
     Shooter,
     TryHarder,
-    Dangler,
+    DefensiveForward,
+    Grinder,
 
-    // Defender
-    Rock,
-    Goon,
-    Professor,
+    // Defenseman
+    DefensiveDefenseman,
+    OffensiveDefenseman,
+    TwoWay,
     ToughGuy,
 
     // goalie
-    Wall,
-    Post2Post,
+    Standup,
+    Butterfly,
+    Hybrid,
 }
-
-pub trait Player {
-    fn get_user_id(&self) -> usize;
-    fn get_role(&self) -> PlayerRole;
-}
-

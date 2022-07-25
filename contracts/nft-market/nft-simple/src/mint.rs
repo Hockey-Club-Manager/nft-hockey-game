@@ -29,7 +29,6 @@ impl Contract {
             final_token_id = token_id
         }
 
-        let initial_storage_usage = env::storage_usage();
         let mut owner_id = env::predecessor_account_id();
         if let Some(receiver_id) = receiver_id {
             owner_id = receiver_id.into();
@@ -63,12 +62,6 @@ impl Contract {
 
         self.internal_add_token_to_pack(&player_type, &rarity, &final_token_id);
         self.token_metadata_by_id.insert(&final_token_id, &metadata);
-
-        let new_token_size_in_bytes = env::storage_usage() - initial_storage_usage;
-        let required_storage_in_bytes =
-            self.extra_storage_in_bytes_per_token + new_token_size_in_bytes;
-
-        refund_deposit(required_storage_in_bytes);
     }
 }
 
@@ -82,7 +75,7 @@ pub fn get_stats(metadata: &TokenMetadata, player_type: &PlayerType) -> Box<dyn 
         PlayerType::FieldPlayer => {
             let field_player_extra: FieldPlayerExtra = match from_str(&metadata.extra.as_ref().unwrap()) {
                 Ok(extra) => extra,
-                Err(err) => panic!("Incorrect stats or card type")
+                Err(err) => panic!("{}", err)
             };
 
             Box::new(field_player_extra.stats)
@@ -90,7 +83,7 @@ pub fn get_stats(metadata: &TokenMetadata, player_type: &PlayerType) -> Box<dyn 
         PlayerType::Goalie => {
             let goalie_extra: GoalieExtra = match from_str(&metadata.extra.as_ref().unwrap()) {
                 Ok(extra) => extra,
-                Err(err) => panic!("Incorrect stats or card type")
+                Err(err) => panic!("{}", err)
             };
 
             Box::new(goalie_extra.stats)
