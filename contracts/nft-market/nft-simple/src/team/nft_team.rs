@@ -25,15 +25,15 @@ pub enum Tactics {
 #[derive(BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
-pub struct NftTeam {
-    pub(crate) fives: HashMap<NumberFive, NftFive>,
+pub struct TeamIds {
+    pub(crate) fives: HashMap<NumberFive, FiveIds>,
     pub(crate) goalies: HashMap<NumberGoalie, TokenId>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
-pub struct NftFive {
+pub struct FiveIds {
     pub(crate) field_players: HashMap<PlayerPosition, TokenId>,
     pub(crate) number: NumberFive,
     pub(crate) ice_time_priority: IceTimePriority,
@@ -43,34 +43,26 @@ pub struct NftFive {
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct TeamMetadata {
-    pub(crate) fives: HashMap<NumberFive, FiveMetadata>,
+    pub(crate) fives: HashMap<NumberFive, FiveIds>,
     pub(crate) goalies: HashMap<NumberGoalie, TokenMetadata>,
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(crate = "near_sdk::serde")]
-pub struct FiveMetadata {
-    pub(crate) field_players: HashMap<PlayerPosition, TokenMetadata>,
-    pub(crate) number: NumberFive,
-    pub(crate) ice_time_priority: IceTimePriority,
-    pub(crate) tactic: Tactics,
+    pub(crate) field_players_metadata: HashMap<TokenId, TokenMetadata>,
 }
 
 #[near_bindgen]
 impl Contract {
-    pub fn manage_team(&mut self, team_ids: NftTeam) {
+    pub fn manage_team(&mut self, team_ids: TeamIds) {
         let account_id = env::predecessor_account_id();
 
         self.check_team_ids(&team_ids);
         self.nft_team_per_owner.insert(&account_id, &team_ids);
     }
 
-    pub fn check_team_ids(&self, team_ids: &NftTeam) {
+    pub fn check_team_ids(&self, team_ids: &TeamIds) {
         self.check_fives(&team_ids.fives);
         self.check_goalies(&team_ids.goalies);
     }
 
-    fn check_fives(&self, fives: &HashMap<NumberFive, NftFive>) {
+    fn check_fives(&self, fives: &HashMap<NumberFive, FiveIds>) {
         if fives.keys().len() != NUMBER_OF_FIVES {
             panic!("Wrong number of fives");
         }
@@ -95,7 +87,7 @@ impl Contract {
     }
 
     fn check_field_players(&self, field_players: &HashMap<PlayerPosition, TokenId>) {
-        for (position, id) in field_players {
+        for (_position, id) in field_players {
             self.check_field_player(&id);
         }
     }
@@ -110,9 +102,9 @@ impl Contract {
         }
 
         let player_metadata = self.token_metadata_by_id.get(&field_player_id).expect("Token has no metadata");
-        let result: FieldPlayerExtra = match serde_json::from_str(&player_metadata.extra.unwrap()) {
+        let _result: FieldPlayerExtra = match serde_json::from_str(&player_metadata.extra.unwrap()) {
             Ok(field_player_extra) => field_player_extra,
-            Err(E) => panic!("Wrong player type")
+            Err(E) => panic!("{}", E)
         };
     }
 
@@ -121,7 +113,7 @@ impl Contract {
             panic!("Wrong number of goalkeepers");
         }
 
-        for (number, id) in goalies {
+        for (_number, id) in goalies {
             self.check_goalie(&id);
         }
     }
@@ -136,47 +128,22 @@ impl Contract {
         }
 
         let player_metadata = self.token_metadata_by_id.get(&goalie_id).expect("Token has no metadata");
-        let result: GoalieExtra = match serde_json::from_str(&player_metadata.extra.unwrap()) {
+        let _result: GoalieExtra = match serde_json::from_str(&player_metadata.extra.unwrap()) {
             Ok(goalie_extra) => goalie_extra,
-            Err(E) => panic!("Wrong player type")
+            Err(E) => panic!("{}", E)
         };
     }
 
     pub fn get_teams(&mut self, account_id_1: AccountId, account_id_2: AccountId) -> (TeamMetadata, TeamMetadata) {
-        (self.get_owner_team(account_id_1), self.get_owner_team(account_id_2))
+        (self.get_owner_team(&account_id_1), self.get_owner_team(&account_id_2))
     }
 
-    pub fn get_owner_team(&mut self, account_id: AccountId) -> TeamMetadata {
+    pub fn get_owner_team(&mut self, account_id: &AccountId) -> TeamMetadata {
         TeamMetadata {
-            fives: self.get_five_metadata_by_ids(&account_id),
-            goalies: self.get_goalie_metadata_by_ids(&account_id),
+            fives: self.nft_team_per_owner.get(account_id).unwrap().fives,
+            goalies: self.get_goalie_metadata_by_ids(account_id),
+            field_players_metadata: self.get_field_players_metadata(account_id),
         }
-    }
-
-    fn get_five_metadata_by_ids(&self, account_id: &AccountId) -> HashMap<NumberFive, FiveMetadata> {
-        let mut result: HashMap<NumberFive, FiveMetadata> = HashMap::new();
-
-        let team_ids = self.nft_team_per_owner.get(account_id).expect("No team");
-
-        for (fives, five) in team_ids.fives {
-            let mut field_player_metadata: HashMap<PlayerPosition, TokenMetadata> = HashMap::new();
-
-            for (player_position, toke_id) in five.field_players {
-                let token_metadata = self.token_metadata_by_id.get(&toke_id).expect("Token has no metadata");
-                field_player_metadata.insert(player_position, token_metadata);
-            }
-
-            let five_metadata = FiveMetadata {
-                field_players: field_player_metadata,
-                number: fives.clone(),
-                ice_time_priority: five.ice_time_priority.clone(),
-                tactic: five.tactic
-            };
-
-            result.insert(fives, five_metadata);
-        };
-
-        result
     }
 
     fn get_goalie_metadata_by_ids(&self, account_id: &AccountId) -> HashMap<NumberGoalie, TokenMetadata> {
@@ -191,7 +158,20 @@ impl Contract {
         result
     }
 
-    pub fn get_owner_team_ids(&self, account_id: AccountId) -> NftTeam {
+    fn get_field_players_metadata(&self, account_id: &AccountId) -> HashMap<TokenId, TokenMetadata> {
+        let mut result: HashMap<TokenId, TokenMetadata> = HashMap::new();
+
+        for (_number, fives_ids) in self.nft_team_per_owner.get(account_id).unwrap().fives {
+            for (_position, token_id) in fives_ids.field_players {
+                let token_metadata = self.token_metadata_by_id.get(&token_id).expect("Token has no metadata");
+                result.insert(token_id, token_metadata);
+            }
+        }
+
+        result
+    }
+
+    pub fn get_owner_team_ids(&self, account_id: AccountId) -> TeamIds {
         match self.nft_team_per_owner.get(&account_id) {
             Some(nft_team) => nft_team,
             None => panic!("Team not found")

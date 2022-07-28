@@ -15,7 +15,7 @@ use crate::internal::*;
 pub use crate::metadata::*;
 pub use crate::mint::*;
 pub use crate::nft_core::*;
-use team::nft_team::{NftTeam, TeamMetadata};
+use team::nft_team::{TeamIds, TeamMetadata};
 use crate::extra::hand::Hand;
 pub use crate::token::*;
 
@@ -41,7 +41,7 @@ near_sdk::setup_alloc!();
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Contract {
-    pub nft_team_per_owner: LookupMap<AccountId, NftTeam>,
+    pub nft_team_per_owner: LookupMap<AccountId, TeamIds>,
 
     pub tokens_per_owner: LookupMap<AccountId, UnorderedSet<TokenId>>,
 

@@ -5,47 +5,29 @@ use near_sdk::serde_json;
 use crate::{PlayerPosition};
 use crate::team::players::goalie::{Goalie};
 use crate::team::players::player::{PlayerMetadata};
-use crate::team::five::{Five, FiveNumber, GoalieNumber, IceTimePriority, Tactics};
+use crate::team::five::{Five, FiveIds, FiveNumber, GoalieNumber, IceTimePriority, Tactics};
+use crate::team::numbers::GoalieNumber;
 use crate::team::team::Team;
 
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct TeamMetadata {
-    pub(crate) fives: HashMap<FiveNumber, FiveMetadata>,
-    pub(crate) goalies: HashMap<GoalieNumber, PlayerMetadata>,
+    pub(crate) fives: HashMap<NumberFive, FiveIds>,
+    pub(crate) goalies: HashMap<NumberGoalie, TokenMetadata>,
+    pub(crate) field_players_metadata: HashMap<TokenId, PlayerMetadata>,
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(crate = "near_sdk::serde")]
-pub struct FiveMetadata {
-    pub(crate) field_players: HashMap<PlayerPosition, PlayerMetadata>,
-    pub(crate) number: FiveNumber,
-    pub(crate) ice_time_priority: IceTimePriority,
-    pub(crate) tactic: Tactics,
-}
 
 pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Team {
-    let mut fives = HashMap::new();
+    let mut fives: HashMap<FiveNumber, FiveIds> = HashMap::new();
 
-    for (number, five_metadata) in team_metadata.fives {
-        let mut field_players = HashMap::new();
+    for (number, mut five_ids) in team_metadata.fives {
+        five_ids.time_field = Option::from(0 as u8);
 
-        for (player_pos, field_player) in five_metadata.field_players {
-            field_players.insert(player_pos, to_field_player(field_player, player_pos.clone(), user_id));
-        }
+        five_ids.calculate_teamwork();
 
-        let mut five = Five {
-            field_players,
-            number: number.clone(),
-            ice_time_priority: five_metadata.ice_time_priority,
-            tactic: five_metadata.tactic,
-            time_field: 0
-        };
-
-        five.calculate_teamwork();
-
-        fives.insert(number, five);
+        fives.insert(number, five_ids);
     }
 
     let mut goalies = HashMap::new();
@@ -54,26 +36,36 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
     }
 
     Team {
-        fives: fives.clone(),
-        goalies: goalies.clone(),
+        fives,
         active_five: FiveNumber::First,
+        field_players: to_field_players(&team_metadata.field_players_metadata, &user_id),
+
+        goalies,
         active_goalie: GoalieNumber::MainGoalkeeper,
-        score: 0
+
+        score: 0,
     }
 }
 
-fn to_field_player(field_player_metadata: PlayerMetadata, position: PlayerPosition, user_id: usize) -> FieldPlayer {
-    let mut result: FieldPlayer = match field_player_metadata.extra {
+fn to_field_players(field_players_metadata: &HashMap<TokenId, PlayerMetadata>, user_id: &usize) -> HashMap<TokenId, FieldPlayer> {
+    let mut result: HashMap<TokenId, FieldPlayer> = HashMap::new();
+    for (token_id, field_player_metadata) in field_players_metadata {
+        let field_player = to_field_player(field_player_metadata, user_id);
+        result.insert(token_id.clone(), field_player);
+    }
+
+    result
+}
+
+fn to_field_player(field_player_metadata: &PlayerMetadata, user_id: &usize) -> FieldPlayer {
+    let mut result: FieldPlayer = match field_player_metadata.as_ref().extra {
         Some(extra) => serde_json::from_str(&extra).unwrap(),
         None => panic!("Extra not found"),
     };
 
-    result.img = field_player_metadata.media;
-    result.name = field_player_metadata.title;
-    result.player_position = Some(position);
-    result.user_id = Some(user_id);
-
-    result.set_position_coefficient();
+    result.img = field_player_metadata.as_ref().media;
+    result.name = field_player_metadata.as_ref().title;
+    result.user_id = Some(*user_id);
 
     result
 }

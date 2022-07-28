@@ -14,17 +14,18 @@ const TOUGH_ENFORCER_TEAMWORK: f32 = 1.2;
 const DEFENDERS_TEAMWORK: f32 = 1.2;
 
 
-#[derive(Serialize, Deserialize, Clone, BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
-pub struct Five {
-    pub(crate) field_players: HashMap<PlayerPosition, FieldPlayer>,
-    pub(crate) number: FiveNumber,
+pub struct FiveIds {
+    pub(crate) field_players: HashMap<PlayerPosition, TokenId>,
+    pub(crate) number: NumberFive,
     pub(crate) ice_time_priority: IceTimePriority,
     pub(crate) tactic: Tactics,
-    pub(crate) time_field: u8,
+    pub(crate) time_field: Option<u8>,
 }
 
-impl Five {
+impl FiveIds {
     pub fn calculate_teamwork(&mut self) {
         let mut player_per_nationality: HashMap<String, Vec<PlayerPosition>> = HashMap::new();
         let mut player_per_role: HashMap<PlayerRole, Vec<PlayerPosition>> = HashMap::new();

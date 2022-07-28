@@ -23,13 +23,10 @@ pub struct FieldPlayer {
     pub native_position: PlayerPosition,
     pub stats: FieldPlayerStats,
 
-    pub player_position: Option<PlayerPosition>,
     pub user_id: Option<usize>,
 }
 
 impl FieldPlayer {
-    pub fn get_player_position(&self) -> PlayerPosition { self.player_position.unwrap() }
-
     pub fn get_role(&self) -> PlayerRole { self.player_role }
 
     pub fn get_user_id(&self) -> usize { self.user_id.unwrap() }

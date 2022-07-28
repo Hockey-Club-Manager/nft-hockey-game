@@ -3,10 +3,11 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use crate::{PlayerPosition, UserInfo};
-use crate::team::five::{Five, FiveNumber, GoalieNumber};
+use crate::team::five::{Five, FiveIds, FiveNumber, GoalieNumber};
 use crate::team::five::FiveNumber::{First, Fourth, Second, Third};
 use crate::team::numbers::GoalieNumber;
 use crate::team::players::goalie::Goalie;
+use crate::team::team_metadata::FiveIds;
 
 const SUPER_LOW_PRIORITY: u8 = 5;
 const LOW_PRIORITY: u8 = 10;
@@ -16,11 +17,14 @@ const SUPER_HIGH_PRIORITY: u8 = 25;
 
 #[derive(Clone, BorshDeserialize, BorshSerialize)]
 pub struct Team {
-    pub(crate) fives: HashMap<FiveNumber, Five>,
-    pub(crate) goalies: HashMap<GoalieNumber, Goalie>,
+    pub(crate) fives: HashMap<FiveNumber, FiveIds>,
     pub(crate) active_five: FiveNumber,
 
+    pub(crate) field_players: HashMap<TokenId, FieldPlayer>,
+
+    pub(crate) goalies: HashMap<GoalieNumber, Goalie>,
     pub(crate) active_goalie: GoalieNumber,
+
     pub(crate) score: u8,
 }
 
