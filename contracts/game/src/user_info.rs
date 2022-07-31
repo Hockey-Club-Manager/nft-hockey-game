@@ -13,5 +13,4 @@ pub struct UserInfo {
     pub(crate) take_to_called: bool,
     pub(crate) coach_speech_called: bool,
     pub(crate) is_goalie_out: bool,
-    pub(crate) tactic: Tactics,
 }

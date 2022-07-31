@@ -13,8 +13,8 @@ use crate::game::actions::move_action::MoveAction;
 use crate::game::actions::pass::PassAction;
 
 use crate::game::game::{EventToSave, Game};
-use crate::team::five::{Tactics};
-use crate::team::numbers::GoalieNumber;
+use crate::team::five::{FiveIds, Tactics};
+use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::user_info::UserInfo;
 
 const PROBABILITY_PASS_NOT_HAPPENED: i32 = 20;
@@ -65,7 +65,7 @@ impl Action {
 3 - dangle_probability
 4 - dump_probability
  */
-    fn get_probability_of_actions(&self, role: PlayerRole, tactics: Tactics) -> Vec<i32> {
+    fn get_probability_of_actions(&self, role: PlayerRole, active_five: &FiveIds) -> Vec<i32> {
         let mut actions = match role {
             Playmaker => vec![2, 2, 3, 3, 1],
             Enforcer => vec![3, 2, 1, 1, 4],
@@ -80,7 +80,18 @@ impl Action {
             _ => panic!("Player has no role")
         };
 
-        match tactics {
+        match active_five.number {
+            FiveNumber::PowerPlay1 | FiveNumber::PowerPlay2 => {
+                actions[0] += 3;
+                actions[1] += 2;
+            },
+            FiveNumber::PenaltyKill1 | FiveNumber::PenaltyKill2 => {
+                actions[4] += 3;
+            }
+            _ => {}
+        }
+
+        match active_five.tactic {
             Tactics::Safe => actions[4] += 2,
             Tactics::Defensive => {
                 actions[4] += 1;
@@ -102,8 +113,8 @@ impl Action {
         actions
     }
 
-    fn get_random_action(&self, is_attack_zone: bool, role: PlayerRole, tactics: Tactics) -> Box<dyn DoAction> {
-        let actions = self.get_probability_of_actions(role, tactics);
+    fn get_random_action(&self, is_attack_zone: bool, role: PlayerRole, active_five: &FiveIds) -> Box<dyn DoAction> {
+        let actions = self.get_probability_of_actions(role, active_five);
 
         let mut percent = 0;
         let mut action_probability: Vec<i32> = Vec::new();
@@ -133,13 +144,14 @@ impl Action {
             is_attack_zone = true;
         }
 
-        let tactic = if user_id == 1 {
-            game.user1.tactic
+        let active_five = if user_id == 1 {
+            &game.user1.team.fives.get(&game.user1.team.active_five).unwrap()
         } else {
-            game.user2.tactic
+            &game.user2.team.fives.get(&game.user2.team.active_five).unwrap()
         };
 
-        let action = self.get_random_action(is_attack_zone, game.player_with_puck.as_ref().unwrap().get_role(), tactic);
+
+        let action = self.get_random_action(is_attack_zone, game.player_with_puck.as_ref().unwrap().get_role(), active_five);
 
         reduce_strength(game);
 
@@ -283,4 +295,3 @@ fn get_opponent_user(game: &Game) -> &UserInfo {
         &game.user1
     }
 }
-
