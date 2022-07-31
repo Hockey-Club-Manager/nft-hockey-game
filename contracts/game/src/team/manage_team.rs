@@ -1,6 +1,5 @@
 use crate::*;
 use crate::team::five::{FiveNumber, IceTimePriority, Tactics};
-use crate::team::team::swap_positions;
 
 #[near_bindgen]
 impl Hockey {

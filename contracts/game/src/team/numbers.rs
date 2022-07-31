@@ -1,13 +1,18 @@
 use crate::*;
+use near_sdk::serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, PartialOrd, Hash, Clone, BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Eq, PartialOrd, Hash, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub enum GoalieNumber {
     MainGoalkeeper,
     SubstituteGoalkeeper,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, PartialOrd, Clone, Copy, BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Eq, Hash, PartialOrd, Clone, Copy)]
 #[serde(crate = "near_sdk::serde")]
 pub enum FiveNumber {
     First,

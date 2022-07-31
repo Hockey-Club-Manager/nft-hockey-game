@@ -13,7 +13,7 @@ use crate::game::actions::move_action::MoveAction;
 use crate::game::actions::pass::PassAction;
 
 use crate::game::game::{EventToSave, Game};
-use crate::team::five::{GoalieNumber, Tactics};
+use crate::team::five::{Tactics};
 use crate::team::numbers::GoalieNumber;
 use crate::user_info::UserInfo;
 

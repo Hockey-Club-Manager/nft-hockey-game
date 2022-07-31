@@ -32,7 +32,8 @@ pub enum Hand {
     Right,
 }
 
-#[derive(PartialEq, Clone, Copy, Eq, PartialOrd, Hash, BorshDeserialize, BorshSerialize)]
+#[derive(PartialEq, Clone, Copy, BorshDeserialize, BorshSerialize)]
+#[derive(Eq, PartialOrd, Hash)]
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub enum PlayerPosition {
@@ -71,6 +72,7 @@ impl fmt::Display for PlayerPosition {
 
 
 #[derive(PartialEq, Clone, Copy, BorshDeserialize, BorshSerialize)]
+#[derive(Eq, Hash)]
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub enum PlayerRole {

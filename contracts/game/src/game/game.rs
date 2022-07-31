@@ -3,7 +3,6 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, env, Timestamp};
 use near_sdk::serde::{Deserialize, Serialize};
 use crate::team::players::field_player::{FieldPlayer};
-use crate::user_info::UserInfo;
 use crate::game::actions::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
 use crate::game::actions::action::ActionTypes::*;
 use crate::team::players::player::{PlayerPosition};

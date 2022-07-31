@@ -2,11 +2,10 @@ use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use near_sdk::serde_json;
-use crate::{PlayerPosition};
 use crate::team::players::goalie::{Goalie};
 use crate::team::players::player::{PlayerMetadata};
-use crate::team::five::{Five, FiveIds, FiveNumber, GoalieNumber, IceTimePriority, Tactics};
-use crate::team::numbers::GoalieNumber;
+use crate::team::five::{FiveIds};
+use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::team::team::Team;
 
 

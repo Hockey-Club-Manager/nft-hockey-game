@@ -4,7 +4,8 @@ use crate::team::five::Tactics;
 use crate::team::team::Team;
 
 
-#[derive(Serialize, Deserialize, BorshDeserialize, BorshSerialize)]
+#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Serialize, Deserialize)]
 pub struct UserInfo {
     pub(crate) user_id: usize,
     pub(crate) team: Team,
