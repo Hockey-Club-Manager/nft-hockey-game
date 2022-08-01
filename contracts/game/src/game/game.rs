@@ -73,7 +73,6 @@ impl Game {
             take_to_called: false,
             coach_speech_called: false,
             is_goalie_out: false,
-            tactic: Neutral,
         };
 
         let user_info2 = UserInfo {
@@ -83,7 +82,6 @@ impl Game {
             take_to_called: false,
             coach_speech_called: false,
             is_goalie_out: false,
-            tactic: Neutral,
         };
 
         let mut game = Game {
@@ -102,21 +100,14 @@ impl Game {
         game
     }
 
-    pub fn get_random_in_range(min: usize, max: usize) -> usize {
-        let random = *env::random_seed().get(0).unwrap();
+    pub fn get_random_in_range(min: usize, max: usize, index: usize) -> usize {
+        let random = *env::random_seed().get(index).unwrap();
         let random_in_range = (random as f64 / 256.0) * (max - min) as f64 + min as f64;
         random_in_range.floor() as usize
     }
 }
 
 impl Game {
-    fn get_center_forward_in_the_zone(&self, user: &UserInfo) -> FieldPlayer {
-        match user.team.active_five.field_players.get(&Center) {
-            Some(player) => player.clone(),
-            _ => panic!("Player not found")
-        }
-    }
-
     fn battle(&mut self) {
         let player1 = self.get_center_forward_in_the_zone(&self.user1);
         let player2 = self.get_center_forward_in_the_zone(&self.user2);
@@ -128,6 +119,13 @@ impl Game {
             self.player_with_puck = Option::from(player1);
         } else {
             self.player_with_puck = Option::from(player2);
+        }
+    }
+
+    fn get_center_forward_in_the_zone(&self, user: &UserInfo) -> FieldPlayer {
+        match user.team.active_five.field_players.get(&Center) {
+            Some(player) => player.clone(),
+            _ => panic!("Player not found")
         }
     }
 
@@ -224,7 +222,7 @@ impl Game {
 }
 
 fn get_random_position_after_rebound() -> PlayerPosition {
-    let rnd = Game::get_random_in_range(0, 10);
+    let rnd = Game::get_random_in_range(0, 10, 20);
 
     let probability_distribution = vec![1, 1, 2, 2, 3, 3, 3, 3, 4, 5];
 

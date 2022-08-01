@@ -244,6 +244,18 @@ impl Team {
             Fourth => {
                 self.active_five = First;
             },
+            PowerPlay1 => {
+                self.active_five = PowerPlay2;
+            }
+            PowerPlay2 => {
+                self.active_five = PowerPlay1
+            },
+            PenaltyKill1 => {
+                self.active_five = PenaltyKill2
+            },
+            PenaltyKill2 => {
+                self.active_five = PenaltyKill1
+            }
         }
 
         let active_five = self.fives.get_mut(&self.active_five).unwrap();

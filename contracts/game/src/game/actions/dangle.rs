@@ -1,6 +1,7 @@
 use crate::game::actions::action::ActionTypes::{Dangle, PokeCheck};
 use crate::game::actions::action::{DoAction, get_opponents_field_player, get_relative_field_player_stat, has_won};
 use crate::{Game, generate_an_event};
+use crate::game::actions::utils::{generate_an_event, get_opponents_field_player, get_relative_field_player_stat, has_won};
 
 pub struct DangleAction;
 impl DoAction for DangleAction {

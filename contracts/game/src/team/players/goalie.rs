@@ -21,6 +21,31 @@ pub struct Goalie {
     pub stats: GoalieStats,
 }
 
+impl Goalie {
+    pub fn get_reflexes_rel_pass(&self, pass_before_shot: bool) -> f32 {
+        let reflexes = self.stats.get_reflexes();
+        let mut pass_coeff: f32 = 1.0;
+
+        if pass_before_shot {
+            match self.player_role {
+                PlayerRole::Butterfly => pass_coeff = 1.2,
+                PlayerRole::Hybrid => pass_coeff = 1.0,
+                PlayerRole::Standup => pass_coeff = 0.8,
+                _ => panic!("Incorrect goalie role")
+            }
+        } else {
+            match self.player_role {
+                PlayerRole::Butterfly => pass_coeff = 0.8,
+                PlayerRole::Hybrid => pass_coeff = 1.0,
+                PlayerRole::Standup => pass_coeff = 1.2,
+                _ => panic!("Incorrect goalie role")
+            }
+        }
+
+        reflexes * pass_coeff
+    }
+}
+
 #[derive(BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize, Copy, Clone)]
 #[serde(crate = "near_sdk::serde")]
@@ -53,4 +78,34 @@ pub struct GoalieStats {
 }
 
 impl GoalieStats {
+
+
+    pub fn get_reflexes(&self) -> f32 {
+        (self.angles as f32 +
+            self.breakaway as f32 +
+            self.five_hole as f32 +
+            self.glove_side_high as f32+
+            self.glove_side_low as f32 +
+            self.stick_side_high as f32 +
+            self.stick_side_low as f32) / 7 as f32
+    }
+
+    pub fn get_puck_control(&self) -> f32 {
+        (self.passing as f32 +
+            self.poise as f32 +
+            self.poke_check as f32 +
+            self.puck_playing as f32 +
+            self.rebound_control as f32 +
+            self.recover as f32) / 6 as f32
+    }
+
+    pub fn get_strength(&self) -> f32 {
+        (self.aggressiveness as f32 +
+            self.agility as f32 +
+            self.durability as f32 +
+            self.endurance as f32 +
+            self.speed as f32 +
+            self.vision as f32 +
+            self.morale as f32) / 7 as f32
+    }
 }

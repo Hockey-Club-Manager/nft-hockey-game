@@ -27,8 +27,6 @@ pub struct FieldPlayer {
 }
 
 impl FieldPlayer {
-    pub fn get_role(&self) -> PlayerRole { self.player_role }
-
     pub fn get_user_id(&self) -> usize { self.user_id.unwrap() }
 
     pub fn get_position_coefficient(&self) -> f32 {
@@ -127,4 +125,47 @@ pub struct FieldPlayerStats {
 }
 
 impl FieldPlayerStats {
+    pub fn get_skating(&self) -> f32 {
+        (self.acceleration as f32 +
+            self.agility as f32 +
+            self.balance as f32 +
+            self.endurance as f32 +
+            self.speed as f32) / 5 as f32
+    }
+
+    pub fn get_shooting(&self) -> f32 {
+        (self.slap_shot_accuracy as f32 +
+            self.slap_shot_power as f32 +
+            self.wrist_shot_accuracy as f32 +
+            self.wrist_shot_power as f32) / 4 as f32
+    }
+
+    pub fn get_stick_handling(&self) -> f32 {
+        (self.deking as f32 +
+            self.hand_eye as f32 +
+            self.passing as f32 +
+            self.puck_control as f32) / 4 as f32
+    }
+
+    pub fn get_strength(&self) -> f32 {
+        (self.aggressiveness as f32 +
+            self.body_checking as f32 +
+            self.durability as f32 +
+            self.fighting_skill as f32 +
+            self.strength as f32) / 5 as f32
+    }
+
+    pub fn get_iq(&self) -> f32 {
+        (self.discipline as f32 +
+            self.offensive as f32 +
+            self.poise as f32 +
+            self.morale as f32) / 4 as f32
+    }
+
+    pub fn get_defense(&self) -> f32 {
+        (self.defensive_awareness as f32 +
+            self.face_offs as f32 +
+            self.shot_blocking as f32 +
+            self.stick_checking as f32) / 4 as f32
+    }
 }

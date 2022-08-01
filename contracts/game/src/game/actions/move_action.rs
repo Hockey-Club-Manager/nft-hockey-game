@@ -1,6 +1,7 @@
 use crate::game::actions::action::ActionTypes::{Hit, Move};
 use crate::game::actions::action::{DoAction, get_opponents_field_player, get_relative_field_player_stat, has_won};
 use crate::{Game, generate_an_event};
+use crate::game::actions::utils::{generate_an_event, get_opponents_field_player, get_relative_field_player_stat, has_won};
 
 pub struct MoveAction;
 impl DoAction for MoveAction {
