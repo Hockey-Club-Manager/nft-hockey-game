@@ -1,28 +1,33 @@
 use crate::game::actions::action::ActionTypes::{Dangle, PokeCheck};
-use crate::game::actions::action::{DoAction, get_opponents_field_player, get_relative_field_player_stat, has_won};
-use crate::{Game, generate_an_event};
+use crate::game::actions::action::{DoAction};
+use crate::{Game};
 use crate::game::actions::utils::{generate_an_event, get_opponents_field_player, get_relative_field_player_stat, has_won};
 
 pub struct DangleAction;
 impl DoAction for DangleAction {
     fn do_action(&self, game: &mut Game) {
-        let opponent = get_opponents_field_player(game);
+        generate_an_event(Dangle, game);
 
-        let player_stat = get_relative_field_player_stat(&game.player_with_puck.as_ref().unwrap(),
-                                                         game.player_with_puck.as_ref().unwrap().stats.get_iq() as f64);
-        let opponent_stat = get_relative_field_player_stat(&opponent, opponent.stats.get_strength());
+        let opponent = get_opponents_field_player(game);
+        let opponent_stat = get_relative_field_player_stat(
+            &opponent,
+            ((opponent.stats.defensive_awareness + opponent.stats.stick_checking) / 2) as f32
+        );
+
+        let player_with_puck = game.get_player_with_puck();
+        let player_stat = get_relative_field_player_stat(
+            &player_with_puck, player_with_puck.stats.get_stick_handling()
+        );
 
         let mut relative_side_zone: i8 = 1;
-        if game.player_with_puck.as_ref().unwrap().get_user_id() == 2 {
+        if player_stat == 2 {
             relative_side_zone = -1;
         }
-
-        generate_an_event(Dangle, game);
 
         if has_won(player_stat, opponent_stat) {
             game.zone_number += relative_side_zone;
         } else {
-            game.player_with_puck = Option::from(opponent);
+            game.player_with_puck = Option::from((opponent.get_user_id(), opponent.get_player_id()));
 
             generate_an_event(PokeCheck, game);
         }
