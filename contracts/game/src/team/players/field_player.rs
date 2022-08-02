@@ -31,6 +31,10 @@ pub struct FieldPlayer {
 impl FieldPlayer {
     pub fn get_user_id(&self) -> usize { self.user_id.unwrap() }
 
+    pub fn get_player_id(&self) -> TokenId {
+        self.id.unwrap()
+    }
+
     pub fn get_position_coefficient(&self) -> f32 {
         let native_pos = 1.0 as f32;
         let other_edge = 0.95 as f32;

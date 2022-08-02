@@ -1,7 +1,7 @@
 use crate::game::actions::action::ActionTypes::{Goal, Rebound, Save, Shot, ShotBlocked, ShotMissed};
 use crate::{FieldPlayer, Game};
 use crate::game::actions::action::DoAction;
-use crate::game::actions::utils::{change_morale_after_goal, generate_an_event, get_opponent_user, get_opponents_field_player, get_opponents_goalie, get_opponents_goalie_number, get_relative_field_player_stat, get_relative_goalie_stat, has_pass_before_shot, has_won};
+use crate::game::actions::utils::{change_morale_after_goal, generate_an_event, get_opponent_user, get_opponents_field_player, get_opponents_goalie, get_relative_field_player_stat, get_relative_goalie_stat, has_pass_before_shot, has_won};
 use crate::team::players::player::PlayerRole;
 
 const PROBABILITY_SAVE: usize = 30;

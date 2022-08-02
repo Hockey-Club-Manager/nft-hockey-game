@@ -1,5 +1,5 @@
-use crate::{Game, generate_an_event, PlayerPosition};
-use crate::game::actions::action::{DoAction, get_opponents_field_player, get_relative_field_player_stat, has_won};
+use crate::{Game, PlayerPosition};
+use crate::game::actions::action::{DoAction};
 use crate::game::actions::action::ActionTypes::{Pass, PassCatched, PuckLose};
 use crate::game::actions::utils::{generate_an_event, get_another_random_position, get_opponents_field_player, get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
@@ -31,8 +31,7 @@ impl DoAction for PassAction {
 
             generate_an_event(Pass, game);
         } else {
-            let new_player_with_id = game.get_field_player_id_by_pos(opponent.get_user_id(), &player_with_puck_pos);
-            game.player_with_puck = Option::from((opponent.get_user_id(), new_player_with_id.clone()));
+            game.player_with_puck = Option::from((opponent.get_user_id(), opponent.get_player_id()));
             generate_an_event(PassCatched, game);
         }
     }
