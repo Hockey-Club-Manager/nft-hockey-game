@@ -45,3 +45,32 @@ fn is_diagonal_pass(positions: Vec<PlayerPosition>) -> bool {
 
     false
 }
+
+fn get_another_random_position(player_pos: &PlayerPosition) -> PlayerPosition {
+    let player_positions = get_other_positions(player_pos);
+
+    let random_pos = Game::get_random_in_range(0, 4, 18);
+
+    player_positions[random_pos]
+}
+
+fn get_other_positions(player_pos: &PlayerPosition) -> Vec<PlayerPosition> {
+    let mut player_positions = vec![RightWing, LeftWing, Center, RightDefender, LeftDefender];
+
+    for num in 0..5 {
+        if *player_pos == player_positions[num] {
+            player_positions.remove(num);
+            break;
+        }
+    }
+
+    player_positions
+}
+
+fn has_pass_before_shot(game: &Game) -> bool {
+    if game.last_action == Pass {
+        true
+    }
+
+    false
+}

@@ -174,4 +174,19 @@ impl FieldPlayerStats {
             self.shot_blocking as f32 +
             self.stick_checking as f32) / 4 as f32
     }
+
+    pub fn change_strength(&mut self, value: i8) {
+        self.aggressiveness += value;
+        self.body_checking += value;
+        self.durability += value;
+        self.fighting_skill += value;
+        self.strength += value;
+    }
+
+    pub fn change_iq(&mut self, value: i8) {
+        self.discipline += value;
+        self.offensive += value;
+        self.poise += value;
+        self.morale += value;
+    }
 }

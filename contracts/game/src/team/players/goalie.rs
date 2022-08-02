@@ -108,4 +108,14 @@ impl GoalieStats {
             self.vision as f32 +
             self.morale as f32) / 7 as f32
     }
+
+    pub fn change_strength(&mut self, value: i8) {
+        self.aggressiveness += value;
+        self.agility += value;
+        self.durability += value;
+        self.endurance += value;
+        self.speed += value;
+        self.vision += value;
+        self.morale += value;
+    }
 }

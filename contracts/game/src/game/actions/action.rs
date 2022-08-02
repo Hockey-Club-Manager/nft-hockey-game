@@ -14,7 +14,7 @@ use crate::game::actions::move_action::MoveAction;
 use crate::game::actions::pass::PassAction;
 use crate::game::actions::utils::reduce_strength;
 
-use crate::game::game::{EventToSave, Game};
+use crate::game::game::{Game};
 use crate::team::five::{FiveIds, Tactics};
 use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::user_info::UserInfo;

@@ -139,7 +139,13 @@ impl Hockey {
     }
 
     #[private]
-    pub fn on_get_teams(&mut self, opponent_id: AccountId, account_id: AccountId, config: GameConfig, #[callback] teams: (TeamMetadata, TeamMetadata)) -> GameId {
+    pub fn on_get_teams(
+        &mut self,
+        opponent_id: AccountId,
+        account_id: AccountId,
+        config: GameConfig,
+        #[callback] teams: (TeamMetadata, TeamMetadata)
+    ) -> GameId {
         // TODO Add FT
         let reward = TokenBalance {
             token_id: Some("NEAR".into()),
@@ -168,82 +174,37 @@ impl Hockey {
         game_id
     }
 
-    pub fn generate_event(&mut self, number_of_rendered_events: usize, game_id: GameId) -> Vec<Event> {
-        log!("number_of_rendered_events: {}", number_of_rendered_events);
-
+    pub fn generate_event(&mut self, game_id: GameId) {
         let game: &mut Game = &mut self.internal_get_game(&game_id);
 
-        if !game.winner_index.is_none() {
-            return self.get_events(number_of_rendered_events, game)
-        }
         assert!(game.winner_index.is_none(), "Game already finished");
 
         let time = env::block_timestamp();
-        if time - game.last_event_generation_time >= 1 {
-            game.last_event_generation_time = time;
-
-            match game.step() {
-                GameState::GameOver { winner_id: winner_index} => {
-                    let winner_account = if game.user1.user_id == winner_index {
-                        game.user1.account_id.clone()
-                    } else {
-                        game.user2.account_id.clone()
-                    };
-
-                    self.internal_distribute_reward(&game.reward, &winner_account);
-                    game.winner_index = Some(winner_index);
-
-                    self.internal_stop_game(game_id);
-
-                    log!("\nGame over! {} won!", winner_account);
-                },
-                _ => {}
-            };
-
-            self.games.insert(&game_id, &game);
+        if time - game.last_event_generation_time < 1 {
+            return;
         }
 
-        self.get_events(number_of_rendered_events, game)
-    }
+        game.last_event_generation_time = time;
 
-    fn get_events(&self, number_of_rendered_events: usize, game: &mut Game) -> Vec<Event> {
-        let mut result: Vec<Event> = vec![];
-        let teams = if game.user1.account_id == env::predecessor_account_id() {
-            (TeamJson {
-                five: game.user1.team.fives.get(&game.user1.team.active_five).unwrap().clone(),
-                goalie:game.user1.team.goalies.get(&game.user1.team.active_goalie).unwrap().clone(),
-                score: game.user1.team.score,
-            }, TeamJson {
-                five: game.user2.team.fives.get(&game.user1.team.active_five).unwrap().clone(),
-                goalie:game.user2.team.goalies.get(&game.user1.team.active_goalie).unwrap().clone(),
-                score: game.user2.team.score,
-            })
-        } else {
-            (TeamJson {
-                five: game.user2.team.fives.get(&game.user1.team.active_five).unwrap().clone(),
-                goalie:game.user2.team.goalies.get(&game.user1.team.active_goalie).unwrap().clone(),
-                score: game.user2.team.score,
-            }, TeamJson {
-                five: game.user1.team.fives.get(&game.user1.team.active_five).unwrap().clone(),
-                goalie:game.user1.team.goalies.get(&game.user1.team.active_goalie).unwrap().clone(),
-                score: game.user1.team.score,
-            })
+        match game.step() {
+            GameState::GameOver { winner_id: winner_index} => {
+                let winner_account = if game.user1.user_id == winner_index {
+                    game.user1.account_id.clone()
+                } else {
+                    game.user2.account_id.clone()
+                };
+
+                self.internal_distribute_reward(&game.reward, &winner_account);
+                game.winner_index = Some(winner_index);
+
+                self.internal_stop_game(game_id);
+
+                log!("\nGame over! {} won!", winner_account);
+            },
+            _ => {}
         };
 
-        for i in number_of_rendered_events..game.events.len() {
-            let event = game.events[i].clone();
-
-            result.push(Event {
-                my_team: teams.0.clone(),
-                opponent_team: teams.1.clone(),
-                time: event.time,
-                zone_number: event.zone_number,
-                action: event.action,
-                player_with_puck: event.player_with_puck,
-            })
-        }
-
-        result
+        self.games.insert(&game_id, &game);
     }
 
     // TODO make private on release
@@ -253,11 +214,6 @@ impl Hockey {
 
     pub fn get_next_game_id(&self) -> GameId {
         self.next_game_id
-    }
-
-    pub fn get_turns(&self, game_id: GameId) -> usize{
-        let game: Game = self.games.get(&game_id).expect("Game not found");
-        game.events.len()
     }
 }
 

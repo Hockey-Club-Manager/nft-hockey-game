@@ -1,4 +1,5 @@
 use crate::*;
+use crate::game::actions::utils::generate_an_event;
 use crate::team::five::{FiveNumber, IceTimePriority, Tactics};
 
 #[near_bindgen]
@@ -10,31 +11,20 @@ impl Hockey {
         if game.user1.account_id == account_id {
             if !game.user1.take_to_called {
                 self.change_stats_take_to(&mut game.user1, &mut game.user2);
-                generate_an_event(TakeTO, &mut game);
             }
         } else if game.user2.account_id == account_id {
             if !game.user2.take_to_called {
                 self.change_stats_take_to(&mut game.user2, &mut game.user1);
-                generate_an_event(TakeTO, &mut game);
             }
+        } else {
+            panic!("Account id not found!")
         }
+
+        generate_an_event(TakeTO, &mut game);
+
         self.games.insert(&game_id, &game);
     }
 
-    fn change_stats_take_to(&self, user1: &mut UserInfo, user2: &mut UserInfo) {
-        for (_player_pos, field_player) in user1.team.fives.get_mut(&user1.team.active_five).unwrap().field_players.iter_mut() {
-            field_player.stats.morale += 5;
-            field_player.stats.strength += 5;
-            //field_player.stats.iq += 3;
-        }
-
-        for (_player_pos, field_player) in user2.team.fives.get_mut(&user2.team.active_five).unwrap().field_players.iter_mut() {
-            field_player.stats.morale += 3;
-            field_player.stats.strength += 3;
-        }
-
-        user1.take_to_called = true;
-    }
 
     pub fn coach_speech(&mut self, game_id: GameId) {
         let account_id = env::predecessor_account_id();
@@ -54,14 +44,6 @@ impl Hockey {
         self.games.insert(&game_id, &game);
     }
 
-    fn change_stats_coach_speech(&self, user: &mut UserInfo) {
-        for (_player_pos, field_player) in user.team.fives.get_mut(&user.team.active_five).unwrap().field_players.iter_mut() {
-            field_player.stats.morale += 3;
-           // field_player.stats.iq += 2;
-        }
-
-        user.coach_speech_called = true;
-    }
 
     pub fn goalie_out(&mut self, game_id: GameId) {
         let account_id = env::predecessor_account_id();
@@ -91,15 +73,13 @@ impl Hockey {
         self.games.insert(&game_id, &game);
     }
 
-    pub fn change_tactic(&mut self, tactic: Tactics, game_id: GameId) {
+    pub fn change_tactic(&mut self, five_number: FiveNumber, tactic: Tactics, game_id: GameId) {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
-        if game.user1.account_id == account_id {
-            game.user1.tactic = tactic;
-        } else if game.user2.account_id == account_id {
-            game.user2.tactic = tactic;
-        }
+        let user = game.get_user_info_by_acc_id(&account_id);
+        let five = user.team.fives.get_mut(&five_number).unwrap();
+        five.tactic = tactic;
 
         self.games.insert(&game_id, &game);
     }
@@ -122,9 +102,9 @@ impl Hockey {
         let mut game: Game = self.internal_get_game(&game_id);
 
         if game.user1.account_id == account_id {
-            swap_positions(&mut game.user1, number_five, position1, position2);
+            self.swap_positions(&mut game.user1, number_five, position1, position2);
         } else if game.user2.account_id == account_id {
-            swap_positions(&mut game.user2, number_five, position1, position2);
+            self.swap_positions(&mut game.user2, number_five, position1, position2);
         }
 
         self.games.insert(&game_id, &game);
@@ -132,7 +112,34 @@ impl Hockey {
 }
 
 impl Hockey {
-    pub fn swap_positions(user_info: &mut UserInfo, number_five: FiveNumber, position1: PlayerPosition, position2: PlayerPosition) {
+    fn change_stats_take_to(&self, user1: &mut UserInfo, user2: &mut UserInfo) {
+        for (_five_number, five_ids) in user1.team.fives {
+            for (_player_pos, field_player) in five_ids.field_players {
+                let field_player = user1.team.get_field_player(&field_player);
+                field_player.stats.morale += 5;
+                field_player.stats.strength += 5;
+                //field_player.stats.iq += 3;
+            }
+        }
+
+        for (_player_pos, field_player) in user2.team.fives.get_mut(&user2.team.active_five).unwrap().field_players.iter_mut() {
+            field_player.stats.morale += 3;
+            field_player.stats.strength += 3;
+        }
+
+        user1.take_to_called = true;
+    }
+
+    fn change_stats_coach_speech(&self, user: &mut UserInfo) {
+        for (_player_pos, field_player) in user.team.fives.get_mut(&user.team.active_five).unwrap().field_players.iter_mut() {
+            field_player.stats.morale += 3;
+            // field_player.stats.iq += 2;
+        }
+
+        user.coach_speech_called = true;
+    }
+
+    fn swap_positions(user_info: &mut UserInfo, number_five: FiveNumber, position1: PlayerPosition, position2: PlayerPosition) {
         let mut five = user_info.team.fives.get_mut(&number_five).unwrap().clone();
         let mut first_player = five.field_players.get(&position1).unwrap().clone();
         let mut second_player = five.field_players.get(&position2).unwrap().clone();

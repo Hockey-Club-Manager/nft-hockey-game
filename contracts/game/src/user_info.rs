@@ -6,7 +6,7 @@ use crate::team::team::Team;
 pub type UserId = usize;
 
 #[derive(BorshDeserialize, BorshSerialize)]
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct UserInfo {
     pub(crate) user_id: UserId,
     pub(crate) team: Team,

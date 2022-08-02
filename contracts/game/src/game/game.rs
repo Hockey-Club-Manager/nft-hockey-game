@@ -8,6 +8,7 @@ use crate::game::actions::action::ActionTypes::*;
 use crate::team::players::player::{PlayerPosition};
 use crate::team::players::player::PlayerPosition::*;
 use crate::{TokenBalance};
+use crate::game::actions::utils::generate_an_event;
 use crate::PlayerPosition::LeftWing;
 use crate::team::five::Tactics::Neutral;
 use crate::team::team::Team;
@@ -24,31 +25,12 @@ pub enum GameState {
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Event {
-    pub(crate) player_with_puck: Option<FieldPlayer>,
+    pub(crate) player_with_puck: Option<(UserId, TokenId)>,
     pub(crate) action: ActionTypes,
     pub(crate) zone_number: i8,
     pub(crate) time: Timestamp,
-    pub(crate) my_team: Team,
-    pub(crate) opponent_team: Team,
-}
-
-#[derive(BorshDeserialize, BorshSerialize, Clone)]
-pub struct EventToSave {
-    pub(crate) action: ActionTypes,
-    pub(crate) zone_number: i8,
-    pub(crate) time: Timestamp,
-    pub(crate) player_with_puck: Option<FieldPlayer>,
-}
-
-impl From<Event> for EventToSave {
-    fn from(event: Event) -> Self {
-        Self {
-            action: event.action,
-            zone_number: event.zone_number,
-            time: event.time,
-            player_with_puck: event.player_with_puck,
-        }
-    }
+    pub(crate) user1: UserInfo,
+    pub(crate) user2: UserInfo,
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -143,6 +125,17 @@ impl Game {
         } else {
             &mut self.user2
         }
+    }
+
+    pub fn get_user_info_by_acc_id(&mut self, account_id: &AccountId) -> &mut UserInfo {
+        if account_id == self.user1.account_id {
+            &mut self.user1
+        }
+        if account_id == self.user2.account_id {
+            &mut self.user2
+        }
+
+        panic!("Account id not found!")
     }
 }
 
@@ -242,16 +235,6 @@ impl Game {
              1
          }
     }
-
-    fn get_last_action(&self) -> &ActionTypes {
-        if self.events.len() == 0 {
-            &EndOfPeriod
-        } else {
-            &self.events[self.events.len() - 1].action
-        }
-    }
-
-
 }
 
 fn get_random_position_after_rebound() -> PlayerPosition {
