@@ -26,7 +26,7 @@ pub fn has_won(stat: f32, opponents_stat: f32) -> bool {
     }
 }
 
-pub fn get_another_random_position(player_pos: PlayerPosition) -> PlayerPosition {
+pub fn get_another_random_position(player_pos: &PlayerPosition) -> PlayerPosition {
     let player_positions = get_other_positions(player_pos);
 
     let random_pos = Game::get_random_in_range(0, 4, 18);
@@ -34,11 +34,11 @@ pub fn get_another_random_position(player_pos: PlayerPosition) -> PlayerPosition
     player_positions[random_pos]
 }
 
-pub fn get_other_positions(player_pos: PlayerPosition) -> Vec<PlayerPosition> {
+pub fn get_other_positions(player_pos: &PlayerPosition) -> Vec<PlayerPosition> {
     let mut player_positions = vec![RightWing, LeftWing, Center, RightDefender, LeftDefender];
 
     for num in 0..5 {
-        if player_pos == player_positions[num] {
+        if *player_pos == player_positions[num] {
             player_positions.remove(num);
             break;
         }
@@ -74,7 +74,7 @@ pub fn get_opponents_field_player(game: &Game) -> &FieldPlayer {
     }
 }
 
-pub fn get_relative_field_player_stat(player: &FieldPlayer, compared_stat: f64) -> f32 {
+pub fn get_relative_field_player_stat(player: &FieldPlayer, compared_stat: f32) -> f32 {
     let stat_avg = (compared_stat as f32 +
         player.stats.morale as f32 +
         player.stats.get_strength()) / 3.0;

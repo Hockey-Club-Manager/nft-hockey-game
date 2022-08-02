@@ -1,14 +1,16 @@
 use crate::*;
 use crate::team::players::player::{Hand, PlayerRole};
 use near_sdk::serde::{Deserialize, Serialize};
+use crate::user_info::UserId;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct Goalie {
+    pub id: Option<TokenId>,
     pub img: Option<SRC>,
     pub name: Option<String>,
-    pub user_id: Option<usize>,
+    pub user_id: Option<UserId>,
 
     pub reality: bool,
     pub nationality: String,
@@ -78,8 +80,6 @@ pub struct GoalieStats {
 }
 
 impl GoalieStats {
-
-
     pub fn get_reflexes(&self) -> f32 {
         (self.angles as f32 +
             self.breakaway as f32 +

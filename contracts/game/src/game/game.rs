@@ -10,7 +10,10 @@ use crate::team::players::player::PlayerPosition::*;
 use crate::{TokenBalance};
 use crate::PlayerPosition::LeftWing;
 use crate::team::five::Tactics::Neutral;
+use crate::team::team::Team;
 use crate::team::team_metadata::team_metadata_to_team;
+use crate::user_info::UserId;
+
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum GameState {
@@ -25,8 +28,8 @@ pub struct Event {
     pub(crate) action: ActionTypes,
     pub(crate) zone_number: i8,
     pub(crate) time: Timestamp,
-    pub(crate) my_team: TeamJson,
-    pub(crate) opponent_team: TeamJson,
+    pub(crate) my_team: Team,
+    pub(crate) opponent_team: Team,
 }
 
 #[derive(BorshDeserialize, BorshSerialize, Clone)]
@@ -55,10 +58,11 @@ pub struct Game {
     pub(crate) reward: TokenBalance,
     pub(crate) winner_index: Option<usize>,
     pub(crate) last_event_generation_time: Timestamp,
-    pub(crate) player_with_puck: Option<FieldPlayer>,
+    pub(crate) player_with_puck: Option<(UserId, TokenId)>,
+    pub(crate) user_id_with_puck: Option<u8>,
     pub(crate) zone_number: i8,
     pub(crate) turns: u128,
-    pub(crate) events: Vec<EventToSave>,
+    pub(crate) last_action: ActionTypes,
 }
 
 impl Game {
@@ -91,9 +95,10 @@ impl Game {
             winner_index: None,
             last_event_generation_time: env::block_timestamp(),
             player_with_puck: None,
+            user_id_with_puck: None,
             zone_number: 2,
             turns: 0,
-            events: vec![],
+            last_action: StartGame
         };
         generate_an_event(StartGame, &mut game);
 
@@ -104,6 +109,40 @@ impl Game {
         let random = *env::random_seed().get(index).unwrap();
         let random_in_range = (random as f64 / 256.0) * (max - min) as f64 + min as f64;
         random_in_range.floor() as usize
+    }
+}
+
+impl Game {
+    pub fn get_field_player_by_pos(&mut self, user_id: UserId, position: &PlayerPosition) -> &FieldPlayer {
+        let user_info = self.get_user_info(user_id);
+        let five = user_info.team.get_active_five();
+        let player_id = five.field_players.get(position).unwrap();
+        user_info.team.get_field_player(player_id)
+    }
+
+    pub fn get_field_player_id_by_pos(&mut self, user_id: UserId, position:& PlayerPosition) -> &TokenId {
+        let user_info = self.get_user_info(user_id);
+        user_info.team.get_active_five().field_players.get(position).unwrap()
+    }
+
+    pub fn get_player_pos(&mut self, player_id: &TokenId, user_id: UserId) -> &PlayerPosition {
+        let user_info = self.get_user_info(user_id);
+        user_info.team.get_field_player_pos(player_id)
+    }
+
+    pub fn get_player_with_puck(&mut self) -> &mut FieldPlayer {
+        let unwrapped_player = self.player_with_puck.unwrap();
+        let user = self.get_user_info(unwrapped_player.0);
+
+        user.team.field_players.get_mut(&unwrapped_player.1).unwrap()
+    }
+
+    pub fn get_user_info(&mut self, user_id: usize) -> &mut UserInfo {
+        if user_id == 1 {
+            &mut self.user1
+        } else {
+            &mut self.user2
+        }
     }
 }
 
@@ -212,13 +251,7 @@ impl Game {
         }
     }
 
-    pub fn get_user_info(&mut self, user_id: usize) -> &mut UserInfo {
-        if user_id == 1 {
-            &mut self.user1
-        } else {
-            &mut self.user2
-        }
-    }
+
 }
 
 fn get_random_position_after_rebound() -> PlayerPosition {

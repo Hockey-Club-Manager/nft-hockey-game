@@ -55,7 +55,6 @@ struct Hockey {
     available_players: UnorderedMap<AccountId, VGameConfig>,
     stats: UnorderedMap<AccountId, VStats>,
     available_games: UnorderedMap<GameId, (AccountId, AccountId)>,
-    whitelisted_tokens: LookupSet<AccountId>,
 
     next_game_id: GameId,
     service_fee: Balance,
@@ -70,7 +69,6 @@ impl Hockey {
             available_players: UnorderedMap::new(StorageKey::AvailablePlayers),
             stats: UnorderedMap::new(StorageKey::Stats),
             available_games: UnorderedMap::new(StorageKey::AvailableGames),
-            whitelisted_tokens: LookupSet::new(StorageKey::WhitelistedTokens),
 
             next_game_id: 0,
             service_fee: 0,

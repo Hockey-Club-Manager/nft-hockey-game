@@ -207,12 +207,26 @@ impl Team {
             field_player.teamwork = Option::from(field_player.teamwork.unwrap() * team_work_line);
         }
     }
-
 }
 
 impl Team {
     pub fn get_field_player(&mut self, id: &TokenId) -> &mut FieldPlayer {
         self.field_players.get_mut(id).unwrap()
+    }
+
+    pub fn get_field_player_pos(&self, player_id: &TokenId) -> &PlayerPosition {
+        let five = self.get_active_five();
+        for (pos, id) in five.field_players {
+            if player_id == id {
+                pos
+            }
+        }
+
+        panic!("Player not found")
+    }
+
+    pub fn get_active_five(&self) -> &FiveIds {
+        self.fives.get(&self.active_five).unwrap()
     }
 
     pub fn need_change(&self) -> bool {
@@ -230,6 +244,7 @@ impl Team {
         // }
         false
     }
+    
     pub fn change_active_five(&mut self) {
         match self.active_five {
             First => {
@@ -261,12 +276,4 @@ impl Team {
         let active_five = self.fives.get_mut(&self.active_five).unwrap();
         active_five.time_field = Option::from(0 as u8);
     }
-}
-
-#[derive(Serialize, Deserialize, Clone)]
-#[serde(crate = "near_sdk::serde")]
-pub struct TeamJson {
-    pub(crate) five: FiveIds,
-    pub(crate) goalie: Goalie,
-    pub(crate) score: u8,
 }

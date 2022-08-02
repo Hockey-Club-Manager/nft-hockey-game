@@ -2,12 +2,14 @@ use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
 use crate::team::players::player::{Hand, PlayerRole};
 use crate::PlayerPosition::*;
+use crate::user_info::UserId;
 
 
 #[derive(Clone, BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FieldPlayer {
+    pub id: Option<TokenId>,
     pub img: Option<SRC>,
     pub name: Option<String>,
     pub teamwork: Option<f32>,
@@ -23,7 +25,7 @@ pub struct FieldPlayer {
     pub native_position: PlayerPosition,
     pub stats: FieldPlayerStats,
 
-    pub user_id: Option<usize>,
+    pub user_id: Option<UserId>,
 }
 
 impl FieldPlayer {
