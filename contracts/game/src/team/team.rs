@@ -23,6 +23,8 @@ const HIGH_PRIORITY: u8 = 20;
 const SUPER_HIGH_PRIORITY: u8 = 25;
 
 #[derive(Clone, BorshDeserialize, BorshSerialize)]
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct Team {
     pub(crate) fives: HashMap<FiveNumber, FiveIds>,
     pub(crate) active_five: FiveNumber,
@@ -51,7 +53,7 @@ impl Team {
 
         for (position, field_player_id) in &five_ids.field_players {
             let field_player = self.get_field_player(field_player_id);
-            field_player.teamwork = Option::from(field_player.get_position_coefficient());
+            field_player.teamwork = Option::from(field_player.get_position_coefficient(position));
 
             self.insert_player_nationality(&mut player_per_nationality, field_player, &position);
             self.insert_player_role(&mut player_per_role, field_player, &position);
@@ -217,8 +219,8 @@ impl Team {
     pub fn get_field_player_pos(&self, player_id: &TokenId) -> &PlayerPosition {
         let five = self.get_active_five();
         for (pos, id) in five.field_players {
-            if player_id == id {
-                pos
+            if *player_id == id {
+                return &pos;
             }
         }
 

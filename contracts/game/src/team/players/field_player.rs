@@ -35,13 +35,13 @@ impl FieldPlayer {
         self.id.unwrap()
     }
 
-    pub fn get_position_coefficient(&self) -> f32 {
+    pub fn get_position_coefficient(&self, position: &PlayerPosition) -> f32 {
         let native_pos = 1.0 as f32;
         let other_edge = 0.95 as f32;
         let another_pos = 0.8 as f32;
         let center = 0.75 as f32;
 
-        match self.player_position {
+        match position {
             Center => match self.native_position {
                 Center => native_pos,
                 RightWing => another_pos,
@@ -175,7 +175,7 @@ impl FieldPlayerStats {
             self.stick_checking as f32) / 4 as f32
     }
 
-    pub fn change_strength(&mut self, value: i8) {
+    pub fn increase_strength(&mut self, value: u8) {
         self.aggressiveness += value;
         self.body_checking += value;
         self.durability += value;
@@ -183,10 +183,25 @@ impl FieldPlayerStats {
         self.strength += value;
     }
 
-    pub fn change_iq(&mut self, value: i8) {
+    pub fn increase_iq(&mut self, value: u8) {
         self.discipline += value;
         self.offensive += value;
         self.poise += value;
         self.morale += value;
+    }
+
+    pub fn decrease_strength(&mut self, value: u8) {
+        self.aggressiveness -= value;
+        self.body_checking -= value;
+        self.durability -= value;
+        self.fighting_skill -= value;
+        self.strength -= value;
+    }
+
+    pub fn decrease_iq(&mut self, value: u8) {
+        self.discipline -= value;
+        self.offensive -= value;
+        self.poise -= value;
+        self.morale -= value;
     }
 }

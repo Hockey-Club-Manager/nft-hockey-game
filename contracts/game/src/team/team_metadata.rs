@@ -49,21 +49,21 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
 fn to_field_players(field_players_metadata: &HashMap<TokenId, PlayerMetadata>, user_id: &usize) -> HashMap<TokenId, FieldPlayer> {
     let mut result: HashMap<TokenId, FieldPlayer> = HashMap::new();
     for (token_id, field_player_metadata) in field_players_metadata {
-        let field_player = to_field_player(field_player_metadata, user_id);
+        let field_player = to_field_player((*field_player_metadata).clone(), user_id);
         result.insert(token_id.clone(), field_player);
     }
 
     result
 }
 
-fn to_field_player(field_player_metadata: &PlayerMetadata, user_id: &usize) -> FieldPlayer {
-    let mut result: FieldPlayer = match field_player_metadata.as_ref().extra {
+fn to_field_player(field_player_metadata: PlayerMetadata, user_id: &usize) -> FieldPlayer {
+    let mut result: FieldPlayer = match field_player_metadata.extra {
         Some(extra) => serde_json::from_str(&extra).unwrap(),
         None => panic!("Extra not found"),
     };
 
-    result.img = field_player_metadata.as_ref().media;
-    result.name = field_player_metadata.as_ref().title;
+    result.img = field_player_metadata.media;
+    result.name = field_player_metadata.title;
     result.user_id = Some(*user_id);
 
     result

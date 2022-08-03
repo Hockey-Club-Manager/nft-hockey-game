@@ -1,3 +1,4 @@
+use near_sdk::serde::{Deserialize, Serialize};
 use near_sdk::AccountId;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use crate::team::five::Tactics;
@@ -7,6 +8,7 @@ pub type UserId = usize;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 #[derive(Clone, Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct UserInfo {
     pub(crate) user_id: UserId,
     pub(crate) team: Team,

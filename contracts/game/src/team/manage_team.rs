@@ -11,10 +11,14 @@ impl Hockey {
         if game.user1.account_id == account_id {
             if !game.user1.take_to_called {
                 self.change_stats_take_to(&mut game.user1, &mut game.user2);
+            } else {
+                panic!("You have already used TO")
             }
         } else if game.user2.account_id == account_id {
             if !game.user2.take_to_called {
                 self.change_stats_take_to(&mut game.user2, &mut game.user1);
+            } else {
+                panic!("You have already used TO")
             }
         } else {
             panic!("Account id not found!")
@@ -34,11 +38,15 @@ impl Hockey {
             if !game.user1.coach_speech_called {
                 self.change_stats_coach_speech(&mut game.user1);
                 generate_an_event(CoachSpeech, &mut game);
+            } else {
+                panic!("You have already used Coach speech")
             }
         } else if game.user2.account_id == account_id {
             if !game.user2.coach_speech_called {
                 self.change_stats_coach_speech(&mut game.user2);
                 generate_an_event(CoachSpeech, &mut game);
+            } else {
+                panic!("You have already used Coach speech")
             }
         }
         self.games.insert(&game_id, &game);
@@ -113,46 +121,56 @@ impl Hockey {
 
 impl Hockey {
     fn change_stats_take_to(&self, user1: &mut UserInfo, user2: &mut UserInfo) {
-        for (_five_number, five_ids) in user1.team.fives {
-            for (_player_pos, field_player) in five_ids.field_players {
-                let field_player = user1.team.get_field_player(&field_player);
-                field_player.stats.morale += 5;
-                field_player.stats.strength += 5;
-                //field_player.stats.iq += 3;
+        for (_five_number, five_ids) in &user1.team.fives {
+            for (_player_pos, field_player) in &five_ids.field_players {
+                let field_player = user1.team.get_field_player(field_player);
+                field_player.stats.increase_strength(5);
+                field_player.stats.increase_iq(3)
             }
         }
 
-        for (_player_pos, field_player) in user2.team.fives.get_mut(&user2.team.active_five).unwrap().field_players.iter_mut() {
-            field_player.stats.morale += 3;
-            field_player.stats.strength += 3;
+        for (_goalie_number, goalie) in user1.team.goalies.iter_mut() {
+            goalie.stats.increase_strength(5);
+        }
+
+        for (_five_number, five_ids) in &user2.team.fives {
+            for (_player_pos, field_player) in &five_ids.field_players {
+                let field_player = user2.team.get_field_player(field_player);
+                field_player.stats.increase_strength(3);
+                field_player.stats.morale += 3;
+            }
+        }
+
+        for (_goalie_number, goalie) in user1.team.goalies.iter_mut() {
+            goalie.stats.increase_strength(3);
         }
 
         user1.take_to_called = true;
     }
 
     fn change_stats_coach_speech(&self, user: &mut UserInfo) {
-        for (_player_pos, field_player) in user.team.fives.get_mut(&user.team.active_five).unwrap().field_players.iter_mut() {
-            field_player.stats.morale += 3;
-            // field_player.stats.iq += 2;
+        for (_five_number, five_ids) in &user.team.fives {
+            for (_player_pos, field_player) in &five_ids.field_players {
+                let field_player = user.team.get_field_player(field_player);
+                field_player.stats.increase_strength(5);
+            }
+        }
+
+        for (_goalie_number, goalie) in user.team.goalies.iter_mut() {
+            goalie.stats.increase_strength(5);
         }
 
         user.coach_speech_called = true;
     }
 
-    fn swap_positions(user_info: &mut UserInfo, number_five: FiveNumber, position1: PlayerPosition, position2: PlayerPosition) {
-        let mut five = user_info.team.fives.get_mut(&number_five).unwrap().clone();
-        let mut first_player = five.field_players.get(&position1).unwrap().clone();
-        let mut second_player = five.field_players.get(&position2).unwrap().clone();
+    fn swap_positions(&mut self, user_info: &mut UserInfo, number_five: FiveNumber, position1: PlayerPosition, position2: PlayerPosition) {
+        let five = user_info.team.fives.get_mut(&number_five).unwrap();
+        let first_player_id = five.field_players.get(&position1).unwrap();
+        let second_player_id = five.field_players.get(&position2).unwrap();
 
-        first_player.position = second_player.position;
-        second_player.position = first_player.position;
+        five.field_players.insert(position1, second_player_id.clone());
+        five.field_players.insert(position2, first_player_id.clone());
 
-        first_player.set_position_coefficient();
-        second_player.set_position_coefficient();
-
-        five.field_players.insert(position1, second_player);
-        five.field_players.insert(position2, first_player);
-
-        user_info.team.fives.insert(number_five, five);
+        // TODO calculate teamwork
     }
 }

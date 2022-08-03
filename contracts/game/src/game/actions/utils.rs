@@ -70,12 +70,15 @@ pub fn generate_an_event(action: ActionTypes, game: &mut Game) {
         player_with_puck: game.player_with_puck.clone(),
     };
 
-    let json_event = serde_json::to_string(&generated_event)?;
+    let json_event = match serde_json::to_string(&generated_event) {
+        Ok(res) => res,
+        Err(e) => panic!("{}", e)
+    };
     log!("{}", json_event);
 }
 
 pub fn get_opponent_user(game: &Game) -> &UserInfo {
-    let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
+    let user_id = game.player_with_puck.unwrap().0;
 
     return if user_id == 1 {
         &game.user2

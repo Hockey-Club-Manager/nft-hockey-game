@@ -5,6 +5,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 
 
 #[derive(Serialize, Deserialize)]
+#[derive(Clone)]
 pub struct PlayerMetadata {
     pub title: Option<String>,
     pub description: Option<String>,
