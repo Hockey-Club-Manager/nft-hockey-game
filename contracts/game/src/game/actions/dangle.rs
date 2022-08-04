@@ -11,7 +11,7 @@ impl DoAction for DangleAction {
         let opponent = get_opponents_field_player(game);
         let opponent_stat = get_relative_field_player_stat(
             &opponent,
-            ((opponent.stats.defensive_awareness + opponent.stats.stick_checking) / 2) as f32
+            ((opponent.stats.defensive_awareness + opponent.stats.stick_checking) as f32 / 2.0) as f32
         );
 
         let player_with_puck = game.get_player_with_puck();
@@ -20,7 +20,7 @@ impl DoAction for DangleAction {
         );
 
         let mut relative_side_zone: i8 = 1;
-        if player_stat == 2 {
+        if player_with_puck.get_user_id() == 2 {
             relative_side_zone = -1;
         }
 

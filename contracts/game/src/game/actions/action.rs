@@ -12,7 +12,6 @@ use crate::game::actions::dangle::DangleAction;
 use crate::game::actions::dump::DumpAction;
 use crate::game::actions::move_action::MoveAction;
 use crate::game::actions::pass::PassAction;
-use crate::game::actions::utils::reduce_strength;
 
 use crate::game::game::{Game};
 use crate::team::five::{FiveIds, Tactics};
@@ -143,22 +142,20 @@ impl Action {
 
     pub fn do_random_action(self, game: &mut Game) {
         let mut is_attack_zone = false;
-        let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
+        let user_player_id = game.player_with_puck.unwrap();
         if game.zone_number == 3 && user_id == 1 || game.zone_number == 1 && user_id == 2 {
             is_attack_zone = true;
         }
 
-        let active_five = if user_id == 1 {
-            &game.user1.team.fives.get(&game.user1.team.active_five).unwrap()
+        let active_five = if user_player_id.0 == 1 {
+            game.user1.team.fives.get(&game.user1.team.active_five).unwrap()
         } else {
-            &game.user2.team.fives.get(&game.user2.team.active_five).unwrap()
+            game.user2.team.fives.get(&game.user2.team.active_five).unwrap()
         };
 
-
+        let
         let action = self.get_random_action(is_attack_zone, game.player_with_puck.as_ref().unwrap().get_role(), active_five);
 
         action.do_action(game);
-
-        reduce_strength(game);
     }
 }

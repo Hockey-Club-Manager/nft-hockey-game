@@ -11,7 +11,7 @@ impl DoAction for MoveAction {
         let opponent = get_opponents_field_player(game);
         let opponent_stat = get_relative_field_player_stat(
             &opponent,
-            (opponent.stats.defensive_awareness + opponent.stats.get_strength()) / 2
+            (opponent.stats.defensive_awareness as f32 + opponent.stats.get_strength()) / 2.0
         );
 
         let player_with_puck = game.get_player_with_puck();

@@ -3,7 +3,8 @@ use crate::{Event, FieldPlayer, Game, PlayerPosition, UserInfo};
 use crate::game::actions::action::ActionTypes;
 use crate::game::actions::action::ActionTypes::Pass;
 use crate::PlayerPosition::*;
-use crate::team::numbers::GoalieNumber;
+use crate::team::five::IceTimePriority;
+use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::team::players::goalie::Goalie;
 
 pub fn has_won(stat: f32, opponents_stat: f32) -> bool {
@@ -27,19 +28,15 @@ pub fn has_won(stat: f32, opponents_stat: f32) -> bool {
 }
 
 pub fn get_opponents_field_player(game: &Game) -> &FieldPlayer {
-    let user_id = game.player_with_puck.as_ref().unwrap().get_user_id();
+    let user_player_ids = game.player_with_puck.unwrap();
 
-    return if user_id == 1 {
-        match game.user2.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position) {
-            Some(player) => player.clone(),
-            _ => panic!("Player not found")
-        }
+    let user = game.get_user_info(user_player_ids.0);
+    let position = user.team.get_field_player_pos(&user_player_ids.1);
+
+    return if user_player_ids.0 == 1 {
+        game.get_field_player_by_pos(2, position)
     } else {
-        let user = &game.user1;
-        match user.team.active_five.field_players.get(&game.player_with_puck.as_ref().unwrap().position){
-            Some(player) => player.clone(),
-            _ => panic!("Player not found")
-        }
+        game.get_field_player_by_pos(1, position)
     }
 }
 
@@ -52,11 +49,30 @@ pub fn get_relative_field_player_stat(player: &FieldPlayer, compared_stat: f32) 
 }
 
 pub fn reduce_strength(game: &mut Game) {
-    for (_player_pos, field_player) in &mut game.user1.team.active_five.field_players.iter_mut() {
-        field_player.stats.strength = field_player.stats.strength * 0.996;
+    let five1 = game.user1.team.get_active_five();
+    for (_player_pos, field_player_id) in &five1.field_players {
+        let field_player = game.user1.team.get_field_player_mut(field_player_id);
+        let amount_of_spent_strength = get_amount_of_spent_strength(&five2.ice_time_priority);
+
+        field_player.stats.decrease_strength(amount_of_spent_strength);
     }
-    for (_player_pos, field_player) in &mut game.user2.team.active_five.field_players.iter_mut() {
-        field_player.stats.strength = field_player.stats.strength * 0.996;
+
+    let five2 = game.user2.team.get_active_five();
+    for (_player_pos, field_player_id) in &five2.field_players {
+        let field_player = game.user2.team.get_field_player_mut(field_player_id);
+
+        let amount_of_spent_strength = get_amount_of_spent_strength(&five2.ice_time_priority);
+        field_player.stats.decrease_strength(amount_of_spent_strength);
+    }
+}
+
+fn get_amount_of_spent_strength(ice_time_priority: &IceTimePriority) -> u8 {
+    match ice_time_priority {
+        IceTimePriority::SuperLowPriority => { 1 }
+        IceTimePriority::LowPriority => { 2 }
+        IceTimePriority::Normal => { 3 }
+        IceTimePriority::HighPriority => { 4 }
+        IceTimePriority::SuperHighPriority => { 5 }
     }
 }
 

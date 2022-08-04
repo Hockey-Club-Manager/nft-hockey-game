@@ -8,7 +8,7 @@ use crate::game::actions::action::ActionTypes::*;
 use crate::team::players::player::{PlayerPosition};
 use crate::team::players::player::PlayerPosition::*;
 use crate::{TokenBalance};
-use crate::game::actions::utils::generate_an_event;
+use crate::game::actions::utils::{generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
 use crate::PlayerPosition::LeftWing;
 use crate::team::five::Tactics::Neutral;
 use crate::team::team::Team;
@@ -41,7 +41,6 @@ pub struct Game {
     pub(crate) winner_index: Option<usize>,
     pub(crate) last_event_generation_time: Timestamp,
     pub(crate) player_with_puck: Option<(UserId, TokenId)>,
-    pub(crate) user_id_with_puck: Option<u8>,
     pub(crate) zone_number: i8,
     pub(crate) turns: u128,
     pub(crate) last_action: ActionTypes,
@@ -95,7 +94,7 @@ impl Game {
 }
 
 impl Game {
-    pub fn get_field_player_by_pos(&mut self, user_id: UserId, position: &PlayerPosition) -> &FieldPlayer {
+    pub fn get_field_player_by_pos(&self, user_id: UserId, position: &PlayerPosition) -> &FieldPlayer {
         let user_info = self.get_user_info(user_id);
         let five = user_info.team.get_active_five();
         let player_id = five.field_players.get(position).unwrap();
@@ -103,28 +102,36 @@ impl Game {
     }
 
     pub fn get_field_player_id_by_pos(&mut self, user_id: UserId, position:& PlayerPosition) -> &TokenId {
-        let user_info = self.get_user_info(user_id);
+        let user_info = self.get_user_info_mut(user_id);
         user_info.team.get_active_five().field_players.get(position).unwrap()
     }
 
     pub fn get_player_pos(&mut self, player_id: &TokenId, user_id: UserId) -> &PlayerPosition {
-        let user_info = self.get_user_info(user_id);
+        let user_info = self.get_user_info_mut(user_id);
         user_info.team.get_field_player_pos(player_id)
     }
 
     pub fn get_player_with_puck(&mut self) -> &mut FieldPlayer {
         let unwrapped_player = self.player_with_puck.unwrap();
-        let user = self.get_user_info(unwrapped_player.0);
+        let user = self.get_user_info_mut(unwrapped_player.0);
 
         user.team.field_players.get_mut(&unwrapped_player.1).unwrap()
     }
 
-    pub fn get_user_info(&mut self, user_id: usize) -> &mut UserInfo {
+    pub fn get_user_info_mut(&mut self, user_id: usize) -> &mut UserInfo {
         if user_id == 1 {
             &mut self.user1
-        } else {
-            &mut self.user2
         }
+
+        &mut self.user2
+    }
+
+    pub fn get_user_info(&self, user_id: usize) -> &UserInfo {
+        if user_id == 1 {
+            &self.user1
+        }
+
+        &self.user2
     }
 
     pub fn get_user_info_by_acc_id(&mut self, account_id: &AccountId) -> &mut UserInfo {

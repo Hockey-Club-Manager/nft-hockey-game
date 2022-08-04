@@ -52,7 +52,7 @@ impl Team {
         let mut team_work_line: f32 = 1.0;
 
         for (position, field_player_id) in &five_ids.field_players {
-            let field_player = self.get_field_player(field_player_id);
+            let field_player = self.get_field_player_mut(field_player_id);
             field_player.teamwork = Option::from(field_player.get_position_coefficient(position));
 
             self.insert_player_nationality(&mut player_per_nationality, field_player, &position);
@@ -133,7 +133,7 @@ impl Team {
 
     fn change_teamwork_by_position(&mut self, five_ids: &FiveIds, position: &PlayerPosition, teamwork: f32) {
         let token_id = five_ids.field_players.get(position).unwrap();
-        let player = self.get_field_player(token_id);
+        let player = self.get_field_player_mut(token_id);
         player.teamwork = Option::from(player.teamwork.unwrap() * teamwork);
     }
 
@@ -212,10 +212,13 @@ impl Team {
 }
 
 impl Team {
-    pub fn get_field_player(&mut self, id: &TokenId) -> &mut FieldPlayer {
+    pub fn get_field_player_mut(&mut self, id: &TokenId) -> &mut FieldPlayer {
         self.field_players.get_mut(id).unwrap()
     }
 
+    pub fn get_field_player(&self, id: &TokenId) -> &FieldPlayer {
+        self.field_players.get(id).unwrap()
+    }
     pub fn get_field_player_pos(&self, player_id: &TokenId) -> &PlayerPosition {
         let five = self.get_active_five();
         for (pos, id) in five.field_players {
@@ -248,6 +251,7 @@ impl Team {
     }
     
     pub fn change_active_five(&mut self) {
+        // TODO: reduce strength
         match self.active_five {
             First => {
                 self.active_five = Second;

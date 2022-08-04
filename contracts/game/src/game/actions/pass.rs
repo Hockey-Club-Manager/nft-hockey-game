@@ -40,7 +40,7 @@ impl DoAction for PassAction {
 fn is_diagonal_pass(positions: Vec<PlayerPosition>) -> bool {
     if positions.contains(&LeftDefender) && positions.contains(&RightWing) ||
         positions.contains(&RightDefender) && positions.contains(&LeftWing) {
-        true
+        return true;
     }
 
     false
@@ -67,10 +67,3 @@ fn get_other_positions(player_pos: &PlayerPosition) -> Vec<PlayerPosition> {
     player_positions
 }
 
-fn has_pass_before_shot(game: &Game) -> bool {
-    if game.last_action == Pass {
-        true
-    }
-
-    false
-}
