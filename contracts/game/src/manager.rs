@@ -127,13 +127,18 @@ impl From<Stats> for StatsOutput {
 }
 
 impl Hockey {
-    pub(crate) fn internal_distribute_reward(&mut self, token_balance: &TokenBalance, winner_id: &AccountId) {
+    pub(crate) fn internal_distribute_reward(&mut self, token_balance: &TokenBalance, winner_id: &AccountId, game_id: GameId) {
         // TODO add for FT
         let amount = token_balance.balance;
         let fee = amount / 10;
         let winner_reward: Balance = amount - fee;
         Promise::new(winner_id.clone()).transfer(winner_reward);
-        log!("Winner is {}. Reward: {}", winner_id, winner_reward);
+
+        let reward = match serde_json::to_string(&(game_id, (winner_id.clone(), winner_reward.clone()))) {
+            Ok(res) => res,
+            Err(e) => panic!("{}", e)
+        };
+        log!("{}", reward);
 
         let stats = self.internal_get_stats(winner_id);
         let referrer_fee = if let Some(referrer_id) = stats.referrer_id {

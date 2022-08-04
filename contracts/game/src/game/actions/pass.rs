@@ -1,7 +1,7 @@
 use crate::{Game, PlayerPosition};
 use crate::game::actions::action::{DoAction};
 use crate::game::actions::action::ActionTypes::{Pass, PassCatched, PuckLose};
-use crate::game::actions::utils::{generate_an_event, get_another_random_position, get_opponents_field_player, get_relative_field_player_stat, has_won};
+use crate::game::actions::utils::{generate_an_event, get_opponents_field_player, get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
 pub struct PassAction;

@@ -29,10 +29,10 @@ pub struct FieldPlayer {
 }
 
 impl FieldPlayer {
-    pub fn get_user_id(&self) -> usize { self.user_id.unwrap() }
+    pub fn get_user_id(&self) -> usize { self.user_id.clone().unwrap() }
 
     pub fn get_player_id(&self) -> TokenId {
-        self.id.unwrap()
+        self.id.clone().unwrap()
     }
 
     pub fn get_position_coefficient(&self, position: &PlayerPosition) -> f32 {

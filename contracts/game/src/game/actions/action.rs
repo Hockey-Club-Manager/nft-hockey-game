@@ -120,10 +120,10 @@ impl Action {
         let mut percent = 0.0;
         let mut action_probability: Vec<f32> = Vec::new();
         for i in 0..actions.len() {
-            percent += actions[i];
+            percent += actions[i] as f32;
             action_probability.push(percent);
         }
-        percent = 100 / percent;
+        percent = 100.0 / percent;
 
         let rnd = Game::get_random_in_range(1, 101, 0) as f32;
 
@@ -143,18 +143,15 @@ impl Action {
     pub fn do_random_action(self, game: &mut Game) {
         let mut is_attack_zone = false;
         let user_player_id = game.player_with_puck.unwrap();
-        if game.zone_number == 3 && user_id == 1 || game.zone_number == 1 && user_id == 2 {
+        if game.zone_number == 3 && user_player_id.0 == 1 || game.zone_number == 1 && user_player_id.0 == 2 {
             is_attack_zone = true;
         }
 
-        let active_five = if user_player_id.0 == 1 {
-            game.user1.team.fives.get(&game.user1.team.active_five).unwrap()
-        } else {
-            game.user2.team.fives.get(&game.user2.team.active_five).unwrap()
-        };
+        let user = game.get_user_info(user_player_id.0);
+        let active_five = user.team.get_active_five();
+        let player_with_puck_role = user.team.get_field_player(&user_player_id.1).player_role;
 
-        let
-        let action = self.get_random_action(is_attack_zone, game.player_with_puck.as_ref().unwrap().get_role(), active_five);
+        let action = self.get_random_action(is_attack_zone, player_with_puck_role, active_five);
 
         action.do_action(game);
     }

@@ -12,8 +12,8 @@ use crate::team::team::Team;
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct TeamMetadata {
-    pub(crate) fives: HashMap<NumberFive, FiveIds>,
-    pub(crate) goalies: HashMap<NumberGoalie, TokenMetadata>,
+    pub(crate) fives: HashMap<FiveNumber, FiveIds>,
+    pub(crate) goalies: HashMap<GoalieNumber, PlayerMetadata>,
     pub(crate) field_players_metadata: HashMap<TokenId, PlayerMetadata>,
 }
 
@@ -24,7 +24,7 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
     for (number, mut five_ids) in team_metadata.fives {
         five_ids.time_field = Option::from(0 as u8);
 
-        five_ids.calculate_teamwork();
+        //TODO: five_ids.calculate_teamwork();
 
         fives.insert(number, five_ids);
     }

@@ -52,7 +52,7 @@ pub fn reduce_strength(game: &mut Game) {
     let five1 = game.user1.team.get_active_five();
     for (_player_pos, field_player_id) in &five1.field_players {
         let field_player = game.user1.team.get_field_player_mut(field_player_id);
-        let amount_of_spent_strength = get_amount_of_spent_strength(&five2.ice_time_priority);
+        let amount_of_spent_strength = get_amount_of_spent_strength(&five1.ice_time_priority);
 
         field_player.stats.decrease_strength(amount_of_spent_strength);
     }

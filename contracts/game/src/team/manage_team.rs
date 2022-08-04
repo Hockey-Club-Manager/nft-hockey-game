@@ -1,6 +1,7 @@
 use crate::*;
 use crate::game::actions::utils::generate_an_event;
-use crate::team::five::{FiveNumber, IceTimePriority, Tactics};
+use crate::team::five::{IceTimePriority, Tactics};
+use crate::team::numbers::*;
 
 #[near_bindgen]
 impl Hockey {

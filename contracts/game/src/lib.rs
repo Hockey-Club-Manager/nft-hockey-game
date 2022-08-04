@@ -1,9 +1,8 @@
 use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap};
 use near_sdk::{ext_contract, Promise};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountId, Balance, BorshStorageKey, env, log, near_bindgen, PanicOnDefault, setup_alloc};
+use near_sdk::{AccountId, Balance, BorshStorageKey, env, serde_json, log, near_bindgen, PanicOnDefault, setup_alloc};
 use game::actions::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, TakeTO};
-use game::actions::action::generate_an_event;
 use crate::external::ext_manage_team;
 use crate::external::ext_self;
 
@@ -11,7 +10,6 @@ use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, V
 use team::players::player::PlayerPosition;
 use team::players::field_player::FieldPlayer;
 use crate::game::game::{Event, Game, GameState};
-use crate::team::team::TeamJson;
 use crate::team::team_metadata::TeamMetadata;
 use crate::user_info::UserInfo;
 
@@ -163,6 +161,12 @@ impl Hockey {
 
         self.available_games.insert(&game_id, &(account_id.clone(), opponent_id.clone()));
 
+        let available_game = match serde_json::to_string(&(game_id.clone(), (account_id.clone(), opponent_id.clone()))) {
+            Ok(res) => res,
+            Err(err) => panic!("{}", err)
+        };
+        log!("{}", available_game);
+
         self.next_game_id += 1;
 
         self.available_players.remove(&opponent_id);
@@ -194,12 +198,10 @@ impl Hockey {
                     game.user2.account_id.clone()
                 };
 
-                self.internal_distribute_reward(&game.reward, &winner_account);
+                self.internal_distribute_reward(&game.reward, &winner_account, game_id);
                 game.winner_index = Some(winner_index);
 
                 self.internal_stop_game(game_id);
-
-                log!("\nGame over! {} won!", winner_account);
             },
             _ => {}
         };
@@ -210,6 +212,7 @@ impl Hockey {
     // TODO make private on release
     pub fn internal_stop_game(&mut self, game_id: GameId) {
         self.available_games.remove(&game_id);
+        log!{"{}", game_id};
     }
 
     pub fn get_next_game_id(&self) -> GameId {

@@ -3,7 +3,7 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, env, Timestamp};
 use near_sdk::serde::{Deserialize, Serialize};
 use crate::team::players::field_player::{FieldPlayer};
-use crate::game::actions::action::{Action, ActionTypes, generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
+use crate::game::actions::action::{Action, ActionTypes};
 use crate::game::actions::action::ActionTypes::*;
 use crate::team::players::player::{PlayerPosition};
 use crate::team::players::player::PlayerPosition::*;
@@ -76,7 +76,6 @@ impl Game {
             winner_index: None,
             last_event_generation_time: env::block_timestamp(),
             player_with_puck: None,
-            user_id_with_puck: None,
             zone_number: 2,
             turns: 0,
             last_action: StartGame
@@ -120,7 +119,7 @@ impl Game {
 
     pub fn get_user_info_mut(&mut self, user_id: usize) -> &mut UserInfo {
         if user_id == 1 {
-            &mut self.user1
+            return &mut self.user1;
         }
 
         &mut self.user2
@@ -128,18 +127,18 @@ impl Game {
 
     pub fn get_user_info(&self, user_id: usize) -> &UserInfo {
         if user_id == 1 {
-            &self.user1
+            return &self.user1;
         }
 
         &self.user2
     }
 
     pub fn get_user_info_by_acc_id(&mut self, account_id: &AccountId) -> &mut UserInfo {
-        if account_id == self.user1.account_id {
-            &mut self.user1
+        if *account_id == self.user1.account_id {
+            return &mut self.user1;
         }
-        if account_id == self.user2.account_id {
-            &mut self.user2
+        if *account_id == self.user2.account_id {
+            return &mut self.user2;
         }
 
         panic!("Account id not found!")
@@ -148,21 +147,24 @@ impl Game {
 
 impl Game {
     fn battle(&mut self) {
-        let player1 = self.get_center_forward_in_the_zone(&self.user1);
-        let player2 = self.get_center_forward_in_the_zone(&self.user2);
+        let player_id1 = self.get_center_id_forward_in_the_zone(&self.user1);
+        let player_id2 = self.get_center_id_forward_in_the_zone(&self.user2);
 
-        let player1_stat = get_relative_field_player_stat(&player1, player1.stats.strength as f64);
-        let player2_stat = get_relative_field_player_stat(&player2, player2.stats.strength as f64);
+        let player1 = self.user1.team.get_field_player(&player_id1);
+        let player2 = self.user2.team.get_field_player(&player_id2);
+
+        let player1_stat = get_relative_field_player_stat(&player1, player1.stats.get_strength());
+        let player2_stat = get_relative_field_player_stat(&player2, player2.stats.get_strength());
 
         if has_won(player1_stat, player2_stat) {
-            self.player_with_puck = Option::from(player1);
+            self.player_with_puck = Option::from((player1.get_user_id(), player1.get_player_id()));
         } else {
-            self.player_with_puck = Option::from(player2);
+            self.player_with_puck = Option::from((player2.get_user_id(), player2.get_player_id()));
         }
     }
 
-    fn get_center_forward_in_the_zone(&self, user: &UserInfo) -> FieldPlayer {
-        match user.team.active_five.field_players.get(&Center) {
+    fn get_center_id_forward_in_the_zone(&self, user: &UserInfo) -> TokenId {
+        match user.team.get_active_five().field_players.get(&Center) {
             Some(player) => player.clone(),
             _ => panic!("Player not found")
         }
@@ -178,17 +180,16 @@ impl Game {
     }
 
     pub fn step(&mut self) -> GameState {
-        let action_type = self.get_last_action();
         let action = Action;
 
-        match action_type {
+        match self.last_action {
             StartGame => self.face_off(),
             Goal => self.face_off(),
             Save => self.face_off(),
             EndOfPeriod => self.face_off(),
             Rebound => {
                 let player_pos = get_random_position_after_rebound();
-                battle_by_position(player_pos, self);
+                battle_by_position(&player_pos, self);
 
                 generate_an_event(Battle, self);
             },
@@ -261,29 +262,17 @@ fn get_random_position_after_rebound() -> PlayerPosition {
     }
 }
 
-fn battle_by_position(pos: PlayerPosition, game: &mut Game) {
-    let player1 = &game.user1.team.active_five.field_players.get(&pos);
-    let player2 = &game.user2.team.active_five.field_players.get(&pos);
+fn battle_by_position(pos: &PlayerPosition, game: &mut Game) {
+    let player1 = game.get_field_player_by_pos(1, pos);
+    let player2 = game.get_field_player_by_pos(2, pos);
 
-    let player1_stat = match player1 {
-        Some(player) => get_relative_field_player_stat(player, player.stats.strength),
-        _ => panic!("Player not found")
-    };
+    let player1_stat = get_relative_field_player_stat(player1, player1.stats.get_strength());
 
-    let player2_stat = match player2 {
-        Some(player) => get_relative_field_player_stat(player, player.stats.strength),
-        _ => panic!("Player not found")
-    };
+    let player2_stat = get_relative_field_player_stat(player2, player2.stats.get_strength());
 
     if has_won(player1_stat, player2_stat) {
-        match *player1 {
-            Some(player) => game.player_with_puck = Option::from(player.clone()),
-            _ => panic!("Player not found")
-        }
+        game.player_with_puck = Option::from((player1.get_user_id(), player1.get_player_id()));
     } else {
-        match *player2 {
-            Some(player) => game.player_with_puck = Option::from(player.clone()),
-            _ => panic!("Player not found")
-        }
+        game.player_with_puck = Option::from((player2.get_user_id(), player2.get_player_id()));
     }
 }
