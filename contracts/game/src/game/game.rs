@@ -275,7 +275,7 @@ impl Game {
             EndOfPeriod => self.face_off(),
             Rebound => {
                 let player_pos = get_random_position_after_rebound();
-                battle_by_position(&player_pos, self);
+                self.battle_by_position(&player_pos);
 
                 self.generate_an_event(Battle);
             },
@@ -314,6 +314,21 @@ impl Game {
         state
     }
 
+    fn battle_by_position(&mut self, pos: &PlayerPosition) {
+        let player1 = self.get_field_player_by_pos(1, pos);
+        let player2 = self.get_field_player_by_pos(2, pos);
+
+        let player1_stat = get_relative_field_player_stat(player1, player1.stats.get_strength());
+
+        let player2_stat = get_relative_field_player_stat(player2, player2.stats.get_strength());
+
+        if has_won(player1_stat, player2_stat) {
+            self.player_with_puck = Option::from((player1.get_user_id(), player1.get_player_id()));
+        } else {
+            self.player_with_puck = Option::from((player2.get_user_id(), player2.get_player_id()));
+        }
+    }
+
     fn is_game_over(&self) -> bool {
         if self.turns >= 90 && self.user1.team.score != self.user2.team.score {
             true
@@ -345,20 +360,5 @@ fn get_random_position_after_rebound() -> PlayerPosition {
         4 => LeftWing,
         5 => RightWing,
         _ => panic!("Player position not found")
-    }
-}
-
-fn battle_by_position(pos: &PlayerPosition, game: &mut Game) {
-    let player1 = game.get_field_player_by_pos(1, pos);
-    let player2 = game.get_field_player_by_pos(2, pos);
-
-    let player1_stat = get_relative_field_player_stat(player1, player1.stats.get_strength());
-
-    let player2_stat = get_relative_field_player_stat(player2, player2.stats.get_strength());
-
-    if has_won(player1_stat, player2_stat) {
-        game.player_with_puck = Option::from((player1.get_user_id(), player1.get_player_id()));
-    } else {
-        game.player_with_puck = Option::from((player2.get_user_id(), player2.get_player_id()));
     }
 }
