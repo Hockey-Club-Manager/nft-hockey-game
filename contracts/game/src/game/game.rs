@@ -49,7 +49,7 @@ pub struct Game {
 
 impl Game {
     pub fn new (teams: (TeamMetadata, TeamMetadata), account_id_1: AccountId, account_id_2: AccountId, reward: TokenBalance) -> Game {
-        let team1 = team_metadata_to_team(teams.0, 1);
+        let mut team1 = team_metadata_to_team(teams.0, 1);
         let team2 = team_metadata_to_team(teams.1, 2);
 
         let user_info1 = UserInfo {

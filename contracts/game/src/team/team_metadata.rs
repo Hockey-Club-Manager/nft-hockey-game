@@ -34,7 +34,7 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
         goalies.insert(number, to_goalie(goalie, user_id));
     }
 
-    Team {
+    let mut team = Team {
         fives,
         active_five: FiveNumber::First,
         field_players: to_field_players(&team_metadata.field_players_metadata, &user_id),
@@ -43,7 +43,10 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
         active_goalie: GoalieNumber::MainGoalkeeper,
 
         score: 0,
-    }
+    };
+
+    team.calculate_teamwork();
+    team
 }
 
 fn to_field_players(field_players_metadata: &HashMap<TokenId, PlayerMetadata>, user_id: &usize) -> HashMap<TokenId, FieldPlayer> {
