@@ -8,8 +8,9 @@ use crate::game::actions::action::ActionTypes::*;
 use crate::team::players::player::{PlayerPosition};
 use crate::team::players::player::PlayerPosition::*;
 use crate::{TokenBalance};
-use crate::game::actions::utils::{generate_an_event, get_relative_field_player_stat, has_won, reduce_strength};
+use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::LeftWing;
+use crate::team::five::IceTimePriority;
 use crate::team::five::Tactics::Neutral;
 use crate::team::team::Team;
 use crate::team::team_metadata::team_metadata_to_team;
@@ -80,7 +81,7 @@ impl Game {
             turns: 0,
             last_action: StartGame
         };
-        generate_an_event(StartGame, &mut game);
+        game.generate_an_event(StartGame);
 
         game
     }
@@ -100,21 +101,32 @@ impl Game {
         user_info.team.get_field_player(player_id)
     }
 
-    pub fn get_field_player_id_by_pos(&mut self, user_id: UserId, position:& PlayerPosition) -> &TokenId {
-        let user_info = self.get_user_info_mut(user_id);
-        user_info.team.get_active_five().field_players.get(position).unwrap()
+    pub fn get_field_player_id_by_pos(&self, user_id: UserId, position:& PlayerPosition) -> TokenId {
+        let user_info = self.get_user_info(user_id);
+        user_info.team.get_active_five().field_players.get(position).unwrap().clone()
     }
 
-    pub fn get_player_pos(&mut self, player_id: &TokenId, user_id: UserId) -> &PlayerPosition {
-        let user_info = self.get_user_info_mut(user_id);
+    pub fn get_player_pos(&self, player_id: &TokenId, user_id: UserId) -> &PlayerPosition {
+        let user_info = self.get_user_info(user_id);
         user_info.team.get_field_player_pos(player_id)
     }
 
-    pub fn get_player_with_puck(&mut self) -> &mut FieldPlayer {
-        let unwrapped_player = self.player_with_puck.unwrap();
+    pub fn get_player_with_puck_mut(&mut self) -> &mut FieldPlayer {
+        let unwrapped_player = self.get_player_id_with_puck();
         let user = self.get_user_info_mut(unwrapped_player.0);
 
         user.team.field_players.get_mut(&unwrapped_player.1).unwrap()
+    }
+
+    pub fn get_player_id_with_puck(&self) -> (UserId, TokenId) {
+        self.player_with_puck.clone().unwrap()
+    }
+
+    pub fn get_player_with_puck(&self) -> &FieldPlayer {
+        let unwrapped_player = self.get_player_id_with_puck();
+        let user = self.get_user_info(unwrapped_player.0);
+
+        user.team.field_players.get(&unwrapped_player.1).unwrap()
     }
 
     pub fn get_user_info_mut(&mut self, user_id: usize) -> &mut UserInfo {
@@ -142,6 +154,70 @@ impl Game {
         }
 
         panic!("Account id not found!")
+    }
+
+    pub fn get_user_id_player_with_puck(&self) -> usize {
+        let player_with_puck = self.get_player_with_puck();
+        player_with_puck.user_id.unwrap()
+    }
+
+    pub fn get_opponents_field_player(&self) -> &FieldPlayer {
+        let user_player_ids = self.player_with_puck.clone().unwrap();
+
+        let user = self.get_user_info(user_player_ids.0);
+        let position = user.team.get_field_player_pos(&user_player_ids.1);
+
+        return if user_player_ids.0 == 1 {
+            self.get_field_player_by_pos(2, position)
+        } else {
+            self.get_field_player_by_pos(1, position)
+        }
+    }
+
+    pub fn reduce_strength(&mut self) {
+        let five1 = self.user1.team.get_active_five().clone();
+        for (_player_pos, field_player_id) in five1.field_players {
+            let amount_of_spent_strength = self.get_amount_of_spent_strength(five1.ice_time_priority);
+
+            let field_player = self.user1.team.get_field_player_mut(&field_player_id);
+            field_player.stats.decrease_strength(amount_of_spent_strength);
+        }
+
+        let five2 = self.user2.team.get_active_five().clone();
+        for (_player_pos, field_player_id) in five2.field_players {
+            let amount_of_spent_strength = self.get_amount_of_spent_strength(five2.ice_time_priority);
+
+            let field_player = self.user2.team.get_field_player_mut(&field_player_id);
+            field_player.stats.decrease_strength(amount_of_spent_strength);
+        }
+    }
+
+    fn get_amount_of_spent_strength(&self, ice_time_priority: IceTimePriority) -> u8 {
+        match ice_time_priority {
+            IceTimePriority::SuperLowPriority => { 1 }
+            IceTimePriority::LowPriority => { 2 }
+            IceTimePriority::Normal => { 3 }
+            IceTimePriority::HighPriority => { 4 }
+            IceTimePriority::SuperHighPriority => { 5 }
+        }
+    }
+
+
+    pub fn generate_an_event(&self ,action: ActionTypes) {
+        let generated_event = Event {
+            user1: self.user1.clone(),
+            user2: self.user2.clone(),
+            time: self.last_event_generation_time.clone(),
+            zone_number: self.zone_number.clone(),
+            action,
+            player_with_puck: self.player_with_puck.clone(),
+        };
+
+        let json_event = match serde_json::to_string(&generated_event) {
+            Ok(res) => res,
+            Err(e) => panic!("{}", e)
+        };
+        log!("{}", json_event);
     }
 }
 
@@ -171,12 +247,12 @@ impl Game {
     }
 
     fn face_off(&mut self) {
-        generate_an_event(FaceOff, self);
+        self.generate_an_event(FaceOff);
 
         self.battle();
-        reduce_strength(self);
+        self.reduce_strength();
 
-        generate_an_event(Battle, self);
+        self.generate_an_event(Battle);
     }
 
     pub fn step(&mut self) -> GameState {
@@ -191,7 +267,7 @@ impl Game {
                 let player_pos = get_random_position_after_rebound();
                 battle_by_position(&player_pos, self);
 
-                generate_an_event(Battle, self);
+                self.generate_an_event(Battle);
             },
              _ => action.do_random_action(self)
         };
@@ -201,28 +277,28 @@ impl Game {
         if self.user1.team.need_change() {
             self.user1.team.change_active_five();
 
-            generate_an_event(FirstTeamChangeActiveFive, self);
+            self.generate_an_event(FirstTeamChangeActiveFive);
         }
         if self.user2.team.need_change() {
             self.user2.team.change_active_five();
 
-            generate_an_event(SecondTeamChangeActiveFive, self);
+            self.generate_an_event(SecondTeamChangeActiveFive);
         }
 
         if [30, 60, 90].contains(&self.turns) {
-            generate_an_event(EndOfPeriod, self);
+            self.generate_an_event(EndOfPeriod);
             self.zone_number = 2;
         }
 
         let state = if self.is_game_over() {
-            generate_an_event(GameFinished, self);
+            self.generate_an_event(GameFinished);
             GameState::GameOver { winner_id: self.get_winner_id() }
         } else {
             GameState::InProgress
         };
 
         if state == GameState::InProgress && self.turns == 90 {
-            generate_an_event(Overtime, self);
+            self.generate_an_event(Overtime);
         }
 
         state

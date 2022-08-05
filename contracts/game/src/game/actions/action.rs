@@ -142,7 +142,7 @@ impl Action {
 
     pub fn do_random_action(self, game: &mut Game) {
         let mut is_attack_zone = false;
-        let user_player_id = game.player_with_puck.unwrap();
+        let user_player_id = game.get_player_id_with_puck();
         if game.zone_number == 3 && user_player_id.0 == 1 || game.zone_number == 1 && user_player_id.0 == 2 {
             is_attack_zone = true;
         }

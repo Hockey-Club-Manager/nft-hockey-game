@@ -1,5 +1,4 @@
 use crate::*;
-use crate::game::actions::utils::generate_an_event;
 use crate::team::five::{IceTimePriority, Tactics};
 use crate::team::numbers::*;
 
@@ -25,7 +24,7 @@ impl Hockey {
             panic!("Account id not found!")
         }
 
-        generate_an_event(TakeTO, &mut game);
+        game.generate_an_event(TakeTO);
 
         self.games.insert(&game_id, &game);
     }
@@ -38,14 +37,14 @@ impl Hockey {
         if game.user1.account_id == account_id {
             if !game.user1.coach_speech_called {
                 self.change_stats_coach_speech(&mut game.user1);
-                generate_an_event(CoachSpeech, &mut game);
+                game.generate_an_event(CoachSpeech);
             } else {
                 panic!("You have already used Coach speech")
             }
         } else if game.user2.account_id == account_id {
             if !game.user2.coach_speech_called {
                 self.change_stats_coach_speech(&mut game.user2);
-                generate_an_event(CoachSpeech, &mut game);
+                game.generate_an_event(CoachSpeech);
             } else {
                 panic!("You have already used Coach speech")
             }
@@ -60,10 +59,10 @@ impl Hockey {
 
         if game.user1.account_id == account_id && !game.user1.is_goalie_out {
             game.user1.is_goalie_out = true;
-            generate_an_event(GoalieOut, &mut game);
+            game.generate_an_event(GoalieOut);
         } else if game.user2.account_id == account_id && !game.user2.is_goalie_out {
             game.user2.is_goalie_out = true;
-            generate_an_event(GoalieOut, &mut game);
+            game.generate_an_event(GoalieOut);
         }
         self.games.insert(&game_id, &game);
     }
@@ -74,10 +73,10 @@ impl Hockey {
 
         if game.user1.account_id == account_id  && game.user1.is_goalie_out{
             game.user1.is_goalie_out = false;
-            generate_an_event(GoalieBack, &mut game);
+            game.generate_an_event(GoalieBack);
         } else if game.user2.account_id == account_id && game.user2.is_goalie_out{
             game.user2.is_goalie_out = false;
-            generate_an_event(GoalieBack, &mut game);
+            game.generate_an_event(GoalieBack);
         }
         self.games.insert(&game_id, &game);
     }
@@ -122,9 +121,9 @@ impl Hockey {
 
 impl Hockey {
     fn change_stats_take_to(&self, user1: &mut UserInfo, user2: &mut UserInfo) {
-        for (_five_number, five_ids) in &user1.team.fives {
-            for (_player_pos, field_player) in &five_ids.field_players {
-                let field_player = user1.team.get_field_player_mut(field_player);
+        for (_five_number, five_ids) in user1.team.fives.clone() {
+            for (_player_pos, field_player) in five_ids.field_players {
+                let field_player = user1.team.get_field_player_mut(&field_player);
                 field_player.stats.increase_strength(5);
                 field_player.stats.increase_iq(3)
             }
@@ -134,9 +133,9 @@ impl Hockey {
             goalie.stats.increase_strength(5);
         }
 
-        for (_five_number, five_ids) in &user2.team.fives {
-            for (_player_pos, field_player) in &five_ids.field_players {
-                let field_player = user2.team.get_field_player_mut(field_player);
+        for (_five_number, five_ids) in user2.team.fives.clone() {
+            for (_player_pos, field_player) in five_ids.field_players {
+                let field_player = user2.team.get_field_player_mut(&field_player);
                 field_player.stats.increase_strength(3);
                 field_player.stats.morale += 3;
             }
@@ -150,9 +149,9 @@ impl Hockey {
     }
 
     fn change_stats_coach_speech(&self, user: &mut UserInfo) {
-        for (_five_number, five_ids) in &user.team.fives {
-            for (_player_pos, field_player) in &five_ids.field_players {
-                let field_player = user.team.get_field_player_mut(field_player);
+        for (_five_number, five_ids) in user.team.fives.clone() {
+            for (_player_pos, field_player) in five_ids.field_players {
+                let field_player = user.team.get_field_player_mut(&field_player);
                 field_player.stats.increase_strength(5);
             }
         }
@@ -166,11 +165,11 @@ impl Hockey {
 
     fn swap_positions(&mut self, user_info: &mut UserInfo, number_five: FiveNumber, position1: PlayerPosition, position2: PlayerPosition) {
         let five = user_info.team.fives.get_mut(&number_five).unwrap();
-        let first_player_id = five.field_players.get(&position1).unwrap();
-        let second_player_id = five.field_players.get(&position2).unwrap();
+        let first_player_id = five.field_players.get(&position1).unwrap().clone();
+        let second_player_id = five.field_players.get(&position2).unwrap().clone();
 
-        five.field_players.insert(position1, second_player_id.clone());
-        five.field_players.insert(position2, first_player_id.clone());
+        five.field_players.insert(position1, second_player_id);
+        five.field_players.insert(position2, first_player_id);
 
         // TODO calculate teamwork
     }
