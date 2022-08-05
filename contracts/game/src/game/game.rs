@@ -35,7 +35,10 @@ pub struct Event {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Serialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct Game {
+    pub(crate) game_id: GameId,
     pub(crate) user1: UserInfo,
     pub(crate) user2: UserInfo,
     pub(crate) reward: TokenBalance,
@@ -48,7 +51,13 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new (teams: (TeamMetadata, TeamMetadata), account_id_1: AccountId, account_id_2: AccountId, reward: TokenBalance) -> Game {
+    pub fn new (
+        teams: (TeamMetadata, TeamMetadata),
+        account_id_1: AccountId,
+        account_id_2: AccountId,
+        reward: TokenBalance,
+        game_id: &GameId
+    ) -> Game {
         let mut team1 = team_metadata_to_team(teams.0, 1);
         let team2 = team_metadata_to_team(teams.1, 2);
 
@@ -71,6 +80,7 @@ impl Game {
         };
 
         let mut game = Game {
+            game_id: *game_id,
             user1: user_info1,
             user2: user_info2,
             reward,

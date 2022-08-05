@@ -8,13 +8,15 @@ use crate::*;
 
 
 #[derive(BorshSerialize, BorshDeserialize)]
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
 pub struct TokenBalance {
     pub(crate) token_id: Option<AccountId>,
     pub(crate) balance: Balance,
 }
 
-#[derive(Clone)]
-#[derive(BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
+#[derive(BorshSerialize, BorshDeserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct GameConfig {
     pub(crate) deposit: Option<Balance>,

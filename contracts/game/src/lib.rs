@@ -113,7 +113,7 @@ impl Hockey {
     }
 
     #[payable]
-    pub fn start_game(&mut self, opponent_id: AccountId, referrer_id: Option<AccountId>) -> Promise {
+    pub fn start_game(&mut self, opponent_id: AccountId) -> Promise {
         if let Some(opponent_config) = self.available_players.get(&opponent_id) {
             let config: GameConfig = opponent_config.into();
             assert_eq!(env::attached_deposit(), config.deposit.unwrap_or(0), "Wrong deposit");
@@ -126,8 +126,6 @@ impl Hockey {
             if let Some(ref player_id) = config.opponent_id {
                 assert_eq!(*player_id, account_id, "Wrong account");
             }
-
-            self.internal_add_referral(&account_id, &referrer_id);
 
             ext_manage_team::get_teams(account_id.clone(), opponent_id.clone(), &NFT_CONTRACT, 0, 100_000_000_000_000)
                 .then(ext_self::on_get_teams(opponent_id, account_id, config.clone(), &env::current_account_id(), 0, 100_000_000_000_000))
@@ -150,18 +148,17 @@ impl Hockey {
             balance: config.deposit.unwrap_or(0) * 2,
         };
 
+        let game_id = self.next_game_id;
 
         let game = Game::new(teams, account_id.clone(),
                              opponent_id.clone(),
-                             reward);
-
-        let game_id = self.next_game_id;
+                             reward, &game_id);
 
         self.games.insert(&game_id, &game);
 
         self.available_games.insert(&game_id, &(account_id.clone(), opponent_id.clone()));
 
-        let available_game = match serde_json::to_string(&(game_id.clone(), (account_id.clone(), opponent_id.clone()))) {
+        let available_game = match serde_json::to_string(&game) {
             Ok(res) => res,
             Err(err) => panic!("{}", err)
         };
