@@ -27,7 +27,7 @@ impl DumpAction {
     fn do_dump_in(&self, game: &mut Game) {
         game.generate_an_event(ActionTypes::DumpIn);
 
-        if self.is_icing(game) {
+        if self.is_icing_in_neutral_zone(game) {
             return;
         }
 
@@ -48,19 +48,19 @@ impl DumpAction {
         }
     }
 
-    fn is_icing(
+    fn is_icing_in_neutral_zone(
         &self,
         game: &mut Game
     ) -> bool {
-        let player_with_puck = game.get_player_with_puck();
+        let player_with_puck = game.get_player_id_with_puck();
 
-        let user = game.get_user_info(player_with_puck.get_user_id());
+        let user = game.get_user_info(player_with_puck.0);
         let active_five = user.team.get_active_five();
 
         match active_five.number {
             FiveNumber::PenaltyKill1 | FiveNumber::PenaltyKill2 => {},
             _ => {
-                match user.team.get_field_player_pos(&player_with_puck.get_player_id()) {
+                match user.team.get_field_player_pos(&player_with_puck.1) {
                     PlayerPosition::LeftDefender | PlayerPosition::RightDefender => {
                         let rnd = Game::get_random_in_range(1, 100, 3);
 
@@ -94,6 +94,9 @@ impl DumpAction {
             return;
         }
 
+        if self.is_icing_in_defender_zone(game) {
+            return;
+        }
     }
 
     fn is_pass_catch(&self, game: &mut Game) -> bool {
@@ -129,5 +132,26 @@ impl DumpAction {
             },
             _ => panic!("Unknown position")
         };
+    }
+
+    fn is_icing_in_defender_zone(&self, game: &mut Game) -> bool {
+        let rnd = Game::get_random_in_range(1, 100, 8);
+        let player_with_puck = game.get_player_id_with_puck();
+
+        let user = game.get_user_info(player_with_puck.0);
+        let active_five = user.team.get_active_five();
+
+        match active_five.number {
+            FiveNumber::PenaltyKill1 | FiveNumber::PenaltyKill2 => {},
+            _ => {
+                if ICING_PROBABILITY >= rnd {
+                    game.generate_an_event(Icing);
+
+                    return true;
+                }
+            }
+        }
+
+        false
     }
 }
