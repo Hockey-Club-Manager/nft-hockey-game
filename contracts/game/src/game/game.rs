@@ -269,20 +269,32 @@ impl Game {
         }
     }
 
+    fn face_off(&mut self) {
+        self.generate_an_event(FaceOff);
+
+        let player_id1 = self.get_center_id_forward_in_the_zone(&self.user1);
+        let player_id2 = self.get_center_id_forward_in_the_zone(&self.user2);
+
+        let player1 = self.user1.team.get_field_player(&player_id1);
+        let player2 = self.user2.team.get_field_player(&player_id2);
+
+        let compared_stat1 = get_relative_field_player_stat(player1, player1.stats.face_offs as f32);
+        let compared_stat2= get_relative_field_player_stat(player2, player2.stats.face_offs as f32);
+
+        if has_won(compared_stat1, compared_stat2) {
+            self.player_with_puck = Option::from((player1.get_user_id(), player1.get_player_id()));
+        } else {
+            self.player_with_puck = Option::from((player2.get_user_id(), player2.get_player_id()));
+        }
+
+        self.generate_an_event(FaceOffWin);
+    }
+
     fn get_center_id_forward_in_the_zone(&self, user: &UserInfo) -> TokenId {
         match user.team.get_active_five().field_players.get(&Center) {
             Some(player) => player.clone(),
             _ => panic!("Player not found")
         }
-    }
-
-    fn face_off(&mut self) {
-        self.generate_an_event(FaceOff);
-
-        self.battle();
-        self.reduce_strength();
-
-        self.generate_an_event(Battle);
     }
 
     pub fn step(&mut self) -> GameState {
