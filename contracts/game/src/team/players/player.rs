@@ -18,7 +18,8 @@ pub struct PlayerMetadata {
     pub extra: Option<String>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(BorshDeserialize, BorshSerialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum PlayerType {
     FieldPlayer,
     Goalie,
@@ -34,7 +35,7 @@ pub enum Hand {
 }
 
 #[derive(PartialEq, Clone, Copy, BorshDeserialize, BorshSerialize)]
-#[derive(Eq, PartialOrd, Hash)]
+#[derive(Eq, PartialOrd, Hash, Ord)]
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub enum PlayerPosition {

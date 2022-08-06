@@ -3,6 +3,7 @@ use crate::*;
 use crate::extra::hand::Hand;
 use crate::extra::player_position::PlayerPosition;
 use crate::extra::player_role::PlayerRole;
+use crate::extra::player_type::PlayerType;
 use crate::extra::stats::{calculate_rarity, Stats};
 use crate::Rarity::*;
 
@@ -13,7 +14,7 @@ pub struct FieldPlayerExtra {
     pub reality: bool,
     pub nationality: String,
     pub birthday: u64,
-    pub player_type: String,
+    pub player_type: PlayerType,
 
     pub number: u8,
     pub hand: Hand,

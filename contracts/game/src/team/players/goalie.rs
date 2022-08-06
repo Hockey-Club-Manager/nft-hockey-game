@@ -1,5 +1,5 @@
 use crate::*;
-use crate::team::players::player::{Hand, PlayerRole};
+use crate::team::players::player::{Hand, PlayerRole, PlayerType};
 use near_sdk::serde::{Deserialize, Serialize};
 use crate::user_info::UserId;
 
@@ -15,7 +15,7 @@ pub struct Goalie {
     pub reality: bool,
     pub nationality: String,
     pub birthday: u64,
-    pub player_type: String,
+    pub player_type: PlayerType,
 
     pub number: u8,
     pub hand: Hand,
