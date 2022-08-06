@@ -49,7 +49,7 @@ fn is_diagonal_pass(positions: Vec<PlayerPosition>) -> bool {
 fn get_another_random_position(player_pos: &PlayerPosition) -> PlayerPosition {
     let player_positions = get_other_positions(player_pos);
 
-    let random_pos = Game::get_random_in_range(0, 4, 18);
+    let random_pos = Game::get_random_in_range(0, 4, 5);
 
     player_positions[random_pos]
 }

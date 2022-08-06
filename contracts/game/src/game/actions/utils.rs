@@ -10,7 +10,7 @@ use crate::team::players::goalie::Goalie;
 pub fn has_won(stat: f32, opponents_stat: f32) -> bool {
     let sum = stat + opponents_stat;
 
-    let random_number = Game::get_random_in_range(1, sum.round() as usize + 1, 19);
+    let random_number = Game::get_random_in_range(1, sum.round() as usize + 1, 5);
 
     return if stat > opponents_stat {
         if random_number as f32 > opponents_stat {

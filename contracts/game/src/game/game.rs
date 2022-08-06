@@ -171,6 +171,14 @@ impl Game {
         player_with_puck.user_id.unwrap()
     }
 
+    pub fn get_opponent_info(&self, user_id: usize) -> &UserInfo {
+        if user_id == 0 {
+            return self.get_user_info(1);
+        }
+
+        self.get_user_info(0)
+    }
+
     pub fn get_opponents_field_player(&self) -> &FieldPlayer {
         let user_player_ids = self.player_with_puck.clone().unwrap();
 
@@ -211,7 +219,6 @@ impl Game {
             IceTimePriority::SuperHighPriority => { 5 }
         }
     }
-
 
     pub fn generate_an_event(&self ,action: ActionTypes) {
         let generated_event = Event {
@@ -366,7 +373,7 @@ impl Game {
 }
 
 fn get_random_position_after_rebound() -> PlayerPosition {
-    let rnd = Game::get_random_in_range(0, 10, 20);
+    let rnd = Game::get_random_in_range(0, 10, 6);
 
     let probability_distribution = vec![1, 1, 2, 2, 3, 3, 3, 3, 4, 5];
 
