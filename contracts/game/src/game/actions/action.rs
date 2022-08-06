@@ -29,6 +29,8 @@ pub enum ActionTypes {
     Hit,
     Dangle,
     PokeCheck,
+    DumpIn,
+    DumpOut,
     Battle,
     Goal,
     Save,
