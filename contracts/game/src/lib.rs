@@ -19,7 +19,7 @@ mod manager;
 mod team;
 mod external;
 
-const NFT_CONTRACT: &str = "nft_0_0.testnet";
+const NFT_CONTRACT: &str = "parh.nft.testnet";
 
 type GameId = u64;
 type SRC = String;
@@ -218,6 +218,4 @@ impl Hockey {
 }
 
 #[cfg(test)]
-mod tests {
-
-}
+mod tests {}

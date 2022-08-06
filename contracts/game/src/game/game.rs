@@ -79,7 +79,7 @@ impl Game {
             is_goalie_out: false,
         };
 
-        let mut game = Game {
+        let game = Game {
             game_id: *game_id,
             user1: user_info1,
             user2: user_info2,
