@@ -1,4 +1,4 @@
-use crate::{FieldPlayer, Game, PlayerPosition, UserInfo};
+use crate::{FieldPlayer, Game, PlayerPosition, TokenId, UserInfo};
 use crate::game::actions::action::{ActionTypes, DoAction};
 use crate::game::actions::action::ActionTypes::{Icing, PassCatched};
 use crate::team::five::FiveIds;
@@ -32,7 +32,7 @@ impl DumpAction {
         }
 
         let user_player_id = game.get_player_id_with_puck();
-        let position_to_dump = self.get_random_wing_pos();
+        let position_to_dump = self.get_random_wing_pos(game, &user_player_id);
 
         let user = game.get_user_info(user_player_id.0);
         let active_five = user.team.get_active_five();
@@ -77,10 +77,12 @@ impl DumpAction {
         false
     }
 
-    fn get_random_wing_pos(&self) -> &PlayerPosition {
+    fn get_random_wing_pos(&self, game: &mut Game, user_player_id: &(usize, TokenId)) -> &PlayerPosition {
         let rnd = Game::get_random_in_range(1, 100, 4);
 
-        return if POSITION_PROBABILITY >= rnd {
+        let player_position = game.get_player_pos(&user_player_id.1, user_player_id.0);
+
+        return if POSITION_PROBABILITY >= rnd && PlayerPosition::LeftWing != *player_position {
             &PlayerPosition::LeftWing
         } else {
             &PlayerPosition::RightWing
