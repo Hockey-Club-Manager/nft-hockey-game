@@ -42,6 +42,12 @@ pub enum ActionTypes {
     PuckLose,
     Overtime,
 
+    Penalty,
+    Icing,
+    NetOff,
+    PuckOff,
+    Fight,
+
     ShotBlocked,
     ShotMissed,
 

@@ -290,6 +290,10 @@ impl Game {
         self.generate_an_event(FaceOffWin);
     }
 
+    fn fight(&mut self) {
+
+    }
+
     fn get_center_id_forward_in_the_zone(&self, user: &UserInfo) -> TokenId {
         match user.team.get_active_five().field_players.get(&Center) {
             Some(player) => player.clone(),
@@ -301,10 +305,7 @@ impl Game {
         let action = Action;
 
         match self.last_action {
-            StartGame => self.face_off(),
-            Goal => self.face_off(),
-            Save => self.face_off(),
-            EndOfPeriod => self.face_off(),
+            StartGame | Goal | Save | Penalty | Icing | NetOff | PuckOff | EndOfPeriod => self.face_off(),
             Rebound => {
                 let player_pos = get_random_position_after_rebound();
                 self.battle_by_position(&player_pos);
