@@ -239,10 +239,30 @@ impl Game {
         let player1 = self.user1.team.get_field_player(&player_id1);
         let player2 = self.user2.team.get_field_player(&player_id2);
 
-        let player1_stat = get_relative_field_player_stat(&player1, player1.stats.get_strength());
-        let player2_stat = get_relative_field_player_stat(&player2, player2.stats.get_strength());
+        let player1_stat = (player1.stats.puck_control + player1.stats.aggressiveness + player1.stats.strength) as f32 / 3.0;
+        let player2_stat = (player2.stats.puck_control + player2.stats.aggressiveness + player2.stats.strength) as f32 / 3.0;
 
-        if has_won(player1_stat, player2_stat) {
+        let compared_stat1 = get_relative_field_player_stat(player1, player1_stat);
+        let compared_stat2= get_relative_field_player_stat(player2, player2_stat);
+
+        if has_won(compared_stat1, compared_stat2) {
+            self.player_with_puck = Option::from((player1.get_user_id(), player1.get_player_id()));
+        } else {
+            self.player_with_puck = Option::from((player2.get_user_id(), player2.get_player_id()));
+        }
+    }
+
+    fn battle_by_position(&mut self, pos: &PlayerPosition) {
+        let player1 = self.get_field_player_by_pos(1, pos);
+        let player2 = self.get_field_player_by_pos(2, pos);
+
+        let player1_stat = (player1.stats.puck_control + player1.stats.aggressiveness + player1.stats.strength) as f32 / 3.0;
+        let player2_stat = (player2.stats.puck_control + player2.stats.aggressiveness + player2.stats.strength) as f32 / 3.0;
+
+        let compared_stat1 = get_relative_field_player_stat(player1, player1_stat);
+        let compared_stat2= get_relative_field_player_stat(player2, player2_stat);
+
+        if has_won(compared_stat1, compared_stat2) {
             self.player_with_puck = Option::from((player1.get_user_id(), player1.get_player_id()));
         } else {
             self.player_with_puck = Option::from((player2.get_user_id(), player2.get_player_id()));
@@ -314,20 +334,6 @@ impl Game {
         state
     }
 
-    fn battle_by_position(&mut self, pos: &PlayerPosition) {
-        let player1 = self.get_field_player_by_pos(1, pos);
-        let player2 = self.get_field_player_by_pos(2, pos);
-
-        let player1_stat = get_relative_field_player_stat(player1, player1.stats.get_strength());
-
-        let player2_stat = get_relative_field_player_stat(player2, player2.stats.get_strength());
-
-        if has_won(player1_stat, player2_stat) {
-            self.player_with_puck = Option::from((player1.get_user_id(), player1.get_player_id()));
-        } else {
-            self.player_with_puck = Option::from((player2.get_user_id(), player2.get_player_id()));
-        }
-    }
 
     fn is_game_over(&self) -> bool {
         if self.turns >= 90 && self.user1.team.score != self.user2.team.score {

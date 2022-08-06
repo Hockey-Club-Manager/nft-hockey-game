@@ -35,8 +35,6 @@ pub fn get_relative_field_player_stat(player: &FieldPlayer, compared_stat: f32) 
     stat_avg * player.teamwork.unwrap() as f32
 }
 
-
-
 pub fn get_opponent_user(game: &Game) -> &UserInfo {
     let user_id = game.player_with_puck.clone().unwrap().0;
 
