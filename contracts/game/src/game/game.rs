@@ -247,14 +247,50 @@ impl Game {
 }
 
 impl Game {
-    fn face_off(&mut self) {
+    pub fn step(&mut self) -> GameState {
+        self.do_action();
+
+        self.turns += 1;
+
+        self.check_teams_to_change_active_five();
+
+        if [25, 50, 75].contains(&self.turns) {
+            self.generate_an_event(EndOfPeriod);
+        }
+
+        let state = if self.is_game_over() {
+            self.generate_an_event(GameFinished);
+            GameState::GameOver { winner_id: self.get_winner_id() }
+        } else {
+            GameState::InProgress
+        };
+
+        if state == GameState::InProgress && self.turns == 75 {
+            self.generate_an_event(Overtime);
+        }
+
+        state
+    }
+
+    fn do_action(&mut self) {
+        let action = Action;
+
+        match self.last_action {
+            StartGame | Goal | EndOfPeriod => {
+                self.zone_number = 2;
+                self.face_off(&Center);
+            },
+            Save | SmallPenalty | BigPenalty | Icing | NetOff | PuckOff => {},
+
+            _ => action.do_action(self)
+        };
+    }
+
+    fn face_off(&mut self, player_position: &PlayerPosition) {
         self.generate_an_event(FaceOff);
 
-        let player_id1 = self.get_center_id_forward_in_the_zone(&self.user1);
-        let player_id2 = self.get_center_id_forward_in_the_zone(&self.user2);
-
-        let player1 = self.user1.team.get_field_player(&player_id1);
-        let player2 = self.user2.team.get_field_player(&player_id2);
+        let player1 = self.get_field_player_by_pos(1, player_position);
+        let player2 = self.get_field_player_by_pos(2, player_position);
 
         let compared_stat1 = get_relative_field_player_stat(player1, player1.stats.face_offs as f32);
         let compared_stat2= get_relative_field_player_stat(player2, player2.stats.face_offs as f32);
@@ -268,29 +304,7 @@ impl Game {
         self.generate_an_event(FaceOffWin);
     }
 
-    fn get_center_id_forward_in_the_zone(&self, user: &UserInfo) -> TokenId {
-        match user.team.get_active_five().field_players.get(&Center) {
-            Some(player) => player.clone(),
-            _ => panic!("Player not found")
-        }
-    }
-
-    pub fn step(&mut self) -> GameState {
-        let action = Action;
-
-        match self.last_action {
-            StartGame | Goal | Save | SmallPenalty | BigPenalty | Icing | NetOff | PuckOff | EndOfPeriod => self.face_off(),
-            Rebound => {
-                let player_pos = get_random_position_after_rebound();
-                //self.battle_by_position(&player_pos);
-
-                self.generate_an_event(Battle);
-            },
-             _ => action.do_action(self)
-        };
-
-        self.turns += 1;
-
+    fn check_teams_to_change_active_five(&mut self) {
         if self.user1.team.need_change() {
             self.user1.team.change_active_five();
 
@@ -301,24 +315,6 @@ impl Game {
 
             self.generate_an_event(SecondTeamChangeActiveFive);
         }
-
-        if [30, 60, 90].contains(&self.turns) {
-            self.generate_an_event(EndOfPeriod);
-            self.zone_number = 2;
-        }
-
-        let state = if self.is_game_over() {
-            self.generate_an_event(GameFinished);
-            GameState::GameOver { winner_id: self.get_winner_id() }
-        } else {
-            GameState::InProgress
-        };
-
-        if state == GameState::InProgress && self.turns == 90 {
-            self.generate_an_event(Overtime);
-        }
-
-        state
     }
 
     fn is_game_over(&self) -> bool {
@@ -335,22 +331,5 @@ impl Game {
          } else {
              1
          }
-    }
-}
-
-fn get_random_position_after_rebound() -> PlayerPosition {
-    let rnd = Game::get_random_in_range(0, 10, 6);
-
-    let probability_distribution = vec![1, 1, 2, 2, 3, 3, 3, 3, 4, 5];
-
-    let num_player_pos = probability_distribution[rnd];
-
-    match num_player_pos {
-        1 => LeftDefender,
-        2 => RightDefender,
-        3 => Center,
-        4 => LeftWing,
-        5 => RightWing,
-        _ => panic!("Player position not found")
     }
 }

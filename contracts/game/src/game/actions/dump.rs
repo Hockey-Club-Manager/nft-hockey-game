@@ -26,13 +26,13 @@ impl DoAction for DumpAction {
 
 impl DumpAction {
     fn do_dump_in(&self, game: &mut Game) {
-        game.generate_an_event(ActionTypes::DumpIn);
-
         if self.is_icing_in_neutral_zone(game) {
             return;
         }
 
         self.dump_to_attack_zone(game);
+
+        game.generate_an_event(ActionTypes::DumpIn);
     }
 
     fn dump_to_attack_zone(&self, game: &mut Game) {
@@ -70,6 +70,7 @@ impl DumpAction {
                         let rnd = Game::get_random_in_range(1, 100, 3);
 
                         if ICING_PROBABILITY >= rnd {
+                            game.generate_an_event(ActionTypes::DumpIn);
                             game.generate_an_event(Icing);
                             return true;
                         }
@@ -98,7 +99,6 @@ impl DumpAction {
     }
 
     fn do_dump_out(&self, game: &mut Game) {
-        game.generate_an_event(ActionTypes::DumpOut);
 
         if self.is_pass_catch(game) {
             return;
@@ -115,6 +115,8 @@ impl DumpAction {
         } else {
             self.dump_neutral_zone(game);
         }
+
+        game.generate_an_event(ActionTypes::DumpOut);
     }
 
     fn is_pass_catch(&self, game: &mut Game) -> bool {
@@ -132,6 +134,7 @@ impl DumpAction {
             let field_player_id = opponent_active_five.field_players.get(&interception_position).unwrap();
             game.player_with_puck = Option::from((opponent.user_id, field_player_id.clone()));
 
+            game.generate_an_event(ActionTypes::DumpOut);
             game.generate_an_event(PassCatched);
 
             return true;
@@ -163,6 +166,7 @@ impl DumpAction {
             FiveNumber::PenaltyKill1 | FiveNumber::PenaltyKill2 => {},
             _ => {
                 if ICING_PROBABILITY >= rnd {
+                    game.generate_an_event(ActionTypes::DumpOut);
                     game.generate_an_event(Icing);
 
                     return true;

@@ -99,8 +99,6 @@ impl ShotAction {
         game.get_user_info_mut(user_id).team.score += 1;
 
         game.generate_an_event(Goal);
-
-        game.zone_number = 2;
     }
 
     fn has_pass_before_shot(&self, game: &Game) -> bool {
