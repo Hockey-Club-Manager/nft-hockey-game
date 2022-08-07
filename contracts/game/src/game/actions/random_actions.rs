@@ -74,7 +74,7 @@ fn battle(game: &mut Game) {
 pub struct Takeaway;
 impl RandomAction for Takeaway {
     fn check_probability(&self) -> bool {
-        let rnd = Game::get_random_in_range(1, 100, 11);
+        let rnd = Game::get_random_in_range(1, 100, 13);
         if PROBABILITY_TAKEAWAY >= rnd {
             return true;
         }
@@ -85,7 +85,7 @@ impl RandomAction for Takeaway {
     fn do_action(&self, game: &mut Game) {
         game.generate_an_event(ActionTypes::Giveaway);
 
-        let rnd = Game::get_random_in_range(1, 100, 12);
+        let rnd = Game::get_random_in_range(1, 100, 14);
 
         if PROBABILITY_BATTLE >= rnd {
             battle(game);
@@ -99,7 +99,7 @@ impl RandomAction for Takeaway {
 pub struct PuckOut;
 impl RandomAction for PuckOut {
     fn check_probability(&self) -> bool {
-        let rnd = Game::get_random_in_range(1, 100, 11);
+        let rnd = Game::get_random_in_range(1, 100, 15);
         if PROBABILITY_PUCK_OUT >= rnd as f32 {
             return true;
         }
@@ -115,7 +115,7 @@ impl RandomAction for PuckOut {
 pub struct BigPenalty;
 impl RandomAction for BigPenalty {
     fn check_probability(&self) -> bool {
-        let rnd = Game::get_random_in_range(1, 100, 11);
+        let rnd = Game::get_random_in_range(1, 100, 16);
         if PROBABILITY_BIG_PENALTY >= rnd {
             return true;
         }
@@ -131,7 +131,7 @@ impl RandomAction for BigPenalty {
 pub struct SmallPenalty;
 impl RandomAction for SmallPenalty {
     fn check_probability(&self) -> bool {
-        let rnd = Game::get_random_in_range(1, 100, 11);
+        let rnd = Game::get_random_in_range(1, 100, 17);
         if PROBABILITY_SMALL_PENALTY >= rnd {
             return true;
         }
@@ -203,7 +203,7 @@ impl Fight {
 pub struct NetOff;
 impl RandomAction for NetOff {
     fn check_probability(&self) -> bool {
-        let rnd = Game::get_random_in_range(1, 100, 11);
+        let rnd = Game::get_random_in_range(1, 100, 18);
         if PROBABILITY_NET_OFF >= rnd as f32 {
             return true;
         }

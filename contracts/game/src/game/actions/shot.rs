@@ -2,6 +2,7 @@ use crate::game::actions::action::ActionTypes::{Goal, Pass, Rebound, Save, Shot,
 use crate::{FieldPlayer, Game};
 use crate::game::actions::action::DoAction;
 use crate::game::actions::utils::{get_opponent_user, get_relative_field_player_stat, has_won};
+use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 use crate::team::players::goalie::Goalie;
 use crate::team::players::player::PlayerRole;
 use crate::user_info::UserId;
@@ -60,7 +61,7 @@ impl ShotAction {
                 if PROBABILITY_SAVE >= Game::get_random_in_range(1, 100, 2) {
                     game.generate_an_event(Save);
                 } else {
-                    game.generate_an_event(Rebound);
+                    self.do_rebound(game);
                 }
             }
         }
@@ -136,5 +137,24 @@ impl ShotAction {
             let field_player = opponent.team.get_field_player_mut(&field_player);
             field_player.stats.morale -= 1;
         }
+    }
+
+    fn do_rebound(&self, game: &mut Game) {
+        let random_user_id = Game::get_random_in_range(1, 2, 19);
+        let user_with_puck_id = game.get_user_id_player_with_puck();
+
+        let positions = if random_user_id == user_with_puck_id {
+            vec![LeftWing, RightWing, Center]
+        } else {
+            vec![LeftDefender, RightDefender, Center]
+        };
+
+        let rnd = Game::get_random_in_range(1, 3, 20);
+
+        let random_position = positions[rnd];
+        let player_id = game.get_field_player_id_by_pos(random_user_id, &random_position);
+        game.player_with_puck = Option::from((random_user_id, player_id));
+
+        game.generate_an_event(Rebound);
     }
 }

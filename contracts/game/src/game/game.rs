@@ -123,7 +123,7 @@ impl Game {
 
     pub fn get_user_id_player_with_puck(&self) -> usize {
         let player_with_puck = self.get_player_with_puck();
-        player_with_puck.user_id.unwrap()
+        player_with_puck.get_user_id()
     }
 
     pub fn get_player_with_puck_mut(&mut self) -> &mut FieldPlayer {
