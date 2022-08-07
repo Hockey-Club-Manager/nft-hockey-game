@@ -72,22 +72,14 @@ pub trait DoAction {
 pub struct Action;
 impl Action {
     pub fn do_action(self, game: &mut Game) {
-        let mut is_attack_zone = false;
-        let user_player_id = game.get_player_id_with_puck();
-        if game.zone_number == 3 && user_player_id.0 == 1 || game.zone_number == 1 && user_player_id.0 == 2 {
-            is_attack_zone = true;
+        if self.random_action_happened(game) {
+            return;
         }
 
-        let user = game.get_user_info(user_player_id.0);
-        let active_five = user.team.get_active_five();
-        let player_with_puck_role = user.team.get_field_player(&user_player_id.1).player_role;
-
-        let action = self.get_action(is_attack_zone, player_with_puck_role, active_five);
-
-        action.do_action(game);
+        self.choose_and_do_action(game);
     }
 
-    fn random_actions(&self, game: &mut Game) -> bool{
+    fn random_action_happened(&self, game: &mut Game) -> bool{
         let random_actions: Vec<Box<dyn RandomAction>> = vec![
             Box::new(Giveaway),
             Box::new(Takeaway),
@@ -107,6 +99,22 @@ impl Action {
         }
 
         false
+    }
+
+    fn choose_and_do_action(&self, game: &mut Game) {
+        let mut is_attack_zone = false;
+        let user_player_id = game.get_player_id_with_puck();
+        if game.zone_number == 3 && user_player_id.0 == 1 || game.zone_number == 1 && user_player_id.0 == 2 {
+            is_attack_zone = true;
+        }
+
+        let user = game.get_user_info(user_player_id.0);
+        let active_five = user.team.get_active_five();
+        let player_with_puck_role = user.team.get_field_player(&user_player_id.1).player_role;
+
+        let action = self.get_action(is_attack_zone, player_with_puck_role, active_five);
+
+        action.do_action(game);
     }
 
     fn get_action(&self, is_attack_zone: bool, role: PlayerRole, active_five: &FiveIds) -> Box<dyn DoAction> {
