@@ -1,6 +1,7 @@
 use crate::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, env, Timestamp};
+use near_sdk::env::panic;
 use near_sdk::serde::{Deserialize, Serialize};
 use crate::team::players::field_player::{FieldPlayer};
 use crate::game::actions::action::{Action, ActionTypes};
@@ -191,12 +192,25 @@ impl Game {
         let user_player_ids = self.player_with_puck.clone().unwrap();
 
         let user = self.get_user_info(user_player_ids.0);
-        let position = user.team.get_field_player_pos(&user_player_ids.1);
+        let field_player_pos = user.team.get_field_player_pos(&user_player_ids.1);
+
+        let position = self.get_opponent_position(field_player_pos);
 
         return if user_player_ids.0 == 1 {
             self.get_field_player_by_pos(2, position)
         } else {
             self.get_field_player_by_pos(1, position)
+        }
+    }
+
+    pub fn get_opponent_position(&self, position: &PlayerPosition) ->&PlayerPosition {
+        match position {
+            Center => &Center,
+            LeftWing => &RightDefender,
+            RightWing => &LeftDefender,
+            LeftDefender => &RightWing,
+            RightDefender => &LeftWing,
+            _ => panic!("Cannot find opponent position")
         }
     }
 
@@ -281,24 +295,54 @@ impl Game {
                 self.face_off(&Center);
             },
             Fight | PuckOut | NetOff => {
-                let positions = vec![LeftWing, RightDefender];
-                let rnd = Game::get_random_in_range(1, 2, 22);
-
-                let random_position = positions[rnd];
+                let random_position = self.get_random_winger_position();
                 self.face_off(&random_position);
             }
-            Save => {},
-            SmallPenalty | BigPenalty | Icing => {},
+            Save => {
+                self.face_off_after_save()
+            },
+            SmallPenalty | BigPenalty | Icing => {
+
+            },
 
             _ => action.do_action(self)
         };
+    }
+
+    fn get_random_winger_position(&self) -> PlayerPosition {
+        let positions = vec![LeftWing, RightDefender];
+        let rnd = Game::get_random_in_range(1, 2, 22);
+
+        positions[rnd]
+    }
+
+    fn face_off_after_save(&mut self) {
+        let user_player_id = self.get_player_id_with_puck();
+        let position_player_with_puck = self.get_player_pos(&user_player_id.1, user_player_id.0);
+
+        let position = match position_player_with_puck {
+            LeftWing | LeftDefender => {
+                LeftWing
+            },
+            RightWing | RightDefender => {
+                RightWing
+            },
+            Center => {
+                self.get_random_winger_position()
+            },
+            _ => panic!("Player position not found after save")
+        };
+
+        self.face_off(&position)
     }
 
     fn face_off(&mut self, player_position: &PlayerPosition) {
         self.generate_an_event(FaceOff);
 
         let player1 = self.get_field_player_by_pos(1, player_position);
-        let player2 = self.get_field_player_by_pos(2, player_position);
+
+        let opponent_pos = self.get_opponent_position(player_position);
+        let player2 = self.get_field_player_by_pos(2, opponent_pos);
 
         let compared_stat1 = get_relative_field_player_stat(player1, player1.stats.face_offs as f32);
         let compared_stat2= get_relative_field_player_stat(player2, player2.stats.face_offs as f32);
