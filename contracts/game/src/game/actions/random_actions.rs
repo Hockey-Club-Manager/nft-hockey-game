@@ -16,13 +16,13 @@ const PROBABILITY_BATTLE: usize = 20;
 
 
 pub trait RandomAction {
-    fn check_probability(&self) -> bool;
+    fn check_probability(&self, game: &Game) -> bool;
     fn do_action(&self, game: &mut Game);
 }
 
 pub struct Giveaway;
 impl RandomAction for Giveaway {
-    fn check_probability(&self) -> bool {
+    fn check_probability(&self, game: &Game) -> bool {
         let rnd = Game::get_random_in_range(1, 100, 11);
         if PROBABILITY_GIVEAWAY >= rnd {
             return true;
@@ -73,7 +73,7 @@ fn battle(game: &mut Game) {
 
 pub struct Takeaway;
 impl RandomAction for Takeaway {
-    fn check_probability(&self) -> bool {
+    fn check_probability(&self, game: &Game) -> bool {
         let rnd = Game::get_random_in_range(1, 100, 13);
         if PROBABILITY_TAKEAWAY >= rnd {
             return true;
@@ -98,7 +98,7 @@ impl RandomAction for Takeaway {
 
 pub struct PuckOut;
 impl RandomAction for PuckOut {
-    fn check_probability(&self) -> bool {
+    fn check_probability(&self, game: &Game) -> bool {
         let rnd = Game::get_random_in_range(1, 100, 15);
         if PROBABILITY_PUCK_OUT >= rnd as f32 {
             return true;
@@ -114,7 +114,7 @@ impl RandomAction for PuckOut {
 
 pub struct BigPenalty;
 impl RandomAction for BigPenalty {
-    fn check_probability(&self) -> bool {
+    fn check_probability(&self, game: &Game) -> bool {
         let rnd = Game::get_random_in_range(1, 100, 16);
         if PROBABILITY_BIG_PENALTY >= rnd {
             return true;
@@ -130,7 +130,7 @@ impl RandomAction for BigPenalty {
 
 pub struct SmallPenalty;
 impl RandomAction for SmallPenalty {
-    fn check_probability(&self) -> bool {
+    fn check_probability(&self, game: &Game) -> bool {
         let rnd = Game::get_random_in_range(1, 100, 17);
         if PROBABILITY_SMALL_PENALTY >= rnd {
             return true;
@@ -146,7 +146,7 @@ impl RandomAction for SmallPenalty {
 
 pub struct Fight;
 impl RandomAction for Fight {
-    fn check_probability(&self) -> bool {
+    fn check_probability(&self, game: &Game) -> bool {
         let rnd = Game::get_random_in_range(1, 100, 11);
         if PROBABILITY_FIGHT >= rnd as f32 {
             return true;
@@ -202,9 +202,9 @@ impl Fight {
 
 pub struct NetOff;
 impl RandomAction for NetOff {
-    fn check_probability(&self) -> bool {
+    fn check_probability(&self, game: &Game) -> bool {
         let rnd = Game::get_random_in_range(1, 100, 18);
-        if PROBABILITY_NET_OFF >= rnd as f32 {
+        if PROBABILITY_NET_OFF >= rnd as f32 && (game.zone_number != 2) {
             return true;
         }
 

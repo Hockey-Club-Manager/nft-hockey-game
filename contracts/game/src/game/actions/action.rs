@@ -101,7 +101,7 @@ impl Action {
         ];
 
         for action in &random_actions {
-            if action.check_probability() {
+            if action.check_probability(game) {
                 action.do_action(game);
 
                 return true;

@@ -232,7 +232,7 @@ impl Game {
         }
     }
 
-    fn get_amount_of_spent_strength(&self, ice_time_priority: IceTimePriority) -> u8 {
+    pub fn get_amount_of_spent_strength(&self, ice_time_priority: IceTimePriority) -> u8 {
         match ice_time_priority {
             IceTimePriority::SuperLowPriority => { 1 }
             IceTimePriority::LowPriority => { 2 }
@@ -264,26 +264,11 @@ impl Game {
     pub fn step(&mut self) -> GameState {
         self.do_action();
 
-        self.turns += 1;
-
         self.check_teams_to_change_active_five();
 
-        if [25, 50, 75].contains(&self.turns) {
-            self.generate_an_event(EndOfPeriod);
-        }
+        self.check_end_of_period();
 
-        let state = if self.is_game_over() {
-            self.generate_an_event(GameFinished);
-            GameState::GameOver { winner_id: self.get_winner_id() }
-        } else {
-            GameState::InProgress
-        };
-
-        if state == GameState::InProgress && self.turns == 75 {
-            self.generate_an_event(Overtime);
-        }
-
-        state
+        self.get_game_state()
     }
 
     fn do_action(&mut self) {
@@ -295,7 +280,7 @@ impl Game {
                 self.face_off(&Center);
             },
             Fight | PuckOut | NetOff => {
-                let random_position = self.get_random_winger_position();
+                let random_position = self.get_random_position();
                 self.face_off(&random_position);
             }
             Save => {
@@ -307,11 +292,19 @@ impl Game {
 
             _ => action.do_action(self)
         };
+
+        self.turns += 1;
     }
 
-    fn get_random_winger_position(&self) -> PlayerPosition {
-        let positions = vec![LeftWing, RightDefender];
-        let rnd = Game::get_random_in_range(1, 2, 22);
+    fn get_random_position(&self) -> PlayerPosition {
+        let positions = match self.zone_number {
+            1 => vec![LeftDefender, RightDefender],
+            2 => vec![Center],
+            3 => vec![LeftWing, RightWing],
+            _ => panic!("Undefined zone number")
+        };
+
+        let rnd = Game::get_random_in_range(1, positions.len(), 22);
 
         positions[rnd]
     }
@@ -322,13 +315,13 @@ impl Game {
 
         let position = match position_player_with_puck {
             LeftWing | LeftDefender => {
-                LeftWing
+                *self.get_opponent_position(&LeftWing)
             },
             RightWing | RightDefender => {
-                RightWing
+                *self.get_opponent_position(&RightWing)
             },
             Center => {
-                self.get_random_winger_position()
+                self.get_random_position()
             },
             _ => panic!("Player position not found after save")
         };
@@ -367,6 +360,27 @@ impl Game {
 
             self.generate_an_event(SecondTeamChangeActiveFive);
         }
+    }
+
+    fn check_end_of_period(&self) {
+        if [25, 50, 75].contains(&self.turns) {
+            self.generate_an_event(EndOfPeriod);
+        }
+    }
+
+    fn get_game_state(&self) -> GameState {
+        let state = if self.is_game_over() {
+            self.generate_an_event(GameFinished);
+            GameState::GameOver { winner_id: self.get_winner_id() }
+        } else {
+            GameState::InProgress
+        };
+
+        if state == GameState::InProgress && self.turns == 75 {
+            self.generate_an_event(Overtime);
+        }
+
+        state
     }
 
     fn is_game_over(&self) -> bool {
