@@ -7,7 +7,7 @@ use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, Right
 pub struct PassAction;
 impl DoAction for PassAction {
     fn do_action(&self, game: &mut Game) {
-        let opponent= game.get_opponents_field_player();;
+        let opponent= game.get_opponent_field_player();;
         let mut opponent_stat = get_relative_field_player_stat(&opponent, opponent.stats.get_iq());
 
         let player_with_puck = game.get_player_with_puck();

@@ -179,7 +179,7 @@ impl Game {
         self.get_user_info(0)
     }
 
-    pub fn get_opponents_field_player(&self) -> &FieldPlayer {
+    pub fn get_opponent_field_player(&self) -> &FieldPlayer {
         let user_player_ids = self.player_with_puck.clone().unwrap();
 
         let user = self.get_user_info(user_player_ids.0);
@@ -239,26 +239,6 @@ impl Game {
 }
 
 impl Game {
-    fn battle(&mut self) {
-        let player_id1 = self.get_center_id_forward_in_the_zone(&self.user1);
-        let player_id2 = self.get_center_id_forward_in_the_zone(&self.user2);
-
-        let player1 = self.user1.team.get_field_player(&player_id1);
-        let player2 = self.user2.team.get_field_player(&player_id2);
-
-        let player1_stat = (player1.stats.puck_control + player1.stats.aggressiveness + player1.stats.strength) as f32 / 3.0;
-        let player2_stat = (player2.stats.puck_control + player2.stats.aggressiveness + player2.stats.strength) as f32 / 3.0;
-
-        let compared_stat1 = get_relative_field_player_stat(player1, player1_stat);
-        let compared_stat2= get_relative_field_player_stat(player2, player2_stat);
-
-        if has_won(compared_stat1, compared_stat2) {
-            self.player_with_puck = Option::from((player1.get_user_id(), player1.get_player_id()));
-        } else {
-            self.player_with_puck = Option::from((player2.get_user_id(), player2.get_player_id()));
-        }
-    }
-
     fn battle_by_position(&mut self, pos: &PlayerPosition) {
         let player1 = self.get_field_player_by_pos(1, pos);
         let player2 = self.get_field_player_by_pos(2, pos);
@@ -298,7 +278,17 @@ impl Game {
     }
 
     fn fight(&mut self) {
+        let player_with_puck = self.get_player_with_puck();
+        let opponent_player = self.get_opponent_field_player();
 
+        let compared_stat1 = get_relative_field_player_stat(player_with_puck, player_with_puck.stats.fighting_skill as f32);
+        let compared_stat2= get_relative_field_player_stat(opponent_player, opponent_player.stats.fighting_skill as f32);
+
+        if has_won(compared_stat2, compared_stat1) {
+            self.player_with_puck = Option::from((opponent_player.get_user_id(), opponent_player.get_player_id()));
+        }
+
+        self.generate_an_event(Fight);
     }
 
     fn get_center_id_forward_in_the_zone(&self, user: &UserInfo) -> TokenId {

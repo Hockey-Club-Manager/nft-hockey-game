@@ -8,7 +8,7 @@ impl DoAction for MoveAction {
     fn do_action(&self, game: &mut Game) {
         game.generate_an_event(Move);
 
-        let opponent = game.get_opponents_field_player();
+        let opponent = game.get_opponent_field_player();
         let opponent_stat = get_relative_field_player_stat(
             &opponent,
             (opponent.stats.defensive_awareness as f32 + opponent.stats.get_strength()) / 2.0

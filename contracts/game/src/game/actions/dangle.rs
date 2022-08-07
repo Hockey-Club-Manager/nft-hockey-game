@@ -8,7 +8,7 @@ impl DoAction for DangleAction {
     fn do_action(&self, game: &mut Game) {
         game.generate_an_event(Dangle);
 
-        let opponent = game.get_opponents_field_player();
+        let opponent = game.get_opponent_field_player();
         let opponent_stat = get_relative_field_player_stat(
             &opponent,
             ((opponent.stats.defensive_awareness + opponent.stats.stick_checking) as f32 / 2.0) as f32

@@ -33,7 +33,7 @@ impl DoAction for ShotAction {
 
 impl ShotAction {
     fn get_opponent_field_player_stats(&self, game: &Game) -> f32 {
-        let opponent_field_player = game.get_opponents_field_player();;
+        let opponent_field_player = game.get_opponent_field_player();;
         get_relative_field_player_stat(
             &opponent_field_player,
             (opponent_field_player.stats.shot_blocking + opponent_field_player.stats.defensive_awareness) as f32 / 10.0
