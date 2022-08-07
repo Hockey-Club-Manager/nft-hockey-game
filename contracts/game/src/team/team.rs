@@ -49,6 +49,7 @@ impl Team {
     pub fn get_field_player(&self, id: &TokenId) -> &FieldPlayer {
         self.field_players.get(id).unwrap()
     }
+
     pub fn get_field_player_pos(&self, player_id: &TokenId) -> &PlayerPosition {
         let five = self.get_active_five();
         for (pos, id) in &five.field_players {
@@ -66,6 +67,28 @@ impl Team {
 
     pub fn get_active_five_mut(&mut self) -> &mut FiveIds {
         self.fives.get_mut(&self.active_five).unwrap()
+    }
+
+    pub fn reduce_morale(&mut self) {
+        for (_five_number, five) in &self.fives {
+            let field_players = &mut self.field_players;
+            five.reduce_morale(field_players)
+        }
+
+        for (_goalie_number, goalie) in &mut self.goalies {
+            goalie.stats.morale -= 3;
+        }
+    }
+
+    pub fn increase_morale(&mut self) {
+        for (_five_number, five) in &self.fives {
+            let field_players = &mut self.field_players;
+            five.increase_morale(field_players)
+        }
+
+        for (_goalie_number, goalie) in &mut self.goalies {
+            goalie.stats.morale += 2;
+        }
     }
 
     pub fn need_change(&self) -> bool {

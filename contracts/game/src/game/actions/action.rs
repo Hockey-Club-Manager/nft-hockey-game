@@ -27,34 +27,45 @@ use crate::user_info::UserInfo;
 #[serde(crate = "near_sdk::serde")]
 pub enum ActionTypes {
     Pass,
+    PassCatched,
+
     Shot,
-    Move,
-    Hit,
-    Dangle,
-    PokeCheck,
-    DumpIn,
-    DumpOut,
-    Battle,
+    ShotBlocked,
+    ShotMissed,
     Goal,
     Save,
     Rebound,
-    StartGame,
-    EndOfPeriod,
-    GameFinished,
+
     FaceOff,
     FaceOffWin,
-    PassCatched,
-    PuckLose,
-    Overtime,
 
-    Penalty,
+    Move,
+    Hit,
+
+    Dangle,
+    PokeCheck,
+
+    DumpIn,
+    DumpOut,
     Icing,
+
+    Giveaway,
+    Takeaway,
+    PuckOut,
+    BigPenalty,
+    SmallPenalty,
     NetOff,
     PuckOff,
     Fight,
+    Battle,
 
-    ShotBlocked,
-    ShotMissed,
+
+    StartGame,
+    EndOfPeriod,
+    GameFinished,
+
+    PuckLose,
+    Overtime,
 
     TakeTO,
     CoachSpeech,
@@ -91,7 +102,7 @@ impl Action {
         ];
 
         for action in &random_actions {
-            if action.check_probability(game) {
+            if action.check_probability() {
                 action.do_action(game);
 
                 return true;

@@ -26,6 +26,7 @@ pub struct FiveIds {
     pub(crate) time_field: Option<u8>,
 }
 
+// teamwork
 impl FiveIds {
     pub fn calculate_team_work(&self, field_players: &mut HashMap<TokenId, FieldPlayer>) {
         let mut player_per_nationality: HashMap<String, Vec<PlayerPosition>> = HashMap::new();
@@ -205,6 +206,22 @@ impl FiveIds {
         }
     }
 
+}
+
+impl FiveIds {
+    pub fn reduce_morale(&self, field_players: &mut HashMap<TokenId, FieldPlayer>) {
+        for (_player_position, player_id) in &self.field_players {
+            let player = field_players.get_mut(player_id).unwrap();
+            player.stats.morale -= 3;
+        }
+    }
+
+    pub fn increase_morale(&self, field_players: &mut HashMap<TokenId, FieldPlayer>) {
+        for (_player_position, player_id) in &self.field_players {
+            let player = field_players.get_mut(player_id).unwrap();
+            player.stats.morale += 2;
+        }
+    }
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]

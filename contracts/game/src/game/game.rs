@@ -121,15 +121,16 @@ impl Game {
         user_info.team.get_field_player_pos(player_id)
     }
 
-    pub fn get_player_with_puck_mut(&mut self) -> &mut FieldPlayer {
-        let unwrapped_player = self.get_player_id_with_puck();
-        let user = self.get_user_info_mut(unwrapped_player.0);
-
-        user.team.field_players.get_mut(&unwrapped_player.1).unwrap()
+    pub fn get_user_id_player_with_puck(&self) -> usize {
+        let player_with_puck = self.get_player_with_puck();
+        player_with_puck.user_id.unwrap()
     }
 
-    pub fn get_player_id_with_puck(&self) -> (UserId, TokenId) {
-        self.player_with_puck.clone().unwrap()
+    pub fn get_player_with_puck_mut(&mut self) -> &mut FieldPlayer {
+        let unwrapped_player = self.get_player_id_with_puck();
+        let user = self.get_user_info_mut(&unwrapped_player.0);
+
+        user.team.field_players.get_mut(&unwrapped_player.1).unwrap()
     }
 
     pub fn get_player_with_puck(&self) -> &FieldPlayer {
@@ -139,8 +140,12 @@ impl Game {
         user.team.field_players.get(&unwrapped_player.1).unwrap()
     }
 
-    pub fn get_user_info_mut(&mut self, user_id: usize) -> &mut UserInfo {
-        if user_id == 1 {
+    pub fn get_player_id_with_puck(&self) -> (UserId, TokenId) {
+        self.player_with_puck.clone().unwrap()
+    }
+
+    pub fn get_user_info_mut(&mut self, user_id: &usize) -> &mut UserInfo {
+        if *user_id == 1 {
             return &mut self.user1;
         }
 
@@ -166,17 +171,20 @@ impl Game {
         panic!("Account id not found!")
     }
 
-    pub fn get_user_id_player_with_puck(&self) -> usize {
-        let player_with_puck = self.get_player_with_puck();
-        player_with_puck.user_id.unwrap()
-    }
-
     pub fn get_opponent_info(&self, user_id: usize) -> &UserInfo {
         if user_id == 0 {
             return self.get_user_info(1);
         }
 
         self.get_user_info(0)
+    }
+
+    pub fn get_opponent_info_mut(&mut self, user_id: &usize) -> &mut UserInfo {
+        if *user_id == 0 {
+            return self.get_user_info_mut(&1);
+        }
+
+        self.get_user_info_mut(&0)
     }
 
     pub fn get_opponent_field_player(&self) -> &FieldPlayer {
@@ -239,23 +247,6 @@ impl Game {
 }
 
 impl Game {
-    fn battle_by_position(&mut self, pos: &PlayerPosition) {
-        let player1 = self.get_field_player_by_pos(1, pos);
-        let player2 = self.get_field_player_by_pos(2, pos);
-
-        let player1_stat = (player1.stats.puck_control + player1.stats.aggressiveness + player1.stats.strength) as f32 / 3.0;
-        let player2_stat = (player2.stats.puck_control + player2.stats.aggressiveness + player2.stats.strength) as f32 / 3.0;
-
-        let compared_stat1 = get_relative_field_player_stat(player1, player1_stat);
-        let compared_stat2= get_relative_field_player_stat(player2, player2_stat);
-
-        if has_won(compared_stat1, compared_stat2) {
-            self.player_with_puck = Option::from((player1.get_user_id(), player1.get_player_id()));
-        } else {
-            self.player_with_puck = Option::from((player2.get_user_id(), player2.get_player_id()));
-        }
-    }
-
     fn face_off(&mut self) {
         self.generate_an_event(FaceOff);
 
@@ -277,20 +268,6 @@ impl Game {
         self.generate_an_event(FaceOffWin);
     }
 
-    fn fight(&mut self) {
-        let player_with_puck = self.get_player_with_puck();
-        let opponent_player = self.get_opponent_field_player();
-
-        let compared_stat1 = get_relative_field_player_stat(player_with_puck, player_with_puck.stats.fighting_skill as f32);
-        let compared_stat2= get_relative_field_player_stat(opponent_player, opponent_player.stats.fighting_skill as f32);
-
-        if has_won(compared_stat2, compared_stat1) {
-            self.player_with_puck = Option::from((opponent_player.get_user_id(), opponent_player.get_player_id()));
-        }
-
-        self.generate_an_event(Fight);
-    }
-
     fn get_center_id_forward_in_the_zone(&self, user: &UserInfo) -> TokenId {
         match user.team.get_active_five().field_players.get(&Center) {
             Some(player) => player.clone(),
@@ -302,10 +279,10 @@ impl Game {
         let action = Action;
 
         match self.last_action {
-            StartGame | Goal | Save | Penalty | Icing | NetOff | PuckOff | EndOfPeriod => self.face_off(),
+            StartGame | Goal | Save | SmallPenalty | BigPenalty | Icing | NetOff | PuckOff | EndOfPeriod => self.face_off(),
             Rebound => {
                 let player_pos = get_random_position_after_rebound();
-                self.battle_by_position(&player_pos);
+                //self.battle_by_position(&player_pos);
 
                 self.generate_an_event(Battle);
             },
@@ -343,7 +320,6 @@ impl Game {
 
         state
     }
-
 
     fn is_game_over(&self) -> bool {
         if self.turns >= 90 && self.user1.team.score != self.user2.team.score {

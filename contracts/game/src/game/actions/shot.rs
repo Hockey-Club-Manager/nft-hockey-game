@@ -76,7 +76,7 @@ impl ShotAction {
 
     fn score_goal(&self, game: &mut Game, user_id: &usize) {
         self.change_morale_after_goal(game);
-        game.get_user_info_mut(*user_id).team.score += 1;
+        game.get_user_info_mut(user_id).team.score += 1;
 
         game.generate_an_event(Goal);
 
@@ -113,7 +113,7 @@ impl ShotAction {
     }
 
     fn change_user_players_morale(&self, game: &mut Game, user_id: &UserId) {
-        let user= game.get_user_info_mut(*user_id);
+        let user= game.get_user_info_mut(user_id);
         let goalie_number = &mut user.team.active_goalie;
         let goalie = user.team.goalies.get_mut(goalie_number).unwrap();
         goalie.stats.morale += 2;
@@ -126,7 +126,7 @@ impl ShotAction {
     }
 
     fn change_opponent_players(&self, game: &mut Game, user_id: &UserId) {
-        let opponent = game.get_user_info_mut(*user_id);
+        let opponent = game.get_user_info_mut(user_id);
         let opponent_goalie_number = &mut opponent.team.active_goalie;
         let opponent_goalie = opponent.team.goalies.get_mut(opponent_goalie_number).unwrap();
         opponent_goalie.stats.morale -= 1;

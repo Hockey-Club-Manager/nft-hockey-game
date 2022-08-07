@@ -1,6 +1,6 @@
 use crate::{Game, PlayerPosition};
 use crate::game::actions::action::{DoAction};
-use crate::game::actions::action::ActionTypes::{Pass, PassCatched, PuckLose};
+use crate::game::actions::action::ActionTypes::{Pass, PassCatched};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
