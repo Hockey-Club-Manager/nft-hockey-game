@@ -280,7 +280,15 @@ impl Game {
                 self.zone_number = 2;
                 self.face_off(&Center);
             },
-            Save | SmallPenalty | BigPenalty | Icing | NetOff | PuckOff => {},
+            Fight | PuckOut | NetOff => {
+                let positions = vec![LeftWing, RightDefender];
+                let rnd = Game::get_random_in_range(1, 2, 22);
+
+                let random_position = positions[rnd];
+                self.face_off(&random_position);
+            }
+            Save => {},
+            SmallPenalty | BigPenalty | Icing => {},
 
             _ => action.do_action(self)
         };

@@ -55,7 +55,6 @@ pub enum ActionTypes {
     BigPenalty,
     SmallPenalty,
     NetOff,
-    PuckOff,
     Fight,
     Battle,
 
