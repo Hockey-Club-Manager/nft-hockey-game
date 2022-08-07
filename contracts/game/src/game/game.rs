@@ -287,7 +287,14 @@ impl Game {
                 self.face_off_after_save()
             },
             SmallPenalty | BigPenalty | Icing => {
+                self.zone_number = match self.get_user_id_player_with_puck() {
+                    1 => 1,
+                    2 => 3,
+                    _ => panic!("User id not found :(")
+                };
 
+                let random_position = self.get_random_position();
+                self.face_off(&random_position);
             },
 
             _ => action.do_action(self)
