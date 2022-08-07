@@ -309,7 +309,7 @@ impl Game {
 
                 self.generate_an_event(Battle);
             },
-             _ => action.do_random_action(self)
+             _ => action.do_action(self)
         };
 
         self.turns += 1;

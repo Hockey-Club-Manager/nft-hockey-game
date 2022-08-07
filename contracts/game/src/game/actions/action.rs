@@ -1,3 +1,4 @@
+use std::arch::global_asm;
 use crate::team::players::player::{PlayerPosition, PlayerRole};
 use crate::team::players::field_player::FieldPlayer;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
@@ -12,11 +13,13 @@ use crate::game::actions::dangle::DangleAction;
 use crate::game::actions::dump::DumpAction;
 use crate::game::actions::move_action::MoveAction;
 use crate::game::actions::pass::PassAction;
+use crate::game::actions::random_actions::{BigPenalty, Fight, Giveaway, NetOff, PuckOut, RandomAction, SmallPenalty, Takeaway};
 
 use crate::game::game::{Game};
 use crate::team::five::{FiveIds, Tactics};
 use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::user_info::UserInfo;
+
 
 
 #[derive(Serialize, Deserialize)]
@@ -68,6 +71,70 @@ pub trait DoAction {
 
 pub struct Action;
 impl Action {
+    pub fn do_action(self, game: &mut Game) {
+        let mut is_attack_zone = false;
+        let user_player_id = game.get_player_id_with_puck();
+        if game.zone_number == 3 && user_player_id.0 == 1 || game.zone_number == 1 && user_player_id.0 == 2 {
+            is_attack_zone = true;
+        }
+
+        let user = game.get_user_info(user_player_id.0);
+        let active_five = user.team.get_active_five();
+        let player_with_puck_role = user.team.get_field_player(&user_player_id.1).player_role;
+
+        let action = self.get_action(is_attack_zone, player_with_puck_role, active_five);
+
+        action.do_action(game);
+    }
+
+    fn random_actions(&self, game: &mut Game) -> bool{
+        let random_actions: Vec<Box<dyn RandomAction>> = vec![
+            Box::new(Giveaway),
+            Box::new(Takeaway),
+            Box::new(PuckOut),
+            Box::new(BigPenalty),
+            Box::new(SmallPenalty),
+            Box::new(Fight),
+            Box::new(NetOff),
+        ];
+
+        for action in &random_actions {
+            if action.check_probability(game) {
+                action.do_action(game);
+
+                return true;
+            }
+        }
+
+        false
+    }
+
+    fn get_action(&self, is_attack_zone: bool, role: PlayerRole, active_five: &FiveIds) -> Box<dyn DoAction> {
+        let actions = self.get_probability_of_actions(role, active_five);
+
+        let mut percent = 0.0;
+        let mut action_probability: Vec<f32> = Vec::new();
+        for i in 0..actions.len() {
+            percent += actions[i] as f32;
+            action_probability.push(percent);
+        }
+        percent = 100.0 / percent;
+
+        let rnd = Game::get_random_in_range(1, 101, 0) as f32;
+
+        return if !is_attack_zone && percent * action_probability[0] >= rnd {
+            Box::new(DumpAction {})
+        } else if is_attack_zone && percent * action_probability[2] >= rnd {
+            Box::new(ShotAction {})
+        } else if !is_attack_zone && percent * action_probability[1] >= rnd {
+            Box::new(MoveAction {})
+        } else if !is_attack_zone && percent * action_probability[0] >= rnd {
+            Box::new(DangleAction {})
+        } else {
+            Box::new(PassAction {})
+        }
+    }
+
     /*
         0 - dump_probability
         1 - shot_probability
@@ -121,47 +188,5 @@ impl Action {
         }
 
         actions
-    }
-
-    fn get_random_action(&self, is_attack_zone: bool, role: PlayerRole, active_five: &FiveIds) -> Box<dyn DoAction> {
-        let actions = self.get_probability_of_actions(role, active_five);
-
-        let mut percent = 0.0;
-        let mut action_probability: Vec<f32> = Vec::new();
-        for i in 0..actions.len() {
-            percent += actions[i] as f32;
-            action_probability.push(percent);
-        }
-        percent = 100.0 / percent;
-
-        let rnd = Game::get_random_in_range(1, 101, 0) as f32;
-
-        return if !is_attack_zone && percent * action_probability[0] >= rnd {
-            Box::new(DumpAction {})
-        } else if is_attack_zone && percent * action_probability[2] >= rnd {
-            Box::new(ShotAction {})
-        } else if !is_attack_zone && percent * action_probability[1] >= rnd {
-            Box::new(MoveAction {})
-        } else if !is_attack_zone && percent * action_probability[0] >= rnd {
-            Box::new(DangleAction {})
-        } else {
-            Box::new(PassAction {})
-        }
-    }
-
-    pub fn do_random_action(self, game: &mut Game) {
-        let mut is_attack_zone = false;
-        let user_player_id = game.get_player_id_with_puck();
-        if game.zone_number == 3 && user_player_id.0 == 1 || game.zone_number == 1 && user_player_id.0 == 2 {
-            is_attack_zone = true;
-        }
-
-        let user = game.get_user_info(user_player_id.0);
-        let active_five = user.team.get_active_five();
-        let player_with_puck_role = user.team.get_field_player(&user_player_id.1).player_role;
-
-        let action = self.get_random_action(is_attack_zone, player_with_puck_role, active_five);
-
-        action.do_action(game);
     }
 }
