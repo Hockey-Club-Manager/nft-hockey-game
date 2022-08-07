@@ -24,7 +24,7 @@ impl DoAction for ShotAction {
             game.generate_an_event(ShotBlocked);
         } else {
             if PROBABILITY_SHOT_MISSED >= Game::get_random_in_range(1, 100, 1) {
-                game.generate_an_event(ShotMissed);
+                self.do_shot_missed(game);
             } else {
                 self.fight_against_goalie(game, player_stat);
             }
@@ -39,6 +39,25 @@ impl ShotAction {
             &opponent_field_player,
             (opponent_field_player.stats.shot_blocking + opponent_field_player.stats.defensive_awareness) as f32 / 10.0
         )
+    }
+
+    fn do_shot_missed(&self, game: &mut Game) {
+        let random_user_id = Game::get_random_in_range(1, 2, 19);
+        let user_with_puck_id = game.get_user_id_player_with_puck();
+
+        let positions = if random_user_id == user_with_puck_id {
+            vec![LeftWing, RightWing]
+        } else {
+            vec![LeftDefender, RightDefender]
+        };
+
+        let rnd = Game::get_random_in_range(1, 2, 21);
+
+        let random_position = positions[rnd];
+        let player_id = game.get_field_player_id_by_pos(random_user_id, &random_position);
+        game.player_with_puck = Option::from((random_user_id, player_id));
+
+        game.generate_an_event(ShotMissed);
     }
 
     fn fight_against_goalie(&self, game: &mut Game, field_player_stat: f32) {
