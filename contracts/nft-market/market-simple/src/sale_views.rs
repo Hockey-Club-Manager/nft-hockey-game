@@ -115,5 +115,14 @@ impl Contract {
     pub fn get_sale(&self, nft_contract_token: ContractAndTokenId) -> Option<Sale> {
         self.sales.get(&nft_contract_token)
     }
-    
+
+    pub fn check_tokens_sales(&self, token_ids: Vec<TokenId>, nft_contract_id: AccountId) {
+        for token_id in &token_ids {
+            let contract_and_token_id = format!("{}{}{}", &nft_contract_id, DELIMETER, *token_id);
+
+            if self.sales.get(&contract_and_token_id).is_some() {
+                panic!("Token is up for sale")
+            }
+        }
+    }
 }

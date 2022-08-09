@@ -1,6 +1,7 @@
 use crate::*;
 use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::{ext_contract, Gas};
 use near_sdk::serde_json;
 use crate::{TokenId, TokenMetadata};
 use crate::extra::field_player_extra::FieldPlayerExtra;
@@ -10,6 +11,8 @@ use crate::team::ice_time_priority::IceTimePriority;
 use crate::team::nft_team::IceTimePriority::*;
 use crate::team::number_five::*;
 use crate::team::number_goalie::NumberGoalie;
+
+const GAS_FOR_CHECK_TOKENS_SALES: Gas = 10_000_000_000_000;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 #[derive(PartialEq, Serialize, Deserialize, Copy, Clone)]
@@ -48,24 +51,42 @@ pub struct TeamMetadata {
     pub(crate) field_players_metadata: HashMap<TokenId, TokenMetadata>,
 }
 
+#[ext_contract(ext_check_tokens_sales)]
+pub trait ExtTokensSales{
+    fn check_tokens_sales(&self, token_ids: Vec<TokenId>, nft_contract_id: AccountId);
+}
+
 #[near_bindgen]
 impl Contract {
-    pub fn manage_team(&mut self, team_ids: TeamIds) {
-        let account_id = env::predecessor_account_id();
+    pub fn manage_team(&mut self, team_ids: TeamIds, nft_contact_id: AccountId, market_contract_id: AccountId) {
+        let account_id = predecessor_account_id();
 
-        self.check_team_ids(&team_ids);
+        let token_ids = self.check_team_ids(&team_ids);
         self.nft_team_per_owner.insert(&account_id, &team_ids);
+
+        ext_check_tokens_sales::check_tokens_sales(
+            token_ids,
+            nft_contact_id,
+            &market_contract_id,
+            NO_DEPOSIT,
+            GAS_FOR_CHECK_TOKENS_SALES);
     }
 
-    pub fn check_team_ids(&self, team_ids: &TeamIds) {
-        self.check_fives(&team_ids.fives);
-        self.check_goalies(&team_ids.goalies);
+    pub fn check_team_ids(&self, team_ids: &TeamIds) -> Vec<TokenId> {
+        let mut token_ids: Vec<TokenId> = Vec::new();
+
+        token_ids.append(&mut self.check_fives(&team_ids.fives));
+        token_ids.append(&mut self.check_goalies(&team_ids.goalies));
+
+        token_ids
     }
 
-    fn check_fives(&self, fives: &HashMap<NumberFive, FiveIds>) {
+    fn check_fives(&self, fives: &HashMap<NumberFive, FiveIds>) -> Vec<TokenId> {
         if fives.keys().len() != NUMBER_OF_FIVES {
             panic!("Wrong number of fives");
         }
+
+        let mut result: Vec<TokenId> = Vec::new();
 
         for (number, five) in fives {
             let number_of_players = five.field_players.keys().len();
@@ -76,8 +97,10 @@ impl Contract {
                 _ => self.check_number_of_field_players(number_of_players, 5)
             };
 
-            self.check_field_players(&five.field_players);
+            result.append(&mut self.check_field_players(&five.field_players));
         }
+
+        result
     }
 
     fn check_number_of_field_players(&self, number_of_players: usize, right_amount: usize) {
@@ -86,10 +109,15 @@ impl Contract {
         }
     }
 
-    fn check_field_players(&self, field_players: &HashMap<PlayerPosition, TokenId>) {
+    fn check_field_players(&self, field_players: &HashMap<PlayerPosition, TokenId>) -> Vec<TokenId> {
+        let mut result: Vec<TokenId> = Vec::new();
         for (_position, id) in field_players {
+            result.push(id.clone());
+
             self.check_field_player(&id);
         }
+
+        result
     }
 
     fn check_field_player(&self, field_player_id: &TokenId) {
@@ -108,14 +136,20 @@ impl Contract {
         };
     }
 
-    fn check_goalies(&self, goalies: &HashMap<NumberGoalie, TokenId>) {
+    fn check_goalies(&self, goalies: &HashMap<NumberGoalie, TokenId>) -> Vec<TokenId> {
         if goalies.keys().len() != 2 {
             panic!("Wrong number of goalkeepers");
         }
 
+        let mut result: Vec<TokenId> = Vec::new();
+
         for (_number, id) in goalies {
+            result.push(id.clone());
+
             self.check_goalie(&id);
         }
+
+        result
     }
 
     fn check_goalie(&self, goalie_id: &TokenId) {
