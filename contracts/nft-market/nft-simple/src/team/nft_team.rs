@@ -1,7 +1,7 @@
 use crate::*;
 use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{ext_contract, Gas};
+use near_sdk::{ext_contract, Gas, log};
 use near_sdk::serde_json;
 use crate::{TokenId, TokenMetadata};
 use crate::extra::field_player_extra::FieldPlayerExtra;
@@ -229,7 +229,7 @@ impl Contract {
         for (_five_number, five) in &mut user_team.fives {
             for (player_position, player_id) in five.field_players.clone() {
                 if *token_id == player_id {
-                    five.field_players.insert(player_position, player_id);
+                    five.field_players.remove(&player_position);
                 }
             }
         }

@@ -1,5 +1,5 @@
 use crate::*;
-use near_sdk::{log, CryptoHash};
+use near_sdk::{log, CryptoHash, serde_json};
 use std::mem::size_of;
 use near_sdk::env::{attached_deposit, predecessor_account_id};
 use crate::extra::player_type::PlayerType;
@@ -197,6 +197,10 @@ impl Contract {
                     .unwrap(),
             )
         });
+
+        log!("{{\"account_id\": \"{account_id}\"}}, \"token_id\": \"{token_id}\" }}",
+            account_id = account_id.clone(), token_id = token_id.clone());
+
         tokens_set.insert(token_id);
         self.tokens_per_owner.insert(account_id, &tokens_set);
     }
