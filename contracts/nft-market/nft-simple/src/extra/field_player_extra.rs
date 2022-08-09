@@ -67,14 +67,14 @@ pub struct FieldPlayerStats {
 
 impl Stats for FieldPlayerStats {
     fn get_rarity(&self) -> Rarity {
-        let average_stats = self.get_stats_sum() as f32 / 26 as f32;
+        let average_stats = self.get_stats_avg();
 
         calculate_rarity(average_stats)
     }
 }
 
 impl FieldPlayerStats {
-    fn get_stats_sum(&self) -> f32 {
+    fn get_stats_avg(&self) -> f32 {
         (self.get_skating() +
             self.get_shooting() +
             self.get_stick_handling() +

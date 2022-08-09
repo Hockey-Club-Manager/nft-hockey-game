@@ -14,6 +14,9 @@ const PROBABILITY_FIGHT: f32 = 0.25;
 const PROBABILITY_NET_OFF: f32 = 0.01;
 const PROBABILITY_BATTLE: usize = 20;
 
+const SMALL_PENALTY: u8 = 5; // number of events
+const BIG_PENALTY: u8 = 12; // number of events
+
 
 pub trait RandomAction {
     fn check_probability(&self, game: &Game) -> bool;
@@ -124,7 +127,19 @@ impl RandomAction for BigPenalty {
     }
 
     fn do_action(&self, game: &mut Game) {
-        todo!()
+        let player_with_puck = game.get_player_with_puck();
+        let opponent_player = game.get_opponent_field_player();
+
+        let player_stat1 = player_with_puck.stats.discipline as f32;
+        let player_stat2 = opponent_player.stats.discipline as f32;
+
+        if has_won(player_stat1, player_stat2) {
+
+        } else {
+
+        }
+
+        game.generate_an_event(ActionTypes::BigPenalty);
     }
 }
 
@@ -140,7 +155,19 @@ impl RandomAction for SmallPenalty {
     }
 
     fn do_action(&self, game: &mut Game) {
-        todo!()
+        let player_with_puck = game.get_player_with_puck();
+        let opponent_player = game.get_opponent_field_player();
+
+        let player_stat1 = player_with_puck.stats.discipline as f32;
+        let player_stat2 = opponent_player.stats.discipline as f32;
+
+        if has_won(player_stat1, player_stat2) {
+
+        } else {
+
+        }
+
+        game.generate_an_event(ActionTypes::SmallPenalty);
     }
 }
 

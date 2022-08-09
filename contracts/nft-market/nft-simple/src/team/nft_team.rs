@@ -31,7 +31,7 @@ pub struct TeamIds {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FiveIds {
     pub(crate) field_players: HashMap<PlayerPosition, TokenId>,
@@ -171,10 +171,47 @@ impl Contract {
         result
     }
 
+    /*
     pub fn get_owner_team_ids(&self, account_id: AccountId) -> TeamIds {
         match self.nft_team_per_owner.get(&account_id) {
             Some(nft_team) => nft_team,
             None => panic!("Team not found")
+        }
+    }
+    */
+
+    pub fn remove_token_from_team(&mut self, token_id: &TokenId) {
+        let account_id = predecessor_account_id();
+
+        let mut user_team = self.nft_team_per_owner.get(&account_id).unwrap();
+
+        self.remove_token_from_fives(token_id, &mut user_team);
+        self.remove_token_from_goalies(token_id, &mut user_team);
+
+        self.nft_team_per_owner.insert(&account_id, &user_team);
+    }
+
+    fn remove_token_from_fives(&self, token_id: &TokenId, user_team: &mut TeamIds) {
+        for (_five_number, five) in &mut user_team.fives {
+            for (player_position, player_id) in five.field_players.clone() {
+                if *token_id == player_id {
+                    five.field_players.insert(player_position, player_id);
+                }
+            }
+        }
+    }
+
+    fn remove_token_from_goalies(&mut self, token_id: &TokenId, user_team: &mut TeamIds) {
+        let mut goalies_to_remove: Vec<NumberGoalie> = Vec::new();
+
+        for (goalie_number, goalie_id) in &user_team.goalies {
+            if *token_id == *goalie_id {
+                goalies_to_remove.push(goalie_number.clone());
+            }
+        }
+
+        for goalie_number in &goalies_to_remove {
+            user_team.goalies.remove(goalie_number);
         }
     }
 }

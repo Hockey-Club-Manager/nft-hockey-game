@@ -285,6 +285,7 @@ impl NonFungibleTokenCore for Contract {
         refund_deposit(storage_used);
 
         if let Some(msg) = msg {
+            self.remove_token_from_team(&token_id);
 
             // CUSTOM - add token_type to msg
             let mut final_msg = msg;

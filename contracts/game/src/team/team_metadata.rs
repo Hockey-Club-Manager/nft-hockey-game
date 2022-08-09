@@ -39,6 +39,7 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
         active_five: FiveNumber::First,
         field_players: to_field_players(&team_metadata.field_players_metadata, &user_id),
 
+        penalty_players: vec![],
         goalies,
         active_goalie: GoalieNumber::MainGoalkeeper,
 
@@ -68,6 +69,7 @@ fn to_field_player(field_player_metadata: PlayerMetadata, user_id: &usize) -> Fi
     result.img = field_player_metadata.media;
     result.name = field_player_metadata.title;
     result.user_id = Some(*user_id);
+    result.number_of_penalty_events = Some(0);
 
     result
 }

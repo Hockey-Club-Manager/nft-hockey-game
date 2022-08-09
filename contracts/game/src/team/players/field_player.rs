@@ -13,6 +13,7 @@ pub struct FieldPlayer {
     pub img: Option<SRC>,
     pub name: Option<String>,
     pub teamwork: Option<f32>,
+    pub number_of_penalty_events: Option<u8>,
 
     pub reality: bool,
     pub nationality: String,

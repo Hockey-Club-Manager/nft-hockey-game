@@ -61,7 +61,7 @@ impl Contract {
                 FieldPlayer
             };
 
-            let rnd = self.get_random_in_range(0, 99, i);
+            let rnd = self.get_random_in_range(1, 100, i);
             let random_rarity = self.get_random_rarity(pack_probabilities, rnd);
             let token_id = self.get_random_token_by_rarity(&player_type, &random_rarity);
 
@@ -85,7 +85,7 @@ impl Contract {
         for i in 0..NUMBER_OF_CARDS_IN_PACK {
             let pack_probabilities = self.internal_get_pack_probabilities();
 
-            let rnd = self.get_random_in_range(0, 99, i);
+            let rnd = self.get_random_in_range(1, 100, i);
             let random_rarity = self.get_random_rarity(pack_probabilities, rnd);
             let random_player_type = self.get_random_player_type(rnd);
             let token_id = self.get_random_token_by_rarity(&random_player_type, &random_rarity);
