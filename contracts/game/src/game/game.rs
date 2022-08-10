@@ -214,31 +214,15 @@ impl Game {
         }
     }
 
-    pub fn reduce_strength(&mut self) {
-        let five1 = self.user1.team.get_active_five().clone();
-        for (_player_pos, field_player_id) in five1.field_players {
-            let amount_of_spent_strength = self.get_amount_of_spent_strength(five1.ice_time_priority);
+    pub fn reduce_strength(&mut self, user_id: usize) {
+        let user = self.get_user_info_mut(&user_id);
 
-            let field_player = self.user1.team.get_field_player_mut(&field_player_id);
+        let five1 = user.team.get_active_five().clone();
+        for (_player_pos, field_player_id) in &five1.field_players {
+            let amount_of_spent_strength = get_amount_of_spent_strength(five1.ice_time_priority);
+
+            let field_player = user.team.get_field_player_mut(field_player_id);
             field_player.stats.decrease_strength(amount_of_spent_strength);
-        }
-
-        let five2 = self.user2.team.get_active_five().clone();
-        for (_player_pos, field_player_id) in five2.field_players {
-            let amount_of_spent_strength = self.get_amount_of_spent_strength(five2.ice_time_priority);
-
-            let field_player = self.user2.team.get_field_player_mut(&field_player_id);
-            field_player.stats.decrease_strength(amount_of_spent_strength);
-        }
-    }
-
-    pub fn get_amount_of_spent_strength(&self, ice_time_priority: IceTimePriority) -> u8 {
-        match ice_time_priority {
-            IceTimePriority::SuperLowPriority => { 1 }
-            IceTimePriority::LowPriority => { 2 }
-            IceTimePriority::Normal => { 3 }
-            IceTimePriority::HighPriority => { 4 }
-            IceTimePriority::SuperHighPriority => { 5 }
         }
     }
 
@@ -257,6 +241,16 @@ impl Game {
             Err(e) => panic!("{}", e)
         };
         log!("{}", json_event);
+    }
+}
+
+pub fn get_amount_of_spent_strength(ice_time_priority: IceTimePriority) -> u8 {
+    match ice_time_priority {
+        IceTimePriority::SuperLowPriority => { 1 }
+        IceTimePriority::LowPriority => { 2 }
+        IceTimePriority::Normal => { 3 }
+        IceTimePriority::HighPriority => { 4 }
+        IceTimePriority::SuperHighPriority => { 5 }
     }
 }
 
@@ -356,13 +350,23 @@ impl Game {
         self.generate_an_event(FaceOffWin);
     }
 
+    fn increase_five_time_field(&mut self) {
+        let five1 = self.user1.team.get_active_five_mut();
+        five1.time_field = Some(five1.time_field.unwrap() + 1);
+
+        let five2 = self.user2.team.get_active_five_mut();
+        five2.time_field = Some(five2.time_field.unwrap() + 1);
+    }
+
     fn check_teams_to_change_active_five(&mut self) {
         if self.user1.team.need_change() {
+            self.reduce_strength(self.user1.user_id);
             self.user1.team.change_active_five();
 
             self.generate_an_event(FirstTeamChangeActiveFive);
         }
         if self.user2.team.need_change() {
+            self.reduce_strength(self.user2.user_id);
             self.user2.team.change_active_five();
 
             self.generate_an_event(SecondTeamChangeActiveFive);

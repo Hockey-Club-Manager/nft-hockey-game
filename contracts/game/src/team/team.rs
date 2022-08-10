@@ -110,7 +110,7 @@ impl Team {
     }
     
     pub fn change_active_five(&mut self) {
-        // TODO: reduce strength
+
         match self.active_five {
             First => {
                 self.active_five = Second;
