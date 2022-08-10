@@ -26,8 +26,8 @@ type SRC = String;
 pub type TokenId = String;
 
 
-// 0.01 NEAR
-const MIN_DEPOSIT: Balance = 10_000_000_000_000_000_000_000;
+// 1 NEAR
+const MIN_DEPOSIT: Balance = 1_000_000_000_000_000_000_000_000;
 const ONE_YOCTO: Balance = 1;
 
 setup_alloc!();

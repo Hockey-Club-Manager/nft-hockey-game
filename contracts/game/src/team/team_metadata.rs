@@ -20,12 +20,12 @@ pub struct TeamMetadata {
 
 pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Team {
     let mut fives: HashMap<FiveNumber, FiveIds> = HashMap::new();
+    let mut field_players = to_field_players(&team_metadata.field_players_metadata, &user_id);
 
     for (number, mut five_ids) in team_metadata.fives {
         five_ids.time_field = Option::from(0 as u8);
 
-        //TODO: five_ids.calculate_teamwork();
-
+        five_ids.calculate_team_work(&mut field_players);
         fives.insert(number, five_ids);
     }
 
@@ -37,7 +37,7 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
     let mut team = Team {
         fives,
         active_five: FiveNumber::First,
-        field_players: to_field_players(&team_metadata.field_players_metadata, &user_id),
+        field_players,
 
         penalty_players: vec![],
         goalies,
