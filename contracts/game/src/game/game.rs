@@ -13,6 +13,7 @@ use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::LeftWing;
 use crate::team::five::IceTimePriority;
 use crate::team::five::Tactics::Neutral;
+use crate::team::numbers::FiveNumber::{PenaltyKill1, PenaltyKill2};
 use crate::team::team::Team;
 use crate::team::team_metadata::team_metadata_to_team;
 use crate::user_info::UserId;
@@ -112,6 +113,13 @@ impl Game {
         user_info.team.get_field_player(player_id)
     }
 
+    pub fn get_field_player_by_pos_mut(&mut self, user_id: UserId, position: &PlayerPosition) -> &mut FieldPlayer {
+        let user_info = self.get_user_info_mut(&user_id);
+        let five = user_info.team.get_active_five();
+        let player_id = five.field_players.get(position).unwrap();
+        user_info.team.get_field_player_mut(player_id)
+    }
+
     pub fn get_field_player_id_by_pos(&self, user_id: UserId, position:& PlayerPosition) -> TokenId {
         let user_info = self.get_user_info(user_id);
         user_info.team.get_active_five().field_players.get(position).unwrap().clone()
@@ -203,6 +211,21 @@ impl Game {
         }
     }
 
+    pub fn get_opponent_field_player_mut(&mut self) -> &mut FieldPlayer {
+        let user_player_ids = self.player_with_puck.clone().unwrap();
+
+        let user = self.get_user_info(user_player_ids.0);
+        let field_player_pos = user.team.get_field_player_pos(&user_player_ids.1);
+
+        let position = self.get_opponent_position(field_player_pos);
+
+        return if user_player_ids.0 == 1 {
+            self.get_field_player_by_pos_mut(2, position)
+        } else {
+            self.get_field_player_by_pos_mut(1, position)
+        }
+    }
+
     pub fn get_opponent_position(&self, position: &PlayerPosition) ->&PlayerPosition {
         match position {
             Center => &Center,
@@ -241,6 +264,20 @@ impl Game {
             Err(e) => panic!("{}", e)
         };
         log!("{}", json_event);
+    }
+
+    pub fn do_penalty(&mut self, user_id: UserId) {
+        let user = self.get_user_info_mut(&user_id);
+        let active_five = user.team.get_active_five();
+
+        if active_five.number == PenaltyKill1 || active_five.number == PenaltyKill2 {
+
+        } else {
+            user.team.active_five = PenaltyKill1;
+
+            let active_five = user.team.get_active_five_mut();
+            active_five.time_field = Option::from(0 as u8);
+        }
     }
 }
 

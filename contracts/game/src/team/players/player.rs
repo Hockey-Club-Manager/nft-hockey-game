@@ -54,6 +54,9 @@ pub enum PlayerPosition {
     #[serde(alias = "RD")]
     RightDefender,
 
+    #[serde(alias = "ADD")]
+    AdditionalPosition,
+
     #[serde(alias = "G")]
     GoaliePos,
 }

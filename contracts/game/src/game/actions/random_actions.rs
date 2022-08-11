@@ -3,6 +3,7 @@ use crate::{Game, PlayerPosition};
 use crate::game::actions::action::ActionTypes::Battle;
 use crate::game::actions::action::{ActionTypes, DoAction};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
+use crate::user_info::UserId;
 
 
 const PROBABILITY_GIVEAWAY: usize = 6;
@@ -127,16 +128,18 @@ impl RandomAction for BigPenalty {
     }
 
     fn do_action(&self, game: &mut Game) {
-        let player_with_puck = game.get_player_with_puck();
-        let opponent_player = game.get_opponent_field_player();
+        let player_with_puck = game.get_player_with_puck_mut();
+        let opponent_player = game.get_opponent_field_player_mut();
 
         let player_stat1 = player_with_puck.stats.discipline as f32;
         let player_stat2 = opponent_player.stats.discipline as f32;
 
         if has_won(player_stat1, player_stat2) {
-
+            opponent_player.number_of_penalty_events = Some(BIG_PENALTY);
+            game.do_penalty(opponent_player.get_user_id());
         } else {
-
+            player_with_puck.number_of_penalty_events = Some(BIG_PENALTY);
+            game.do_penalty(player_with_puck.get_user_id());
         }
 
         game.generate_an_event(ActionTypes::BigPenalty);
