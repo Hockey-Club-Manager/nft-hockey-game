@@ -5,4 +5,4 @@ mod dangle;
 mod move_action;
 mod dump;
 pub mod utils;
-mod random_actions;
+pub mod random_actions;

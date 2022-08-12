@@ -15,8 +15,8 @@ const PROBABILITY_FIGHT: f32 = 0.25;
 const PROBABILITY_NET_OFF: f32 = 0.01;
 const PROBABILITY_BATTLE: usize = 20;
 
-const SMALL_PENALTY: u8 = 5; // number of events
-const BIG_PENALTY: u8 = 12; // number of events
+pub const SMALL_PENALTY: u8 = 5; // number of events
+pub const BIG_PENALTY: u8 = 12; // number of events
 
 
 pub trait RandomAction {
@@ -47,12 +47,7 @@ impl RandomAction for Giveaway {
             game.player_with_puck = Option::from((opponent_player.get_user_id(), opponent_player.get_player_id()));
         }
     }
-}
-
-fn battle(game: &mut Game) {
-    let player_with_puck = game.get_player_with_puck();
-    let opponent_player = game.get_opponent_field_player();
-
+} fn battle(game: &mut Game) { let player_with_puck = game.get_player_with_puck(); let opponent_player = game.get_opponent_field_player();
     let player1_stat = (
         player_with_puck.stats.puck_control +
         player_with_puck.stats.aggressiveness +
@@ -128,18 +123,22 @@ impl RandomAction for BigPenalty {
     }
 
     fn do_action(&self, game: &mut Game) {
-        let player_with_puck = game.get_player_with_puck_mut();
-        let opponent_player = game.get_opponent_field_player_mut();
+        let player_with_puck = game.get_player_with_puck();
+        let opponent_player = game.get_opponent_field_player();
 
-        let player_stat1 = player_with_puck.stats.discipline as f32;
-        let player_stat2 = opponent_player.stats.discipline as f32;
+        let player_stat1 = player_with_puck.stats.get_discipline();
+        let player_stat2 = opponent_player.stats.get_discipline();
 
         if has_won(player_stat1, player_stat2) {
-            opponent_player.number_of_penalty_events = Some(BIG_PENALTY);
-            game.do_penalty(opponent_player.get_user_id());
+            game.do_penalty(BIG_PENALTY,
+                            opponent_player.get_player_id(),
+                            player_with_puck.get_user_id(),
+                            opponent_player.get_user_id());
         } else {
-            player_with_puck.number_of_penalty_events = Some(BIG_PENALTY);
-            game.do_penalty(player_with_puck.get_user_id());
+            game.do_penalty(BIG_PENALTY,
+                            player_with_puck.get_player_id(),
+                            opponent_player.get_user_id(),
+                            player_with_puck.get_user_id());
         }
 
         game.generate_an_event(ActionTypes::BigPenalty);
@@ -165,9 +164,15 @@ impl RandomAction for SmallPenalty {
         let player_stat2 = opponent_player.stats.discipline as f32;
 
         if has_won(player_stat1, player_stat2) {
-
+            game.do_penalty(SMALL_PENALTY,
+                            opponent_player.get_player_id(),
+                            player_with_puck.get_user_id(),
+                            opponent_player.get_user_id());
         } else {
-
+            game.do_penalty(SMALL_PENALTY,
+                            player_with_puck.get_player_id(),
+                            opponent_player.get_user_id(),
+                            player_with_puck.get_user_id());
         }
 
         game.generate_an_event(ActionTypes::SmallPenalty);

@@ -205,7 +205,6 @@ impl FiveIds {
             field_player.teamwork = Option::from(field_player.teamwork.unwrap() * team_work_line);
         }
     }
-
 }
 
 impl FiveIds {

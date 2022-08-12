@@ -4,7 +4,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use near_sdk::collections::Vector;
 use crate::{PlayerPosition, UserInfo};
-use crate::PlayerPosition::{LeftDefender, RightDefender};
+use crate::PlayerPosition::{Center, LeftDefender, RightDefender};
 use crate::team::five::{FiveIds, IceTimePriority};
 use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::team::numbers::FiveNumber::*;
@@ -13,11 +13,11 @@ use crate::team::players::player::PlayerRole;
 use crate::team::players::player::PlayerRole::*;
 
 
-const SUPER_LOW_PRIORITY: u8 = 5;
-const LOW_PRIORITY: u8 = 10;
-const NORMAL: u8 = 15;
-const HIGH_PRIORITY: u8 = 20;
-const SUPER_HIGH_PRIORITY: u8 = 25;
+const SUPER_LOW_PRIORITY: u8 = 3;
+const LOW_PRIORITY: u8 = 5;
+const NORMAL: u8 = 7;
+const HIGH_PRIORITY: u8 = 10;
+const SUPER_HIGH_PRIORITY: u8 = 12;
 
 
 #[derive(Clone, BorshDeserialize, BorshSerialize)]
@@ -42,6 +42,39 @@ impl Team {
             let field_players = &mut self.field_players;
             five_ids.calculate_team_work(field_players);
         }
+    }
+
+    pub fn do_penalty(&mut self) {
+        let active_five = self.get_active_five_mut();
+
+        if active_five.number == PenaltyKill1 || active_five.number == PenaltyKill2 {
+
+        } else {
+            self.active_five = PenaltyKill1;
+            let new_active_five = self.get_active_five_mut();
+            new_active_five.time_field = Option::from(0 as u8);
+        }
+    }
+
+    fn get_active_five_after_penalty_mut(&mut self) {
+
+    }
+
+    pub fn get_players_in_brigades(&mut self) -> Vec<TokenId> {
+        let mut result: Vec<TokenId> = Vec::new();
+        let brigades = vec![PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2];
+
+        for five_number in &brigades {
+            if !brigades.contains(&five_number) {
+                let brigade = self.fives.get(five_number).unwrap();
+
+                for (_pos, token_id) in &brigade.field_players {
+                    result.push(token_id.clone());
+                }
+            }
+        }
+
+        result
     }
 
     pub fn get_field_player_mut(&mut self, id: &TokenId) -> &mut FieldPlayer {

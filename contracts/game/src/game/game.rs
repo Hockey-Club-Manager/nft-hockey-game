@@ -9,6 +9,7 @@ use crate::game::actions::action::ActionTypes::*;
 use crate::team::players::player::{PlayerPosition};
 use crate::team::players::player::PlayerPosition::*;
 use crate::{TokenBalance};
+use crate::game::actions::random_actions::BIG_PENALTY;
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::LeftWing;
 use crate::team::five::IceTimePriority;
@@ -115,9 +116,9 @@ impl Game {
 
     pub fn get_field_player_by_pos_mut(&mut self, user_id: UserId, position: &PlayerPosition) -> &mut FieldPlayer {
         let user_info = self.get_user_info_mut(&user_id);
-        let five = user_info.team.get_active_five();
-        let player_id = five.field_players.get(position).unwrap();
-        user_info.team.get_field_player_mut(player_id)
+        let player_id = user_info.team.get_active_five().field_players.get(position).unwrap().clone();
+
+        user_info.team.get_field_player_mut(&player_id)
     }
 
     pub fn get_field_player_id_by_pos(&self, user_id: UserId, position:& PlayerPosition) -> TokenId {
@@ -217,12 +218,12 @@ impl Game {
         let user = self.get_user_info(user_player_ids.0);
         let field_player_pos = user.team.get_field_player_pos(&user_player_ids.1);
 
-        let position = self.get_opponent_position(field_player_pos);
+        let position = self.get_opponent_position(field_player_pos).clone();
 
         return if user_player_ids.0 == 1 {
-            self.get_field_player_by_pos_mut(2, position)
+            self.get_field_player_by_pos_mut(2, &position)
         } else {
-            self.get_field_player_by_pos_mut(1, position)
+            self.get_field_player_by_pos_mut(1, &position)
         }
     }
 
@@ -266,18 +267,36 @@ impl Game {
         log!("{}", json_event);
     }
 
-    pub fn do_penalty(&mut self, user_id: UserId) {
-        let user = self.get_user_info_mut(&user_id);
-        let active_five = user.team.get_active_five();
+    pub fn do_penalty(
+        &mut self,
+        penalty_time: u8,
+        penalty_player_id: TokenId,
+        user_id: UserId,
+        penalty_user_id: UserId)
+    {
+        self.penalty_player(penalty_time, &penalty_player_id, &penalty_user_id);
+
+        let penalty_user = self.get_user_info_mut(&penalty_user_id);
+        let active_five = penalty_user.team.get_active_five();
 
         if active_five.number == PenaltyKill1 || active_five.number == PenaltyKill2 {
 
         } else {
-            user.team.active_five = PenaltyKill1;
 
-            let active_five = user.team.get_active_five_mut();
-            active_five.time_field = Option::from(0 as u8);
         }
+    }
+
+    pub fn penalty_player(
+        &mut self,
+        penalty_time: u8,
+        penalty_player_id: &TokenId,
+        penalty_user_id: &UserId
+    ) {
+        let penalty_user = self.get_user_info_mut(penalty_user_id);
+        penalty_user.team.penalty_players.push(penalty_player_id.clone());
+
+        let player = penalty_user.team.get_field_player_mut(penalty_player_id);
+        player.number_of_penalty_events = Some(penalty_time);
     }
 }
 

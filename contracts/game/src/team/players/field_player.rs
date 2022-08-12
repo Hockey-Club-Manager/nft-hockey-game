@@ -205,4 +205,8 @@ impl FieldPlayerStats {
         self.poise -= value;
         self.morale -= value;
     }
+
+    pub fn get_discipline(&self) -> f32 {
+        self.discipline as f32
+    }
 }
