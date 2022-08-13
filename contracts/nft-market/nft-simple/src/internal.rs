@@ -165,6 +165,7 @@ impl Contract {
         );
         assert_eq!(&token.owner_id, &self.owner_id, "contract owner does not have a token");
 
+
         self.internal_remove_token_from_pack(player_type, rarity, token_id);
         self.internal_add_token_to_owner(receiver_id, token_id);
 
@@ -197,9 +198,6 @@ impl Contract {
                     .unwrap(),
             )
         });
-
-        log!("{{\"account_id\": \"{account_id}\"}}, \"token_id\": \"{token_id}\" }}",
-            account_id = account_id.clone(), token_id = token_id.clone());
 
         tokens_set.insert(token_id);
         self.tokens_per_owner.insert(account_id, &tokens_set);

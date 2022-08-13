@@ -130,15 +130,21 @@ impl RandomAction for BigPenalty {
         let player_stat2 = opponent_player.stats.get_discipline();
 
         if has_won(player_stat1, player_stat2) {
+            let penalty_player_id = opponent_player.get_player_id();
+            let user_id = player_with_puck.get_user_id();
+            let penalty_user_id = opponent_player.get_user_id();
             game.do_penalty(BIG_PENALTY,
-                            opponent_player.get_player_id(),
-                            player_with_puck.get_user_id(),
-                            opponent_player.get_user_id());
+                            &penalty_player_id,
+                            &user_id,
+                            &penalty_user_id);
         } else {
+            let penalty_player_id = player_with_puck.get_player_id();
+            let user_id = opponent_player.get_user_id();
+            let penalty_user_id = player_with_puck.get_user_id();
             game.do_penalty(BIG_PENALTY,
-                            player_with_puck.get_player_id(),
-                            opponent_player.get_user_id(),
-                            player_with_puck.get_user_id());
+                            &penalty_player_id,
+                            &user_id,
+                            &penalty_user_id);
         }
 
         game.generate_an_event(ActionTypes::BigPenalty);
@@ -168,17 +174,17 @@ impl RandomAction for SmallPenalty {
             let user_id = player_with_puck.get_user_id();
             let penalty_user_id = opponent_player.get_user_id();
             game.do_penalty(SMALL_PENALTY,
-                            penalty_player_id,
-                            user_id,
-                            penalty_user_id);
+                            &penalty_player_id,
+                            &user_id,
+                            &penalty_user_id);
         } else {
             let penalty_player_id = player_with_puck.get_player_id();
             let user_id = opponent_player.get_user_id();
             let penalty_user_id = player_with_puck.get_user_id();
             game.do_penalty(SMALL_PENALTY,
-                            penalty_player_id,
-                            user_id,
-                            penalty_user_id);
+                            &penalty_player_id,
+                            &user_id,
+                            &penalty_user_id);
         }
 
         game.generate_an_event(ActionTypes::SmallPenalty);

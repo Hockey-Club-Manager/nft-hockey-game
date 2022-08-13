@@ -14,7 +14,7 @@ use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::LeftWing;
 use crate::team::five::IceTimePriority;
 use crate::team::five::Tactics::Neutral;
-use crate::team::numbers::FiveNumber::{PenaltyKill1, PenaltyKill2};
+use crate::team::numbers::FiveNumber::{PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2};
 use crate::team::team::Team;
 use crate::team::team_metadata::team_metadata_to_team;
 use crate::user_info::UserId;
@@ -270,20 +270,20 @@ impl Game {
     pub fn do_penalty(
         &mut self,
         penalty_time: u8,
-        penalty_player_id: TokenId,
-        user_id: UserId,
-        penalty_user_id: UserId)
+        penalty_player_id: &TokenId,
+        user_id: &UserId,
+        penalty_user_id: &UserId)
     {
-        self.penalty_player(penalty_time, &penalty_player_id, &penalty_user_id);
+        self.penalty_player(penalty_time, penalty_player_id, penalty_user_id);
 
-        let penalty_user = self.get_user_info_mut(&penalty_user_id);
-        let active_five = penalty_user.team.get_active_five();
+        let penalty_user = self.get_user_info_mut(penalty_user_id);
+        penalty_user.team.do_penalty(&penalty_player_id);
 
-        if active_five.number == PenaltyKill1 || active_five.number == PenaltyKill2 {
+        let user = self.get_user_info_mut(user_id);
+        let active_five = user.team.active_five;
 
-        } else {
-
-        }
+        let brigades = vec![PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2];
+        //if brigades.contains(active_five)
     }
 
     pub fn penalty_player(

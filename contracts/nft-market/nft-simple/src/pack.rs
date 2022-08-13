@@ -1,4 +1,5 @@
 use near_sdk::env::{attached_deposit, predecessor_account_id};
+use near_sdk::{log, serde_json};
 use crate::*;
 use crate::extra::player_type::PlayerType;
 use crate::extra::player_type::PlayerType::{FieldPlayer, Goalie};
@@ -44,14 +45,14 @@ pub fn get_pack_probabilities(pack: Pack) -> Vec<u8> {
 
 #[near_bindgen]
 impl Contract {
-    pub fn register_account(&mut self) -> Vec<TokenMetadata> {
+    pub fn nft_register_account(&mut self, receiver_id: AccountId) -> Vec<TokenMetadata> {
         if !self.is_account_registered() {
             panic!("Account already registered");
         }
 
-        let receiver_id = predecessor_account_id();
-
         let mut pack_probabilities = get_pack_probabilities(Pack::Silver);
+
+        let mut tokens: Vec<TokenId> = Vec::new();
 
         let mut result: Vec<TokenMetadata> = Vec::new();
         for i in 0.. 6 {
@@ -65,10 +66,19 @@ impl Contract {
             let random_rarity = self.get_random_rarity(pack_probabilities, rnd);
             let token_id = self.get_random_token_by_rarity(&player_type, &random_rarity);
 
+            tokens.push(token_id.clone());
+
             result.push(self.internal_transfer_token_from_pack(&receiver_id, &token_id, &player_type, &random_rarity));
 
             pack_probabilities = get_pack_probabilities(Pack::Silver);
         }
+
+        let json_tokens = match serde_json::to_string(&tokens) {
+            Ok(res) => res,
+            Err(e) => panic!("{}", e)
+        };
+
+        log!("{}", json_tokens);
 
         result
     }
@@ -78,8 +88,8 @@ impl Contract {
     }
 
     #[payable]
-    pub fn buy_pack(&mut self) -> Vec<TokenMetadata> {
-        let receiver_id = predecessor_account_id();
+    pub fn nft_buy_pack(&mut self, receiver_id: AccountId) -> Vec<TokenMetadata> {
+        let mut tokens: Vec<TokenId> = Vec::new();
 
         let mut result: Vec<TokenMetadata> = Vec::new();
         for i in 0..NUMBER_OF_CARDS_IN_PACK {
@@ -90,8 +100,17 @@ impl Contract {
             let random_player_type = self.get_random_player_type(rnd);
             let token_id = self.get_random_token_by_rarity(&random_player_type, &random_rarity);
 
+            tokens.push(token_id.clone());
+
             result.push(self.internal_transfer_token_from_pack(&receiver_id, &token_id, &random_player_type, &random_rarity));
         }
+
+        let json_tokens = match serde_json::to_string(&tokens) {
+            Ok(res) => res,
+            Err(e) => panic!("{}", e)
+        };
+
+        log!("{}", json_tokens);
 
         result
     }
