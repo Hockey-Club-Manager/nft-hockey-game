@@ -12,7 +12,7 @@ pub trait NonFungibleTokenCore {
         &mut self,
         receiver_id: ValidAccountId,
         token_id: TokenId,
-        approval_id: u64,
+        approval_id: Option<u64>,
         memo: Option<String>,
     );
 
@@ -110,7 +110,7 @@ impl NonFungibleTokenCore for Contract {
         &mut self,
         receiver_id: ValidAccountId,
         token_id: TokenId,
-        approval_id: u64,
+        approval_id: Option<u64>,
         memo: Option<String>,
     ) {
         assert_one_yocto();
@@ -119,7 +119,7 @@ impl NonFungibleTokenCore for Contract {
             &sender_id,
             receiver_id.as_ref(),
             &token_id,
-            Some(approval_id),
+            approval_id,
             memo,
         );
         refund_approved_account_ids(
