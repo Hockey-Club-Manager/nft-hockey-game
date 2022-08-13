@@ -1,10 +1,12 @@
+use std::cmp::max;
 use crate::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::ops::Index;
 use near_sdk::collections::Vector;
 use crate::{PlayerPosition, UserInfo};
-use crate::PlayerPosition::{Center, LeftDefender, RightDefender};
+use crate::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
 use crate::team::five::{FiveIds, IceTimePriority};
 use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::team::numbers::FiveNumber::*;
@@ -44,28 +46,143 @@ impl Team {
         }
     }
 
-    pub fn do_penalty(&mut self) {
-        let active_five = self.get_active_five_mut();
+    pub fn do_penalty(&mut self, penalty_player_id: &TokenId) {
+        let brigades =vec![PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2];
+        let fives = vec![First, Second, Third, Fourth];
 
-        if active_five.number == PenaltyKill1 || active_five.number == PenaltyKill2 {
+        let (five_number, count_players_in_five) = self.get_number_players_count_active_five();
 
+        if five_number == PenaltyKill1 || five_number == PenaltyKill2 {
+            if count_players_in_five == 3 {
+                let player_position = self.remove_player_id_from_five(penalty_player_id);
+
+                let available_players = self.get_available_players(&brigades, &fives);
+
+                let player_id = self.get_player_id_with_max_defence(&available_players);
+                let active_five = self.get_active_five_mut();
+                active_five.field_players.insert(player_position, player_id);
+            } else {
+                let player_position = self.remove_player_id_from_five(penalty_player_id);
+                if player_position != RightWing {
+                    let rw_id = self.get_player_id_by_pos(&RightWing);
+
+                    self.remove_player_id_from_five(&rw_id);
+
+                    let available_players = self.get_available_players(&brigades, &fives);
+                    let player_id = self.get_player_id_with_max_defence(&available_players);
+
+                    let active_five = self.get_active_five_mut();
+                    active_five.field_players.insert(player_position, player_id);
+
+                    if five_number == PenaltyKill1 {
+                        let five = self.fives.get_mut(&PenaltyKill2).unwrap();
+                        five.field_players.remove(&RightWing);
+                    } else {
+                        let five = self.fives.get_mut(&PenaltyKill1).unwrap();
+                        five.field_players.remove(&RightWing);
+                    }
+                }
+            }
         } else {
             self.active_five = PenaltyKill1;
-            let new_active_five = self.get_active_five_mut();
-            new_active_five.time_field = Option::from(0 as u8);
+
+            let (penalty_player_in_brigade, players_in_brigade) = self.remove_player_from_pk1(penalty_player_id);
+
+            if penalty_player_in_brigade {
+                let players_in_fives = self.get_players_in_fives(&fives);
+
+                let mut available_players: Vec<TokenId> = Vec::new();
+                for player_id in &players_in_fives {
+                    if !players_in_brigade.contains(player_id) && !self.penalty_players.contains(player_id) {
+                        available_players.push(player_id.clone());
+                    }
+                }
+
+                let player_position = self.remove_player_id_from_five(penalty_player_id);
+                let player_id = self.get_player_id_with_max_defence(&available_players);
+
+                let new_active_five = self.get_active_five_mut();
+                new_active_five.time_field = Option::from(0 as u8);
+
+                new_active_five.field_players.insert(player_position, player_id);
+            } else {
+                let new_active_five = self.get_active_five_mut();
+                new_active_five.time_field = Option::from(0 as u8);
+            }
         }
     }
 
-    fn get_active_five_after_penalty_mut(&mut self) {
+    fn remove_player_from_pk1(&self, penalty_player_id: &TokenId) -> (bool, Vec<TokenId>) {
+        let mut players: Vec<TokenId> = Vec::new();
+        let pk1 = self.get_active_five();
 
+        let mut contains = false;
+        for (_player_pos, player_id) in &pk1.field_players {
+            if *player_id == *penalty_player_id {
+                contains = true;
+            } else {
+                players.push(player_id.clone());
+            }
+        }
+
+        (contains, players)
     }
 
-    pub fn get_players_in_brigades(&mut self) -> Vec<TokenId> {
-        let mut result: Vec<TokenId> = Vec::new();
-        let brigades = vec![PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2];
+    fn get_player_id_by_pos(&self, position: &PlayerPosition) -> TokenId {
+        let active_five = self.get_active_five();
+        active_five.field_players.get(&position).unwrap().clone()
+    }
 
-        for five_number in &brigades {
-            if !brigades.contains(&five_number) {
+    fn get_available_players(&self, brigades: &Vec<FiveNumber>, fives: &Vec<FiveNumber>) -> Vec<TokenId> {
+        let players_in_brigades = self.get_players_in_fives(brigades);
+        let players_in_fives = self.get_players_in_fives(fives);
+
+        let mut available_players: Vec<TokenId> = Vec::new();
+        for player_id in &players_in_fives {
+            if !players_in_brigades.contains(player_id) && !self.penalty_players.contains(player_id) {
+                available_players.push(player_id.clone());
+            }
+        }
+
+        available_players
+    }
+
+    fn get_number_players_count_active_five(&self) -> (FiveNumber, usize) {
+        let active_five = self.get_active_five();
+        (active_five.number, active_five.field_players.len())
+    }
+
+    fn remove_player_id_from_five(&mut self, penalty_player_id: &TokenId) -> PlayerPosition {
+        let player_position = self.get_field_player_pos(penalty_player_id).clone();
+        let active_five = self.get_active_five_mut();
+
+        active_five.field_players.remove(&player_position);
+
+        player_position
+    }
+
+    fn get_player_id_with_max_defence(&self, available_players: &Vec<TokenId>) -> TokenId {
+        let mut player_id_with_max_defense: TokenId = "".into();
+        let mut max_defence: f32 = 0.0;
+
+        for player_id in available_players {
+            let player = self.field_players.get(player_id).unwrap();
+            let player_defence = player.stats.get_defense();
+
+            if player_defence > max_defence {
+                player_id_with_max_defense = player_id.clone();
+                max_defence = player_defence;
+            }
+        }
+
+        player_id_with_max_defense
+    }
+
+    fn get_players_in_fives(&self, five_numbers: &Vec<FiveNumber>) -> Vec<TokenId> {
+        let mut result: Vec<TokenId> = Vec::new();
+
+        for five_number in five_numbers.into_iter() {
+            if !five_numbers.contains(&five_number) {
                 let brigade = self.fives.get(five_number).unwrap();
 
                 for (_pos, token_id) in &brigade.field_players {
