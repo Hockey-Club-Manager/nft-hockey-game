@@ -6,12 +6,12 @@ use std::collections::HashMap;
 use std::ops::Index;
 use near_sdk::collections::Vector;
 use crate::{PlayerPosition, UserInfo};
-use crate::PlayerPosition::{Center, LeftDefender, RightDefender, RightWing};
+use crate::PlayerPosition::{AdditionalPosition, Center, LeftDefender, LeftWing, RightDefender, RightWing};
 use crate::team::five::{FiveIds, IceTimePriority};
 use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::team::numbers::FiveNumber::*;
 use crate::team::players::goalie::Goalie;
-use crate::team::players::player::PlayerRole;
+use crate::team::players::player::{GoalieSubstitution, PlayerRole};
 use crate::team::players::player::PlayerRole::*;
 
 
@@ -30,7 +30,11 @@ pub struct Team {
     pub(crate) active_five: FiveNumber,
 
     pub(crate) field_players: HashMap<TokenId, FieldPlayer>,
+
     pub(crate) penalty_players: Vec<TokenId>,
+
+    pub(crate) goalie_substitutions: HashMap<GoalieSubstitution, TokenId>,
+    pub(crate) active_goalie_substitutions: GoalieSubstitution,
 
     pub(crate) goalies: HashMap<GoalieNumber, Goalie>,
     pub(crate) active_goalie: GoalieNumber,
@@ -290,5 +294,35 @@ impl Team {
 
         let active_five = self.get_active_five_mut();
         active_five.time_field = Option::from(0 as u8);
+    }
+
+    pub fn goalie_out(&mut self) {
+        let goalie_substitute_id = self.goalie_substitutions.get(&self.active_goalie_substitutions).unwrap().clone();
+
+        for (_five_number, five_ids) in &mut self.fives {
+            let number_of_players = five_ids.field_players.len();
+
+            if number_of_players == 5 {
+                five_ids.field_players.insert(AdditionalPosition, goalie_substitute_id.clone());
+            } else if number_of_players == 4 {
+                five_ids.field_players.insert(LeftWing, goalie_substitute_id.clone());
+            } else {
+                five_ids.field_players.insert(RightWing, goalie_substitute_id.clone());
+            }
+        }
+    }
+
+    pub fn goalie_back(&mut self) {
+        for (_five_number, five_ids) in &mut self.fives {
+            let number_of_players = five_ids.field_players.len();
+
+            if number_of_players == 4 {
+                five_ids.field_players.remove(&RightWing);
+            } else if number_of_players == 5 {
+                five_ids.field_players.remove(&LeftWing);
+            } else if number_of_players == 6 {
+                five_ids.field_players.remove(&AdditionalPosition);
+            }
+        }
     }
 }

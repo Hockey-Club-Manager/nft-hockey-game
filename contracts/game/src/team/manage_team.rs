@@ -1,6 +1,8 @@
 use crate::*;
 use crate::team::five::{IceTimePriority, Tactics};
 use crate::team::numbers::*;
+use crate::team::numbers::FiveNumber::{PenaltyKill1, PenaltyKill2};
+use crate::team::players::player::GoalieSubstitution;
 
 #[near_bindgen]
 impl Hockey {
@@ -53,15 +55,19 @@ impl Hockey {
     }
 
 
-    pub fn goalie_out(&mut self, game_id: GameId) {
+    pub fn goalie_out(&mut self, game_id: GameId, goalie_substitution: GoalieSubstitution) {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
         if game.user1.account_id == account_id && !game.user1.is_goalie_out {
             game.user1.is_goalie_out = true;
+            game.user1.team.active_goalie_substitutions = goalie_substitution;
+            game.user1.team.goalie_out();
             game.generate_an_event(GoalieOut);
         } else if game.user2.account_id == account_id && !game.user2.is_goalie_out {
             game.user2.is_goalie_out = true;
+            game.user2.team.active_goalie_substitutions = goalie_substitution;
+            game.user2.team.goalie_out();
             game.generate_an_event(GoalieOut);
         }
         self.games.insert(&game_id, &game);
@@ -73,9 +79,11 @@ impl Hockey {
 
         if game.user1.account_id == account_id  && game.user1.is_goalie_out{
             game.user1.is_goalie_out = false;
+            game.user1.team.goalie_out();
             game.generate_an_event(GoalieBack);
         } else if game.user2.account_id == account_id && game.user2.is_goalie_out{
             game.user2.is_goalie_out = false;
+            game.user2.team.goalie_out();
             game.generate_an_event(GoalieBack);
         }
         self.games.insert(&game_id, &game);

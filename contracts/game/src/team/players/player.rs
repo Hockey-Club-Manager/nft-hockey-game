@@ -61,6 +61,18 @@ pub enum PlayerPosition {
     GoaliePos,
 }
 
+#[derive(PartialEq, Clone, Copy, BorshDeserialize, BorshSerialize)]
+#[derive(Eq, PartialOrd, Hash, Ord)]
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "near_sdk::serde")]
+pub enum GoalieSubstitution {
+    #[serde(alias = "GS1")]
+    GoalieSubstitution1,
+
+    #[serde(alias = "GS2")]
+    GoalieSubstitution2,
+}
+
 impl fmt::Display for PlayerPosition {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

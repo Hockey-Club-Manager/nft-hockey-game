@@ -3,7 +3,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use near_sdk::serde_json;
 use crate::team::players::goalie::{Goalie};
-use crate::team::players::player::{PlayerMetadata};
+use crate::team::players::player::{GoalieSubstitution, PlayerMetadata};
 use crate::team::five::{FiveIds};
 use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::team::team::Team;
@@ -40,6 +40,8 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
         field_players,
 
         penalty_players: vec![],
+        goalie_substitutions: Default::default(),
+        active_goalie_substitutions: GoalieSubstitution::GoalieSubstitution1,
         goalies,
         active_goalie: GoalieNumber::MainGoalkeeper,
 

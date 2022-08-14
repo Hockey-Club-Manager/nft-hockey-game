@@ -283,7 +283,9 @@ impl Game {
         let active_five = user.team.active_five;
 
         let brigades = vec![PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2];
-        //if brigades.contains(active_five)
+        if !brigades.contains(&active_five) {
+            user.team.active_five = PowerPlay1;
+        }
     }
 
     pub fn penalty_player(
