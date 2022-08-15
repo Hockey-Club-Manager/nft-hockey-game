@@ -217,6 +217,11 @@ impl Team {
         panic!("Player not found")
     }
 
+    pub fn get_five_number_of_player(&self) -> usize {
+        let active_five = self.get_active_five();
+        active_five.field_players.len()
+    }
+
     pub fn get_active_five(&self) -> &FiveIds {
         self.fives.get(&self.active_five).unwrap()
     }

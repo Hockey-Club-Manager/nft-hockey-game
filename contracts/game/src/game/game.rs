@@ -15,7 +15,7 @@ use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::LeftWing;
 use crate::team::five::IceTimePriority;
 use crate::team::five::Tactics::Neutral;
-use crate::team::numbers::FiveNumber::{PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2};
+use crate::team::numbers::FiveNumber::{First, PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2};
 use crate::team::team::Team;
 use crate::team::team_metadata::team_metadata_to_team;
 use crate::user_info::UserId;
@@ -111,7 +111,26 @@ impl Game {
     pub fn get_field_player_by_pos(&self, user_id: UserId, position: &PlayerPosition) -> &FieldPlayer {
         let user_info = self.get_user_info(user_id);
         let five = user_info.team.get_active_five();
-        let player_id = five.field_players.get(position).unwrap();
+        let player_id = match five.field_players.get(position) {
+            Some(id) => id,
+            None => {
+                match position {
+                    RightWing => {
+                        five.field_players.get(&RightDefender).unwrap()
+                    },
+                    LeftWing => {
+                        let number_of_players = five.field_players.len();
+                        if number_of_players == 4 {
+                            five.field_players.get(&RightWing).unwrap()
+                        } else {
+                            five.field_players.get(&LeftDefender).unwrap()
+                        }
+                    },
+                    _ => panic!("")
+                }
+            }
+        };
+
         user_info.team.get_field_player(player_id)
     }
 
@@ -404,6 +423,8 @@ impl Game {
 
         self.check_teams_to_change_active_five();
 
+        self.reduce_penalty();
+
         self.check_end_of_period();
 
         self.get_game_state()
@@ -437,6 +458,8 @@ impl Game {
 
             _ => action.do_action(self)
         };
+
+
 
         self.turns += 1;
     }
@@ -563,5 +586,43 @@ impl Game {
          } else {
              1
          }
+    }
+
+    fn reduce_penalty(&mut self) {
+        self.reduce_user_player_penalty(&1);
+        self.reduce_user_player_penalty(&2);
+    }
+
+    fn reduce_user_player_penalty(&mut self, user_id: &UserId) {
+        let user = self.get_user_info_mut(user_id);
+
+        let mut number_of_liberated_players = 0 as u8;
+        let number_of_players_in_five = user.team.get_five_number_of_player();
+
+        let number_of_penalty_players = user.team.penalty_players.len();
+        for i in 0.. number_of_penalty_players {
+            if i > 1 {
+                break;
+            }
+
+            let player_id = user.team.penalty_players.get(i).unwrap().clone();
+            let player = user.team.get_field_player_mut(&player_id);
+            player.number_of_penalty_events = Some(player.number_of_penalty_events.unwrap() - 1);
+
+            if player.number_of_penalty_events.unwrap() == 0 {
+                number_of_liberated_players += 1;
+
+                if number_of_players_in_five == 3 {
+                    let active_five = user.team.get_active_five_mut();
+                    active_five.field_players.insert(RightWing, player_id);
+                } else if number_of_players_in_five == 4 {
+                    user.team.active_five = First;
+                }
+            }
+        }
+
+        for _ in 0..number_of_liberated_players {
+            user.team.penalty_players.remove(0);
+        }
     }
 }

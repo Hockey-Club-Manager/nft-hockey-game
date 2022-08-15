@@ -179,6 +179,6 @@ impl Hockey {
         five.field_players.insert(position1, second_player_id);
         five.field_players.insert(position2, first_player_id);
 
-        // TODO calculate teamwork
+        five.calculate_team_work(&mut user_info.team.field_players);
     }
 }
