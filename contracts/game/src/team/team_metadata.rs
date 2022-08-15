@@ -14,9 +14,9 @@ use crate::team::team::Team;
 pub struct TeamMetadata {
     pub(crate) fives: HashMap<FiveNumber, FiveIds>,
     pub(crate) goalies: HashMap<GoalieNumber, PlayerMetadata>,
+    pub(crate) goalie_substitutions: HashMap<GoalieSubstitution, TokenId>,
     pub(crate) field_players_metadata: HashMap<TokenId, PlayerMetadata>,
 }
-
 
 pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Team {
     let mut fives: HashMap<FiveNumber, FiveIds> = HashMap::new();
@@ -40,7 +40,7 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
         field_players,
 
         penalty_players: vec![],
-        goalie_substitutions: Default::default(),
+        goalie_substitutions: team_metadata.goalie_substitutions,
         active_goalie_substitutions: GoalieSubstitution::GoalieSubstitution1,
         goalies,
         active_goalie: GoalieNumber::MainGoalkeeper,

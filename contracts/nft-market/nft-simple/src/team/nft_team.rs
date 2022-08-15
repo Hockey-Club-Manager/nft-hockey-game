@@ -2,6 +2,7 @@ use crate::*;
 use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{ext_contract, Gas, log};
+use near_sdk::env::panic;
 use near_sdk::serde_json;
 use crate::{TokenId, TokenMetadata};
 use crate::extra::field_player_extra::FieldPlayerExtra;
@@ -10,7 +11,7 @@ use crate::extra::player_position::PlayerPosition;
 use crate::team::ice_time_priority::IceTimePriority;
 use crate::team::nft_team::IceTimePriority::*;
 use crate::team::number_five::*;
-use crate::team::number_goalie::NumberGoalie;
+use crate::team::number_goalie::{GoalieSubstitution, NumberGoalie};
 
 const GAS_FOR_CHECK_TOKENS_SALES: Gas = 10_000_000_000_000;
 
@@ -31,6 +32,7 @@ pub enum Tactics {
 pub struct TeamIds {
     pub(crate) fives: HashMap<NumberFive, FiveIds>,
     pub(crate) goalies: HashMap<NumberGoalie, TokenId>,
+    pub(crate) goalie_substitutions: HashMap<GoalieSubstitution, TokenId>,
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
@@ -48,6 +50,7 @@ pub struct FiveIds {
 pub struct TeamMetadata {
     pub(crate) fives: HashMap<NumberFive, FiveIds>,
     pub(crate) goalies: HashMap<NumberGoalie, TokenMetadata>,
+    pub(crate) goalie_substitutions: HashMap<GoalieSubstitution, TokenId>,
     pub(crate) field_players_metadata: HashMap<TokenId, TokenMetadata>,
 }
 
@@ -136,6 +139,22 @@ impl Contract {
         };
     }
 
+    fn check_goalie_substitution(&self, goalie_substitution: &HashMap<GoalieSubstitution, TokenId>) -> Vec<TokenId> {
+        if goalie_substitution.len() != 2 {
+            panic!("Wrong number of goalie substitutuon");
+        }
+
+        let mut result: Vec<TokenId> = Vec::new();
+
+        for (_number, id) in goalie_substitution {
+            result.push(id.clone());
+
+            self.check_goalie(&id);
+        }
+
+        result
+    }
+
     fn check_goalies(&self, goalies: &HashMap<NumberGoalie, TokenId>) -> Vec<TokenId> {
         if goalies.keys().len() != 2 {
             panic!("Wrong number of goalkeepers");
@@ -146,7 +165,13 @@ impl Contract {
         for (_number, id) in goalies {
             result.push(id.clone());
 
-            self.check_goalie(&id);
+            let account_id = predecessor_account_id();
+            let user_tokens = self.tokens_per_owner.get(&account_id)
+                .expect("You don't have tokens");
+
+            if !user_tokens.contains(&id) {
+                panic!("You are not the owner of the token");
+            }
         }
 
         result
@@ -176,6 +201,7 @@ impl Contract {
         TeamMetadata {
             fives: self.nft_team_per_owner.get(account_id).unwrap().fives,
             goalies: self.get_goalie_metadata_by_ids(account_id),
+            goalie_substitutions: self.nft_team_per_owner.get(account_id).unwrap().goalie_substitutions,
             field_players_metadata: self.get_field_players_metadata(account_id),
         }
     }
@@ -195,11 +221,17 @@ impl Contract {
     fn get_field_players_metadata(&self, account_id: &AccountId) -> HashMap<TokenId, TokenMetadata> {
         let mut result: HashMap<TokenId, TokenMetadata> = HashMap::new();
 
-        for (_number, fives_ids) in self.nft_team_per_owner.get(account_id).unwrap().fives {
+        let team = self.nft_team_per_owner.get(account_id).expect("You don't have a team");
+        for (_number, fives_ids) in team.fives {
             for (_position, token_id) in fives_ids.field_players {
                 let token_metadata = self.token_metadata_by_id.get(&token_id).expect("Token has no metadata");
                 result.insert(token_id, token_metadata);
             }
+        }
+
+        for (_number, token_id) in team.goalie_substitutions {
+            let token_metadata = self.token_metadata_by_id.get(&token_id).expect("Token has no metadata");
+            result.insert(token_id, token_metadata);
         }
 
         result
@@ -221,6 +253,7 @@ impl Contract {
 
         self.remove_token_from_fives(token_id, &mut user_team);
         self.remove_token_from_goalies(token_id, &mut user_team);
+        self.remove_token_from_substitute_goalies(token_id, &mut user_team);
 
         self.nft_team_per_owner.insert(&account_id, &user_team);
     }
@@ -231,6 +264,14 @@ impl Contract {
                 if *token_id == player_id {
                     five.field_players.remove(&player_position);
                 }
+            }
+        }
+    }
+
+    fn remove_token_from_substitute_goalies(&self, token_id: &TokenId, user_team: &mut TeamIds) {
+        for (number, player_id) in user_team.goalie_substitutions.clone() {
+            if *token_id == player_id {
+                user_team.goalie_substitutions.remove(&number);
             }
         }
     }
