@@ -36,9 +36,9 @@ impl ShotAction {
     fn get_opponent_field_player_stats(&self, game: &Game) -> f32 {
         let opponent_field_player = game.get_opponent_field_player();;
         get_relative_field_player_stat(
-            &opponent_field_player,
-            (opponent_field_player.stats.shot_blocking + opponent_field_player.stats.defensive_awareness) as f32 / 10.0
-        )
+            &opponent_field_player.1,
+            (opponent_field_player.1.stats.shot_blocking + opponent_field_player.1.stats.defensive_awareness) as f32 / 10.0
+        ) * opponent_field_player.0
     }
 
     fn do_shot_missed(&self, game: &mut Game) {

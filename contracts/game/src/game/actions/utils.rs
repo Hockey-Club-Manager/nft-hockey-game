@@ -7,6 +7,7 @@ use crate::team::five::IceTimePriority;
 use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::team::players::goalie::Goalie;
 
+
 pub fn has_won(stat: f32, opponents_stat: f32) -> bool {
     let sum = stat + opponents_stat;
 

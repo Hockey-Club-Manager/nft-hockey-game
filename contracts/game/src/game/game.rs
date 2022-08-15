@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, env, Timestamp};
@@ -197,37 +198,122 @@ impl Game {
         self.get_user_info_mut(&0)
     }
 
-    pub fn get_opponent_field_player(&self) -> &FieldPlayer {
+    pub fn get_opponent_field_player(&self) -> (f32, &FieldPlayer) {
         let user_player_ids = self.player_with_puck.clone().unwrap();
 
-        let user = self.get_user_info(user_player_ids.0);
-        let field_player_pos = user.team.get_field_player_pos(&user_player_ids.1);
-
-        let position = self.get_opponent_position(field_player_pos);
+        let position = self.get_coeff_player_pos(&user_player_ids);
 
         return if user_player_ids.0 == 1 {
-            self.get_field_player_by_pos(2, position)
+            (position.0, self.get_field_player_by_pos(2, &position.1))
         } else {
-            self.get_field_player_by_pos(1, position)
+            (position.0, self.get_field_player_by_pos(1, &position.1))
         }
     }
 
-    pub fn get_opponent_field_player_mut(&mut self) -> &mut FieldPlayer {
+    pub fn get_opponent_field_player_mut(&mut self) -> (f32, &mut FieldPlayer) {
         let user_player_ids = self.player_with_puck.clone().unwrap();
 
-        let user = self.get_user_info(user_player_ids.0);
-        let field_player_pos = user.team.get_field_player_pos(&user_player_ids.1);
-
-        let position = self.get_opponent_position(field_player_pos).clone();
+        let position = self.get_coeff_player_pos(&user_player_ids);
 
         return if user_player_ids.0 == 1 {
-            self.get_field_player_by_pos_mut(2, &position)
+            (position.0, self.get_field_player_by_pos_mut(2, &position.1))
         } else {
-            self.get_field_player_by_pos_mut(1, &position)
+            (position.0, self.get_field_player_by_pos_mut(1, &position.1))
         }
     }
 
-    pub fn get_opponent_position(&self, position: &PlayerPosition) ->&PlayerPosition {
+    fn get_coeff_player_pos(&self, user_player_ids: &(UserId, TokenId)) -> (f32, PlayerPosition) {
+        let user = self.get_user_info(user_player_ids.0);
+        let active_five = user.team.get_active_five();
+
+        let opponent_user = self.get_opponent_info(user.user_id);
+        let opponent_active_five = opponent_user.team.get_active_five();
+
+        let field_player_pos = user.team.get_field_player_pos(&user_player_ids.1);
+
+        let result = self.get_opponent_position(&active_five.field_players,&opponent_active_five.field_players,field_player_pos);
+        (result.0, result.1.clone())
+
+    }
+
+    pub fn get_opponent_position(
+        &self,
+        players: &HashMap<PlayerPosition, TokenId>,
+        opponent_players: &HashMap<PlayerPosition, TokenId>,
+        position: &PlayerPosition
+    ) -> (f32, &PlayerPosition) {
+
+        match position {
+            Center => {
+                if opponent_players.get(&AdditionalPosition).is_some() && players.get(&AdditionalPosition).is_some() {
+                    (1.0, &Center)
+                } else if opponent_players.get(&AdditionalPosition).is_some() {
+                    (1.5, &Center)
+                } else {
+                    (0.5, &Center)
+                }
+            },
+            AdditionalPosition => {
+                if opponent_players.get(&AdditionalPosition).is_some() {
+                    (1.0, &AdditionalPosition)
+                } else if players.len() == 4 {
+                    (1.5, &RightDefender)
+                }
+                else {
+                    (1.5, &Center)
+                }
+            },
+            LeftWing => {
+                let number_of_opponent_players = opponent_players.len();
+
+                if number_of_opponent_players == 3 || number_of_opponent_players == 4 {
+                    (1.5, &RightDefender)
+                } else {
+                    (1.0, &RightDefender)
+                }
+            },
+            RightWing => {
+                let number_of_players = players.len();
+                let number_of_opponent_players = opponent_players.len();
+                if (number_of_opponent_players == 5 || number_of_opponent_players == 6) && (number_of_players == 5 || number_of_players == 6) {
+                    (1.0, &LeftDefender)
+                } else if number_of_players > number_of_opponent_players {
+                    (0.5, &LeftDefender)
+                } else {
+                    (1.5, &LeftDefender)
+                }
+            },
+            LeftDefender => {
+                let number_of_players = players.len();
+                let number_of_opponent_players = opponent_players.len();
+                if (number_of_opponent_players == 5 || number_of_opponent_players == 6) && (number_of_players == 5 || number_of_players == 6) {
+                    (1.0, &RightWing)
+                } else if opponent_players.get(&RightWing).is_some() {
+                    if number_of_opponent_players >= number_of_players  {
+                        (1.5, &RightWing)
+                    } else {
+                        (0.5, &RightWing)
+                    }
+                } else {
+                    (1.0, &RightDefender)
+                }
+            },
+            RightDefender => {
+                let number_of_players = players.len();
+                let number_of_opponent_players = opponent_players.len();
+                if (number_of_opponent_players == 5 || number_of_opponent_players == 6) && (number_of_players == 5 || number_of_players == 6) {
+                    (1.0, &LeftWing)
+                } else if number_of_players > number_of_opponent_players {
+                    (0.5, &LeftDefender)
+                } else {
+                    (1.5, &LeftDefender)
+                }
+            },
+            _ => panic!("Cannot find opponent position")
+        }
+    }
+
+    pub fn f(&self, position: &PlayerPosition) -> &PlayerPosition {
         match position {
             Center => &Center,
             LeftWing => &RightDefender,
@@ -372,12 +458,18 @@ impl Game {
         let user_player_id = self.get_player_id_with_puck();
         let position_player_with_puck = self.get_player_pos(&user_player_id.1, user_player_id.0);
 
+        let user = self.get_user_info(user_player_id.0);
+        let active_five = user.team.get_active_five();
+
+        let opponent_user = self.get_opponent_info(user_player_id.0);
+        let opponent_active_five = opponent_user.team.get_active_five();
+
         let position = match position_player_with_puck {
             LeftWing | LeftDefender => {
-                *self.get_opponent_position(&LeftWing)
+                *self.get_opponent_position(&active_five.field_players, &opponent_active_five.field_players, &LeftWing).1
             },
             RightWing | RightDefender => {
-                *self.get_opponent_position(&RightWing)
+                *self.get_opponent_position(&active_five.field_players, &opponent_active_five.field_players, &RightWing).1
             },
             Center => {
                 self.get_random_position()
@@ -392,12 +484,17 @@ impl Game {
         self.generate_an_event(FaceOff);
 
         let player1 = self.get_field_player_by_pos(1, player_position);
+        let user = self.get_user_info(player1.get_user_id());
+        let active_five = user.team.get_active_five();
 
-        let opponent_pos = self.get_opponent_position(player_position);
-        let player2 = self.get_field_player_by_pos(2, opponent_pos);
+        let opponent_user = self.get_opponent_info(user.user_id);
+        let opponent_five = opponent_user.team.get_active_five();
+
+        let opponent_pos = self.get_opponent_position(&active_five.field_players, &opponent_five.field_players, player_position);
+        let player2 = self.get_field_player_by_pos(2, opponent_pos.1);
 
         let compared_stat1 = get_relative_field_player_stat(player1, player1.stats.face_offs as f32);
-        let compared_stat2= get_relative_field_player_stat(player2, player2.stats.face_offs as f32);
+        let compared_stat2= get_relative_field_player_stat(player2, player2.stats.face_offs as f32) * opponent_pos.0;
 
         if has_won(compared_stat1, compared_stat2) {
             self.player_with_puck = Option::from((player1.get_user_id(), player1.get_player_id()));

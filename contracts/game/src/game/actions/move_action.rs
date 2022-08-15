@@ -10,9 +10,9 @@ impl DoAction for MoveAction {
 
         let opponent = game.get_opponent_field_player();
         let opponent_stat = get_relative_field_player_stat(
-            &opponent,
-            (opponent.stats.defensive_awareness as f32 + opponent.stats.get_strength()) / 2.0
-        );
+            &opponent.1,
+            (opponent.1.stats.defensive_awareness as f32 + opponent.1.stats.get_strength()) / 2.0
+        ) * opponent.0;
 
         let player_with_puck = game.get_player_with_puck();
         let player_stat = get_relative_field_player_stat(player_with_puck, player_with_puck.stats.get_skating());
@@ -25,7 +25,7 @@ impl DoAction for MoveAction {
         if has_won(player_stat, opponent_stat) {
             game.zone_number += relative_side_zone;
         } else {
-            game.player_with_puck = Option::from((opponent.get_user_id(), opponent.get_player_id()));
+            game.player_with_puck = Option::from((opponent.1.get_user_id(), opponent.1.get_player_id()));
             game.generate_an_event(Hit);
         }
     }
