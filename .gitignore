@@ -12,11 +12,11 @@ contracts/game/target*
 contracts/nft-market/ft/target
 contracts/nft-market/ft/target*
 
-contracts/nft-market/nft-simple/target
-contracts/nft-market/nft-simple/target*
+contracts/nft-market/nft/target
+contracts/nft-market/nft/target*
 
-contracts/nft-market/market-simple/target
-contracts/nft-market/market-simple/target*
+contracts/nft-market/marketplace/target
+contracts/nft-market/marketplace/target*
 
 #keys
 /neardev

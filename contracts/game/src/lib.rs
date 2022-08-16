@@ -6,10 +6,11 @@ use game::actions::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, Tak
 use crate::external::ext_manage_team;
 use crate::external::ext_self;
 
-use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
+use crate::manager::{GameConfig, GameConfigOutput, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
 use team::players::player::PlayerPosition;
 use team::players::field_player::FieldPlayer;
 use crate::game::game::{Event, Game, GameState};
+use crate::StorageKey::AvailablePlayers;
 use crate::team::team_metadata::TeamMetadata;
 use crate::user_info::UserInfo;
 
@@ -36,6 +37,7 @@ setup_alloc!();
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKey {
     Games,
+    Deposit,
     AvailablePlayers,
     Stats,
     AvailableGames,
@@ -50,7 +52,7 @@ enum StorageKey {
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 struct Hockey {
     games: LookupMap<GameId, Game>,
-    available_players: UnorderedMap<AccountId, VGameConfig>,
+    available_players: UnorderedMap<Balance, UnorderedMap<AccountId, VGameConfig>>,
     stats: UnorderedMap<AccountId, VStats>,
     available_games: UnorderedMap<GameId, (AccountId, AccountId)>,
 
@@ -64,7 +66,7 @@ impl Hockey {
     pub fn new() -> Self {
         Self {
             games: LookupMap::new(StorageKey::Games),
-            available_players: UnorderedMap::new(StorageKey::AvailablePlayers),
+            available_players: UnorderedMap::new(StorageKey::Deposit),
             stats: UnorderedMap::new(StorageKey::Stats),
             available_games: UnorderedMap::new(StorageKey::AvailableGames),
 
@@ -95,28 +97,39 @@ impl Hockey {
     }
 
     #[payable]
-    pub fn make_available(&mut self, config: GameConfig, referrer_id: Option<AccountId>) {
+    pub fn make_available(&mut self, config: GameConfig) {
         let account_id: &AccountId = &env::predecessor_account_id();
-        assert!(self.available_players.get(account_id).is_none(), "Already in the waiting list the list");
         let deposit: Balance = env::attached_deposit();
         assert!(deposit >= MIN_DEPOSIT, "Deposit is too small. Attached: {}, Required: {}", deposit, MIN_DEPOSIT);
 
-        self.internal_check_if_has_game_started(account_id);
+        let mut available_players_by_deposit = self.available_players.get(&deposit).unwrap_or_else(|| {
+            UnorderedMap::new(AvailablePlayers)
+        });
 
-        self.internal_add_referral(account_id, &referrer_id);
+        if available_players_by_deposit.len() == 0 {
+            available_players_by_deposit.insert(&account_id, &VGameConfig::Current(GameConfig{
+                deposit: Some(deposit),
+                opponent_id: config.opponent_id
+            }));
 
-        self.available_players.insert(account_id,
-                                      &VGameConfig::Current(GameConfig {
-                                          deposit: Some(deposit),
-                                          opponent_id: config.opponent_id,
-                                      }));
+            self.internal_check_if_has_game_started(account_id);
+        } else {
+            assert!(available_players_by_deposit.get(account_id).is_none(), "Already in the waiting list the list");
+            let available_players = self.get_available_players(0, 1, &available_players_by_deposit);
+
+            self.internal_check_if_has_game_started(account_id);
+
+            let opponent_id = available_players.get(0).expect("Cannot find opponent id");
+            self.start_game(opponent_id.0.clone());
+        }
     }
 
     #[payable]
     pub fn start_game(&mut self, opponent_id: AccountId) -> Promise {
-        if let Some(opponent_config) = self.available_players.get(&opponent_id) {
+        let deposit = env::attached_deposit();
+        if let Some(opponent_config) = self.available_players.get(&deposit).expect("Deposit not found").get(&opponent_id) {
             let config: GameConfig = opponent_config.into();
-            assert_eq!(env::attached_deposit(), config.deposit.unwrap_or(0), "Wrong deposit");
+            assert_eq!(deposit, config.deposit.unwrap_or(0), "Wrong deposit");
 
             let account_id = env::predecessor_account_id();
             assert_ne!(account_id.clone(), opponent_id.clone(), "Find a friend to play");
@@ -166,8 +179,11 @@ impl Hockey {
 
         self.next_game_id += 1;
 
-        self.available_players.remove(&opponent_id);
-        self.available_players.remove(&account_id);
+        let mut available_players_by_deposit = self.available_players.get(&config.deposit.expect("Incorrect game config")).expect("Deposit not found");
+        available_players_by_deposit.remove(&opponent_id);
+        available_players_by_deposit.remove(&account_id);
+
+        self.available_players.insert(&config.deposit.unwrap(), &available_players_by_deposit);
 
         self.internal_update_stats(&account_id, UpdateStatsAction::AddPlayedGame, None, None);
         self.internal_update_stats(&opponent_id, UpdateStatsAction::AddPlayedGame, None, None);

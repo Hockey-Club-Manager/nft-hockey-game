@@ -223,20 +223,23 @@ impl Hockey {
 
 #[near_bindgen]
 impl Hockey {
-    pub fn make_unavailable(&mut self) -> PromiseOrValue<bool> {
+    pub fn make_unavailable(&mut self, deposit: Balance) -> PromiseOrValue<bool> {
         let account_id = env::predecessor_account_id();
-        if let Some(v_game_config) = self.available_players.get(&account_id) {
+
+        let mut available_players_by_deposit = self.available_players.get(&deposit).expect("Deposit not found");
+        if let Some(v_game_config) = available_players_by_deposit.get(&account_id) {
             let config: GameConfig = v_game_config.into();
-            self.available_players.remove(&account_id);
+            available_players_by_deposit.remove(&account_id);
+            self.available_players.insert(&deposit, &available_players_by_deposit);
             PromiseOrValue::Promise(Promise::new(account_id).transfer(config.deposit.unwrap_or(0)))
         } else {
             PromiseOrValue::Value(false)
         }
     }
 
-    pub fn get_available_players(&self, from_index: u64, limit: u64) -> Vec<(AccountId, GameConfigOutput)> {
-        let keys = self.available_players.keys_as_vector();
-        let values = self.available_players.values_as_vector();
+    pub(crate) fn get_available_players(&self, from_index: u64, limit: u64, available_players: &UnorderedMap<AccountId, VGameConfig>) -> Vec<(AccountId, GameConfigOutput)> {
+        let keys = available_players.keys_as_vector();
+        let values = available_players.values_as_vector();
         (from_index..std::cmp::min(from_index + limit, keys.len()))
             .map(|index| {
                 let config: GameConfig = values.get(index).unwrap().into();
@@ -264,11 +267,13 @@ impl Hockey {
         U128::from(self.service_fee)
     }
 
-    pub fn is_already_in_the_waiting_list(&self, account_id: AccountId) -> bool {
-        !self.available_players.get(&account_id).is_none()
+    pub fn is_already_in_the_waiting_list(&self, account_id: AccountId, deposit: Balance) -> bool {
+        let available_players_by_deposit = self.available_players.get(&deposit).expect("Deposit not found");
+        !available_players_by_deposit.get(&account_id).is_none()
     }
 
-    pub fn get_game_config(&self, account_id: AccountId) -> GameConfig {
-        self.available_players.get(&account_id).unwrap().into()
+    pub fn get_game_config(&self, account_id: AccountId, deposit: Balance) -> GameConfig {
+        let available_players_by_deposit = self.available_players.get(&deposit).expect("Deposit not found");
+        available_players_by_deposit.get(&account_id).unwrap().into()
     }
 }

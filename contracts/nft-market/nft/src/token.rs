@@ -7,10 +7,10 @@ pub type Payout = HashMap<AccountId, U128>;
 #[serde(crate = "near_sdk::serde")]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub enum  Rarity {
-    Usual,
+    Common,
+    Uncommon,
     Rare,
-    SuperRare,
-    Myth,
+    Unique,
     Exclusive,
 }
 

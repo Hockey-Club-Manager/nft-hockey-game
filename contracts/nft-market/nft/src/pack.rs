@@ -22,7 +22,7 @@ pub enum Pack {
 }
 
 fn get_rarity_by_index(index: usize) -> Rarity {
-    let rarities: Vec<Rarity> = vec![Rarity::Usual, Rarity::Rare, Rarity::SuperRare, Rarity::Myth, Rarity::Exclusive];
+    let rarities: Vec<Rarity> = vec![Rarity::Common, Rarity::Uncommon, Rarity::Rare, Rarity::Unique, Rarity::Exclusive];
     rarities[index]
 }
 
