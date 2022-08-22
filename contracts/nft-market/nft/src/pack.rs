@@ -45,7 +45,7 @@ pub fn get_pack_probabilities(pack: Pack) -> Vec<u8> {
 
 #[near_bindgen]
 impl Contract {
-    pub fn nft_register_account(&mut self, receiver_id: AccountId) -> Vec<TokenMetadata> {
+    pub fn nft_register_account(&mut self, receiver_id: ValidAccountId) -> Vec<TokenMetadata> {
         if self.is_account_registered() {
             panic!("Account already registered");
         }
@@ -68,10 +68,12 @@ impl Contract {
 
             tokens.push(token_id.clone());
 
-            result.push(self.internal_transfer_token_from_pack(&receiver_id, &token_id, &player_type, &random_rarity));
+            result.push(self.internal_transfer_token_from_pack(&predecessor_account_id(), &token_id, &player_type, &random_rarity));
 
             pack_probabilities = get_pack_probabilities(Pack::Silver);
         }
+
+        self.registered_accounts.insert(&predecessor_account_id());
 
         let json_tokens = match serde_json::to_string(&tokens) {
             Ok(res) => res,
@@ -88,7 +90,7 @@ impl Contract {
     }
 
     #[payable]
-    pub fn nft_buy_pack(&mut self, receiver_id: AccountId) -> Vec<TokenMetadata> {
+    pub fn nft_buy_pack(&mut self, receiver_id: ValidAccountId) -> Vec<TokenMetadata> {
         let mut tokens: Vec<TokenId> = Vec::new();
 
         let mut result: Vec<TokenMetadata> = Vec::new();
@@ -102,7 +104,7 @@ impl Contract {
 
             tokens.push(token_id.clone());
 
-            result.push(self.internal_transfer_token_from_pack(&receiver_id, &token_id, &random_player_type, &random_rarity));
+            result.push(self.internal_transfer_token_from_pack(&predecessor_account_id(), &token_id, &random_player_type, &random_rarity));
         }
 
         let json_tokens = match serde_json::to_string(&tokens) {

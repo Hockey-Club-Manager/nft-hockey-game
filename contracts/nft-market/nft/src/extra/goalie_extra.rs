@@ -61,9 +61,9 @@ impl Stats for GoalieStats {
 
 impl GoalieStats {
     fn get_stats_avg(&self) -> f32 {
-        self.get_reflexes() +
+        (self.get_reflexes() +
             self.get_puck_control() +
-            self.get_strength() / 3 as f32
+            self.get_strength()) / 3 as f32
     }
 
     fn get_reflexes(&self) -> f32 {

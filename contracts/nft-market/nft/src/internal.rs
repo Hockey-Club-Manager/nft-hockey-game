@@ -128,10 +128,11 @@ impl Contract {
     }
 
     fn get_field_players_set(&self, rarity: &Rarity) -> UnorderedSet<TokenId> {
+        let json_rarity: AccountId = serde_json::to_string(&rarity).expect("Cannot parse rarity");
         self.field_players.get(rarity).unwrap_or_else(|| {
             UnorderedSet::new(
                 StorageKey::FieldPlayersInner {
-                    field_player_hash: hash_account_id(&"FieldPlayer".into()),
+                    field_player_hash: hash_account_id(&json_rarity.into()),
                 }
                     .try_to_vec()
                     .unwrap(),
@@ -140,10 +141,11 @@ impl Contract {
     }
 
     fn get_goalies_set(&self, rarity: &Rarity) -> UnorderedSet<TokenId> {
+        let json_rarity: AccountId = serde_json::to_string(&rarity).expect("Cannot parse rarity");
         self.goalies.get(rarity).unwrap_or_else(|| {
             UnorderedSet::new(
                 StorageKey::GoaliesInner {
-                    goalies_hash: hash_account_id(&"Goalie".into()),
+                    goalies_hash: hash_account_id(&json_rarity),
                 }
                     .try_to_vec()
                     .unwrap(),

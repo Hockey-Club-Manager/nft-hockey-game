@@ -20,7 +20,7 @@ mod manager;
 mod team;
 mod external;
 
-const NFT_CONTRACT: &str = "parh.nft.testnet";
+const NFT_CONTRACT: &str = "hcm.parh.testnet";
 
 type GameId = u64;
 type SRC = String;
