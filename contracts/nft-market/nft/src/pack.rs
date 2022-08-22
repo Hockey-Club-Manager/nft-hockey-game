@@ -46,7 +46,7 @@ pub fn get_pack_probabilities(pack: Pack) -> Vec<u8> {
 #[near_bindgen]
 impl Contract {
     pub fn nft_register_account(&mut self, receiver_id: AccountId) -> Vec<TokenMetadata> {
-        if !self.is_account_registered() {
+        if self.is_account_registered() {
             panic!("Account already registered");
         }
 
@@ -55,8 +55,8 @@ impl Contract {
         let mut tokens: Vec<TokenId> = Vec::new();
 
         let mut result: Vec<TokenMetadata> = Vec::new();
-        for i in 0.. 6 {
-            let player_type = if i == 0 {
+        for i in 0.. 22 {
+            let player_type = if i == 0 || i == 1 {
                 Goalie
             } else {
                 FieldPlayer
