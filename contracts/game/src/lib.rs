@@ -1,7 +1,8 @@
-use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap};
-use near_sdk::{ext_contract, Promise};
+use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap, UnorderedSet};
+use near_sdk::{CryptoHash, ext_contract, Promise};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, serde_json, log, near_bindgen, PanicOnDefault, setup_alloc};
+use near_sdk::env::{panic, predecessor_account_id};
 use game::actions::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, TakeTO};
 use crate::external::ext_manage_team;
 use crate::external::ext_self;
@@ -12,7 +13,7 @@ use team::players::field_player::FieldPlayer;
 use crate::game::game::{Event, Game, GameState};
 use crate::StorageKey::AvailablePlayers;
 use crate::team::team_metadata::TeamMetadata;
-use crate::user_info::UserInfo;
+use crate::user_info::{Account, UserInfo};
 
 mod game;
 mod user_info;
@@ -46,6 +47,12 @@ enum StorageKey {
     TotalAffiliateRewards{ account_id: AccountId},
     WhitelistedTokens,
     FieldPlayers,
+    Account,
+    Friends { account_id: CryptoHash},
+    SentFriendRequests { account_id: CryptoHash},
+    SentFriendPlay{ account_id: CryptoHash},
+    FriendRequestsReceived { account_id: CryptoHash},
+    RequestsPlayReceived { account_id: CryptoHash},
 }
 
 #[near_bindgen]
@@ -55,6 +62,8 @@ struct Hockey {
     available_players: UnorderedMap<Balance, UnorderedMap<AccountId, VGameConfig>>,
     stats: UnorderedMap<AccountId, VStats>,
     available_games: UnorderedMap<GameId, (AccountId, AccountId)>,
+
+    accounts: UnorderedMap<AccountId, Account>,
 
     next_game_id: GameId,
     service_fee: Balance,
@@ -70,11 +79,13 @@ impl Hockey {
             stats: UnorderedMap::new(StorageKey::Stats),
             available_games: UnorderedMap::new(StorageKey::AvailableGames),
 
+            accounts: UnorderedMap::new(StorageKey::Account),
             next_game_id: 0,
             service_fee: 0,
         }
     }
 }
+
 
 #[near_bindgen]
 impl Hockey {

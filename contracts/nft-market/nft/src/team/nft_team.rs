@@ -72,7 +72,8 @@ impl Contract {
             nft_contact_id,
             &market_contract_id,
             NO_DEPOSIT,
-            GAS_FOR_CHECK_TOKENS_SALES);
+            GAS_FOR_CHECK_TOKENS_SALES)
+            .as_return();
     }
 
     pub fn check_team_ids(&self, team_ids: &TeamIds) -> Vec<TokenId> {
@@ -80,6 +81,7 @@ impl Contract {
 
         token_ids.append(&mut self.check_fives(&team_ids.fives));
         token_ids.append(&mut self.check_goalies(&team_ids.goalies));
+        token_ids.append(&mut self.check_goalie_substitution(&team_ids.goalie_substitutions));
 
         token_ids
     }
@@ -149,7 +151,7 @@ impl Contract {
         for (_number, id) in goalie_substitution {
             result.push(id.clone());
 
-            self.check_goalie(&id);
+            self.check_field_player(&id);
         }
 
         result

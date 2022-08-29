@@ -1,7 +1,7 @@
 use crate::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 
-pub const NUMBER_OF_FIVES: usize = 6;
+pub const NUMBER_OF_FIVES: usize = 8;
 
 #[derive(Serialize, Deserialize, BorshDeserialize, BorshSerialize)]
 #[derive(PartialEq, Eq, Hash, PartialOrd, Clone)]
