@@ -1,6 +1,6 @@
 use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{AccountId, CryptoHash, env};
+use near_sdk::{AccountId, CryptoHash, env, PromiseOrValue};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedSet;
 use near_sdk::env::{attached_deposit, predecessor_account_id};
@@ -182,8 +182,15 @@ impl Hockey {
         account.requests_play_received.remove(&friend_id);
         account.sent_requests_play.remove(&friend_id);
 
-        friend.requests_play_received.remove(&account_id);
-        friend.sent_requests_play.remove(&account_id);
+        if let Some(deposit) = friend.requests_play_received.remove(&account_id) {
+            account.sent_requests_play.remove(&friend_id);
+            Promise::new(account_id.clone()).transfer(deposit);
+        }
+
+        if let Some(deposit) = account.requests_play_received.remove(&account_id) {
+            friend.sent_requests_play.remove(&account_id);
+            Promise::new(friend_id.clone()).transfer(deposit);
+        }
 
         self.accounts.insert(&account_id, &account);
         self.accounts.insert(&friend_id, &friend);
