@@ -2,7 +2,7 @@ use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap, UnorderedSet};
 use near_sdk::{CryptoHash, ext_contract, Promise};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, serde_json, log, near_bindgen, PanicOnDefault, setup_alloc};
-use near_sdk::env::{panic, predecessor_account_id};
+use near_sdk::env::{log, panic, predecessor_account_id};
 use game::actions::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, TakeTO};
 use crate::external::ext_manage_team;
 use crate::external::ext_self;
@@ -13,7 +13,7 @@ use team::players::field_player::FieldPlayer;
 use crate::game::game::{Event, Game, GameState};
 use crate::StorageKey::AvailablePlayers;
 use crate::team::team_metadata::TeamMetadata;
-use crate::user_info::{Account, UserInfo};
+use crate::user_info::{Account, hash_account_id, UserInfo};
 
 mod game;
 mod user_info;
@@ -39,7 +39,7 @@ setup_alloc!();
 enum StorageKey {
     Games,
     Deposit,
-    AvailablePlayers,
+    AvailablePlayers {deposit: CryptoHash},
     Stats,
     AvailableGames,
     Affiliates {account_id: AccountId},
@@ -114,7 +114,7 @@ impl Hockey {
         assert!(deposit >= MIN_DEPOSIT, "Deposit is too small. Attached: {}, Required: {}", deposit, MIN_DEPOSIT);
 
         let mut available_players_by_deposit = self.available_players.get(&deposit).unwrap_or_else(|| {
-            UnorderedMap::new(AvailablePlayers)
+            UnorderedMap::new(AvailablePlayers {deposit: hash_account_id(&serde_json::to_string(&deposit).expect(""))}.try_to_vec().unwrap())
         });
 
         if available_players_by_deposit.len() == 0 {
@@ -124,18 +124,18 @@ impl Hockey {
             }));
 
             self.internal_check_if_has_game_started(account_id);
+            self.available_players.insert(&deposit, &available_players_by_deposit);
         } else {
             assert!(available_players_by_deposit.get(account_id).is_none(), "Already in the waiting list the list");
             let available_players = self.get_available_players(0, 1, &available_players_by_deposit);
-
             self.internal_check_if_has_game_started(account_id);
 
             let opponent_id = available_players.get(0).expect("Cannot find opponent id");
+
             self.start_game(opponent_id.0.clone());
         }
     }
 
-    #[payable]
     pub fn start_game(&mut self, opponent_id: AccountId) -> Promise {
         let deposit = env::attached_deposit();
         if let Some(opponent_config) = self.available_players.get(&deposit).expect("Deposit not found").get(&opponent_id) {

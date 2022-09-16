@@ -223,8 +223,9 @@ impl Hockey {
 
 #[near_bindgen]
 impl Hockey {
-    pub fn make_unavailable(&mut self, deposit: Balance) -> PromiseOrValue<bool> {
-        let account_id = env::predecessor_account_id();
+    pub fn make_unavailable(&mut self, bid: String) -> PromiseOrValue<bool> {
+        let account_id = predecessor_account_id();
+        let deposit: Balance = serde_json::from_str(&bid).expect("Wrong deposit");
 
         let mut available_players_by_deposit = self.available_players.get(&deposit).expect("Deposit not found");
         if let Some(v_game_config) = available_players_by_deposit.get(&account_id) {
@@ -240,6 +241,7 @@ impl Hockey {
     pub(crate) fn get_available_players(&self, from_index: u64, limit: u64, available_players: &UnorderedMap<AccountId, VGameConfig>) -> Vec<(AccountId, GameConfigOutput)> {
         let keys = available_players.keys_as_vector();
         let values = available_players.values_as_vector();
+        log!("start");
         (from_index..std::cmp::min(from_index + limit, keys.len()))
             .map(|index| {
                 let config: GameConfig = values.get(index).unwrap().into();

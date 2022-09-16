@@ -73,7 +73,7 @@ impl Hockey {
         self.accounts.insert(&account_id, &account);
     }
 
-    pub fn send_friend_request(&mut self, friend_id: &AccountId) {
+    pub fn send_friend_request(&mut self, friend_id: AccountId) {
         let account_id = predecessor_account_id();
 
         let mut account = self.accounts.get(&account_id).expect("You are not registered");
@@ -81,20 +81,20 @@ impl Hockey {
 
         assert_ne!(account_id.clone(), friend_id.clone(), "Wrong friend id");
 
-        account.sent_friend_requests.insert(friend_id);
+        account.sent_friend_requests.insert(&friend_id);
         friend.friend_requests_received.insert(&account_id);
 
         self.accounts.insert(&account_id, &account);
         self.accounts.insert(&friend_id, &friend);
     }
 
-    pub fn accept_friend_request(&mut self, friend_id: &AccountId) {
+    pub fn accept_friend_request(&mut self, friend_id: AccountId) {
         let account_id = predecessor_account_id();
 
         let mut account = self.accounts.get(&account_id).expect("You are not registered");
         let mut friend = self.accounts.get(&friend_id).expect(&format!("Account not found {}", friend_id.clone()));
 
-        if !account.friend_requests_received.remove(friend_id) {
+        if !account.friend_requests_received.remove(&friend_id) {
             panic!("Friend id not found")
         }
 
@@ -102,21 +102,21 @@ impl Hockey {
             panic!("Account id not found")
         }
 
-        account.friends.insert(friend_id);
+        account.friends.insert(&friend_id);
         friend.friends.insert(&account_id);
 
         self.accounts.insert(&account_id, &account);
         self.accounts.insert(&friend_id, &friend);
     }
 
-    pub fn decline_friend_request(&mut self, friend_id: &AccountId) {
+    pub fn decline_friend_request(&mut self, friend_id: AccountId) {
         let account_id = predecessor_account_id();
 
         let mut account = self.accounts.get(&account_id).expect("You are not registered");
         let mut friend = self.accounts.get(&friend_id).expect(&format!("Account not found {}", friend_id.clone()));
 
-        account.friend_requests_received.remove(friend_id);
-        account.sent_friend_requests.remove(friend_id);
+        account.friend_requests_received.remove(&friend_id);
+        account.sent_friend_requests.remove(&friend_id);
         friend.sent_friend_requests.remove(&account_id);
         friend.friend_requests_received.remove(&account_id);
 
@@ -124,7 +124,7 @@ impl Hockey {
         self.accounts.insert(&friend_id, &friend);
     }
 
-    pub fn send_request_play(&mut self, friend_id: &AccountId) {
+    pub fn send_request_play(&mut self, friend_id: AccountId) {
         let account_id = predecessor_account_id();
         let deposit = attached_deposit();
 
@@ -133,14 +133,14 @@ impl Hockey {
 
         assert_ne!(account_id.clone(), friend_id.clone(), "Wrong friend id");
 
-        account.sent_requests_play.insert(friend_id, &deposit);
+        account.sent_requests_play.insert(&friend_id, &deposit);
         friend.requests_play_received.insert(&account_id, &deposit);
 
         self.accounts.insert(&account_id, &account);
         self.accounts.insert(&friend_id, &friend);
     }
 
-    pub fn accept_request_play(&mut self, friend_id: &AccountId) -> Promise {
+    pub fn accept_request_play(&mut self, friend_id: AccountId) -> Promise {
         let account_id = predecessor_account_id();
         let deposit = attached_deposit();
 
@@ -151,7 +151,7 @@ impl Hockey {
 
         assert_eq!(deposit, friend_deposit, "Wrong deposit");
 
-        if account.requests_play_received.remove(friend_id).is_none() {
+        if account.requests_play_received.remove(&friend_id).is_none() {
             panic!("Friend id not found");
         }
 
@@ -160,6 +160,7 @@ impl Hockey {
         }
 
         self.internal_check_if_has_game_started(&account_id);
+        self.internal_check_if_has_game_started(&friend_id);
 
         self.accounts.insert(&account_id, &account);
         self.accounts.insert(&friend_id, &friend);
@@ -173,7 +174,7 @@ impl Hockey {
             .then(ext_self::on_get_teams(friend_id.clone(), account_id, config.clone(), &env::current_account_id(), 0, 100_000_000_000_000))
     }
 
-    pub fn decline_request_play(&mut self, friend_id: &AccountId) {
+    pub fn decline_request_play(&mut self, friend_id: AccountId) {
         let account_id = predecessor_account_id();
 
         let mut account = self.accounts.get(&account_id).expect("You are not registered");
