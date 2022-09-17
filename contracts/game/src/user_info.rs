@@ -73,6 +73,22 @@ impl Hockey {
         self.accounts.insert(&account_id, &account);
     }
 
+    pub fn remove_friend(&mut self, friend_id: AccountId) {
+        let account_id = predecessor_account_id();
+
+
+        let mut account = self.accounts.get(&account_id).expect("You are not registered");
+        let mut friend = self.accounts.get(&friend_id).expect(&format!("Account not found {}", friend_id.clone()));
+
+        assert_ne!(account_id.clone(), friend_id.clone(), "Wrong friend id");
+
+        account.friends.remove(&friend_id);
+        friend.friends.remove(&account_id);
+
+        self.accounts.insert(&account_id, &account);
+        self.accounts.insert(&friend_id, &friend);
+    }
+
     pub fn send_friend_request(&mut self, friend_id: AccountId) {
         let account_id = predecessor_account_id();
 
@@ -124,6 +140,7 @@ impl Hockey {
         self.accounts.insert(&friend_id, &friend);
     }
 
+    #[payable]
     pub fn send_request_play(&mut self, friend_id: AccountId) {
         let account_id = predecessor_account_id();
         let deposit = attached_deposit();
