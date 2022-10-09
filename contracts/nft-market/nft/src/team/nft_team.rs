@@ -251,6 +251,10 @@ impl Contract {
     pub fn remove_token_from_team(&mut self, token_id: &TokenId) {
         let account_id = predecessor_account_id();
 
+        if !self.nft_team_per_owner.get(&account_id).is_some() {
+            return;
+        }
+
         let mut user_team = self.nft_team_per_owner.get(&account_id).unwrap();
 
         self.remove_token_from_fives(token_id, &mut user_team);

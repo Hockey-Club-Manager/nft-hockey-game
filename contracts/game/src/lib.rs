@@ -38,6 +38,7 @@ setup_alloc!();
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKey {
     Games,
+    Teams,
     Deposit,
     AvailablePlayers {deposit: CryptoHash},
     Stats,
@@ -59,6 +60,7 @@ enum StorageKey {
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 struct Hockey {
     games: LookupMap<GameId, Game>,
+    teams: LookupMap<AccountId, TeamMetadata>,
     available_players: UnorderedMap<Balance, UnorderedMap<AccountId, VGameConfig>>,
     stats: UnorderedMap<AccountId, VStats>,
     available_games: UnorderedMap<GameId, (AccountId, AccountId)>,
@@ -75,6 +77,7 @@ impl Hockey {
     pub fn new() -> Self {
         Self {
             games: LookupMap::new(StorageKey::Games),
+            teams: LookupMap::new(StorageKey::Teams),
             available_players: UnorderedMap::new(StorageKey::Deposit),
             stats: UnorderedMap::new(StorageKey::Stats),
             available_games: UnorderedMap::new(StorageKey::AvailableGames),
@@ -109,10 +112,21 @@ impl Hockey {
 
     #[payable]
     pub fn make_available(&mut self, config: GameConfig) {
-        let account_id: &AccountId = &env::predecessor_account_id();
+        let account_id: &AccountId = &predecessor_account_id();
         let deposit: Balance = env::attached_deposit();
         assert!(deposit >= MIN_DEPOSIT, "Deposit is too small. Attached: {}, Required: {}", deposit, MIN_DEPOSIT);
 
+        ext_manage_team::get_owner_team(account_id.clone(), &NFT_CONTRACT, 0, 10_000_000_000_000)
+            .then(ext_self::on_get_teams(account_id.clone(), deposit.to_string(), config, &env::current_account_id(), 0, 10_000_000_000_000));
+    }
+
+    #[private]
+    fn on_get_team(&mut self,
+                   account_id: AccountId,
+                   deposit: Balance,
+                   config: GameConfig,
+                   #[callback] team: TeamMetadata
+    ) {
         let mut available_players_by_deposit = self.available_players.get(&deposit).unwrap_or_else(|| {
             UnorderedMap::new(AvailablePlayers {deposit: hash_account_id(&serde_json::to_string(&deposit).expect(""))}.try_to_vec().unwrap())
         });
@@ -123,26 +137,28 @@ impl Hockey {
                 opponent_id: config.opponent_id
             }));
 
-            self.internal_check_if_has_game_started(account_id);
+            self.internal_check_if_has_game_started(&account_id);
             self.available_players.insert(&deposit, &available_players_by_deposit);
+            self.teams.insert(&account_id, &team);
         } else {
-            assert!(available_players_by_deposit.get(account_id).is_none(), "Already in the waiting list the list");
+            assert!(available_players_by_deposit.get(&account_id).is_none(), "Already in the waiting list the list");
             let available_players = self.get_available_players(0, 1, &available_players_by_deposit);
-            self.internal_check_if_has_game_started(account_id);
+            self.internal_check_if_has_game_started(&account_id);
 
             let opponent_id = available_players.get(0).expect("Cannot find opponent id");
+            self.teams.insert(&account_id, &team);
 
             self.start_game(opponent_id.0.clone());
         }
     }
 
-    pub fn start_game(&mut self, opponent_id: AccountId) -> Promise {
+    pub fn start_game(&mut self, opponent_id: AccountId) -> GameId {
         let deposit = env::attached_deposit();
         if let Some(opponent_config) = self.available_players.get(&deposit).expect("Deposit not found").get(&opponent_id) {
             let config: GameConfig = opponent_config.into();
             assert_eq!(deposit, config.deposit.unwrap_or(0), "Wrong deposit");
 
-            let account_id = env::predecessor_account_id();
+            let account_id = predecessor_account_id();
             assert_ne!(account_id.clone(), opponent_id.clone(), "Find a friend to play");
 
             self.internal_check_if_has_game_started(&account_id);
@@ -151,22 +167,22 @@ impl Hockey {
                 assert_eq!(*player_id, account_id, "Wrong account");
             }
 
-            ext_manage_team::get_teams(account_id.clone(), opponent_id.clone(), &NFT_CONTRACT, 0, 100_000_000_000_000)
-                .then(ext_self::on_get_teams(opponent_id, account_id, config.clone(), &env::current_account_id(), 0, 100_000_000_000_000))
+            let team = self.teams.remove(&account_id).expect("Team not found");
+            let opponent_team = self.teams.remove(&account_id).expect("Team not found");
+
+            self.init_game(opponent_id, account_id, config.clone(),  (team, opponent_team))
         } else {
             panic!("Your opponent is not ready");
         }
     }
 
-    #[private]
-    pub fn on_get_teams(
+    pub fn init_game(
         &mut self,
         opponent_id: AccountId,
         account_id: AccountId,
         config: GameConfig,
-        #[callback] teams: (TeamMetadata, TeamMetadata)
+        teams: (TeamMetadata, TeamMetadata)
     ) -> GameId {
-        // TODO Add FT
         let reward = TokenBalance {
             token_id: Some("NEAR".into()),
             balance: config.deposit.unwrap_or(0) * 2,

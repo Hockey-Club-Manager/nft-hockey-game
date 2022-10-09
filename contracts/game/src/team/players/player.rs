@@ -4,6 +4,7 @@ use near_sdk::json_types::Base64VecU8;
 use near_sdk::serde::{Deserialize, Serialize};
 
 
+#[derive(BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]
 #[derive(Clone)]
 pub struct PlayerMetadata {

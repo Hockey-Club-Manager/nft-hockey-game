@@ -9,6 +9,7 @@ use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::team::team::Team;
 
 
+#[derive(BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct TeamMetadata {
