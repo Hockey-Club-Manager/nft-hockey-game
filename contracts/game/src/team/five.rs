@@ -202,6 +202,9 @@ impl FiveIds {
         field_players: &mut HashMap<TokenId, FieldPlayer>
     ) {
         for (_position, field_player) in field_players {
+            if field_player.teamwork.is_none() {
+                field_player.teamwork = Some(1.0);
+            }
             field_player.teamwork = Option::from(field_player.teamwork.unwrap() * team_work_line);
         }
     }

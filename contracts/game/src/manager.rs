@@ -241,7 +241,6 @@ impl Hockey {
     pub(crate) fn get_available_players(&self, from_index: u64, limit: u64, available_players: &UnorderedMap<AccountId, VGameConfig>) -> Vec<(AccountId, GameConfigOutput)> {
         let keys = available_players.keys_as_vector();
         let values = available_players.values_as_vector();
-        log!("start");
         (from_index..std::cmp::min(from_index + limit, keys.len()))
             .map(|index| {
                 let config: GameConfig = values.get(index).unwrap().into();

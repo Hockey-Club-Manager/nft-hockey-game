@@ -171,19 +171,17 @@ impl Hockey {
             let opponent_id = available_players.get(0).expect("Cannot find opponent id");
             self.teams.insert(&account_id, &team);
 
-            self.start_game(opponent_id.0.clone());
+            self.start_game(opponent_id.0.clone(), deposit, account_id);
         }
 
         true
     }
 
-    pub fn start_game(&mut self, opponent_id: AccountId) -> GameId {
-        let deposit = env::attached_deposit();
+    pub fn start_game(&mut self, opponent_id: AccountId, deposit: Balance, account_id: AccountId) -> GameId {
         if let Some(opponent_config) = self.available_players.get(&deposit).expect("Deposit not found").get(&opponent_id) {
             let config: GameConfig = opponent_config.into();
             assert_eq!(deposit, config.deposit.unwrap_or(0), "Wrong deposit");
 
-            let account_id = predecessor_account_id();
             assert_ne!(account_id.clone(), opponent_id.clone(), "Find a friend to play");
 
             self.internal_check_if_has_game_started(&account_id);
@@ -193,9 +191,9 @@ impl Hockey {
             }
 
             let team = self.teams.remove(&account_id).expect("Team not found");
-            let opponent_team = self.teams.remove(&account_id).expect("Team not found");
+            let opponent_team = self.teams.remove(&opponent_id).expect("Team not found");
 
-            self.init_game(opponent_id, account_id, config.clone(),  (team, opponent_team))
+            self.init_game(opponent_id, account_id.clone(), config.clone(),  (team, opponent_team))
         } else {
             panic!("Your opponent is not ready");
         }

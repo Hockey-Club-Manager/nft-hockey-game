@@ -74,7 +74,7 @@ impl Contract {
     ) -> Promise {
         let account_id = predecessor_account_id();
 
-        let token_ids = self.check_team_ids(&team_ids);
+        let token_ids = self.check_team_ids(&team_ids, &account_id);
 
         ext_check_tokens_sales::check_tokens_sales(
             token_ids,
@@ -100,17 +100,17 @@ impl Contract {
         true
     }
 
-    pub fn check_team_ids(&self, team_ids: &TeamIds) -> Vec<TokenId> {
+    pub fn check_team_ids(&self, team_ids: &TeamIds, account_id: &AccountId) -> Vec<TokenId> {
         let mut token_ids: Vec<TokenId> = Vec::new();
 
-        token_ids.append(&mut self.check_fives(&team_ids.fives));
-        token_ids.append(&mut self.check_goalies(&team_ids.goalies));
-        token_ids.append(&mut self.check_goalie_substitution(&team_ids.goalie_substitutions));
+        token_ids.append(&mut self.check_fives(&team_ids.fives, account_id));
+        token_ids.append(&mut self.check_goalies(&team_ids.goalies, account_id));
+        token_ids.append(&mut self.check_goalie_substitution(&team_ids.goalie_substitutions, account_id));
 
         token_ids
     }
 
-    fn check_fives(&self, fives: &HashMap<NumberFive, FiveIds>) -> Vec<TokenId> {
+    fn check_fives(&self, fives: &HashMap<NumberFive, FiveIds>, account_id: &AccountId) -> Vec<TokenId> {
         if fives.keys().len() != NUMBER_OF_FIVES {
             panic!("Wrong number of fives");
         }
@@ -126,7 +126,7 @@ impl Contract {
                 _ => self.check_number_of_field_players(number_of_players, 5)
             };
 
-            result.append(&mut self.check_field_players(&five.field_players));
+            result.append(&mut self.check_field_players(&five.field_players, account_id));
         }
 
         result
@@ -138,20 +138,19 @@ impl Contract {
         }
     }
 
-    fn check_field_players(&self, field_players: &HashMap<PlayerPosition, TokenId>) -> Vec<TokenId> {
+    fn check_field_players(&self, field_players: &HashMap<PlayerPosition, TokenId>, account_id: &AccountId) -> Vec<TokenId> {
         let mut result: Vec<TokenId> = Vec::new();
         for (_position, id) in field_players {
             result.push(id.clone());
 
-            self.check_field_player(&id);
+            self.check_field_player(&id, account_id);
         }
 
         result
     }
 
-    fn check_field_player(&self, field_player_id: &TokenId) {
-        let account_id = env::predecessor_account_id();
-        let user_tokens = self.tokens_per_owner.get(&account_id)
+    fn check_field_player(&self, field_player_id: &TokenId, account_id: &AccountId) {
+        let user_tokens = self.tokens_per_owner.get(account_id)
             .expect("You don't have tokens");
 
         if !user_tokens.contains(&field_player_id) {
@@ -165,7 +164,11 @@ impl Contract {
         };
     }
 
-    fn check_goalie_substitution(&self, goalie_substitution: &HashMap<GoalieSubstitution, TokenId>) -> Vec<TokenId> {
+    fn check_goalie_substitution(
+        &self,
+        goalie_substitution: &HashMap<GoalieSubstitution, TokenId>,
+        account_id: &AccountId
+    ) -> Vec<TokenId> {
         if goalie_substitution.len() != 2 {
             panic!("Wrong number of goalie substitutuon");
         }
@@ -175,13 +178,13 @@ impl Contract {
         for (_number, id) in goalie_substitution {
             result.push(id.clone());
 
-            self.check_field_player(&id);
+            self.check_field_player(&id, account_id);
         }
 
         result
     }
 
-    fn check_goalies(&self, goalies: &HashMap<NumberGoalie, TokenId>) -> Vec<TokenId> {
+    fn check_goalies(&self, goalies: &HashMap<NumberGoalie, TokenId>, account_id: &AccountId) -> Vec<TokenId> {
         if goalies.keys().len() != 2 {
             panic!("Wrong number of goalkeepers");
         }
@@ -190,9 +193,7 @@ impl Contract {
 
         for (_number, id) in goalies {
             result.push(id.clone());
-
-            let account_id = predecessor_account_id();
-            let user_tokens = self.tokens_per_owner.get(&account_id)
+            let user_tokens = self.tokens_per_owner.get(account_id)
                 .expect("You don't have tokens");
 
             if !user_tokens.contains(&id) {
@@ -203,9 +204,8 @@ impl Contract {
         result
     }
 
-    fn check_goalie(&self, goalie_id: &TokenId) {
-        let account_id = env::predecessor_account_id();
-        let user_tokens = self.tokens_per_owner.get(&account_id)
+    fn check_goalie(&self, goalie_id: &TokenId, account_id: &AccountId) {
+        let user_tokens = self.tokens_per_owner.get(account_id)
             .expect("You don't have tokens");
 
         if !user_tokens.contains(&goalie_id) {
@@ -226,9 +226,9 @@ impl Contract {
     pub fn get_owner_team(&self, account_id: &AccountId) -> TeamMetadata {
         let team = self.nft_team_per_owner.get(account_id).expect("No team");
 
-        self.check_fives(&team.fives);
-        self.check_goalies(&team.goalies);
-        self.check_goalie_substitution(&team.goalie_substitutions);
+        self.check_fives(&team.fives, account_id);
+        self.check_goalies(&team.goalies, account_id);
+        self.check_goalie_substitution(&team.goalie_substitutions, account_id);
 
         TeamMetadata {
             fives: team.fives,
