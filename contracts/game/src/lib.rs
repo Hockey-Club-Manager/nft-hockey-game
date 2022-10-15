@@ -141,11 +141,11 @@ impl Hockey {
                    deposit: Balance,
                    config: GameConfig,
                    #[callback_result] call_result: Result<TeamMetadata, PromiseError>
-    ) -> bool {
+    ) -> Option<Game> {
         if call_result.is_err() {
             Promise::new(account_id).transfer(deposit);
             log!("The team is incomplete");
-            return false;
+            return None;
         }
 
         let team = call_result.unwrap();
@@ -163,6 +163,7 @@ impl Hockey {
             self.internal_check_if_has_game_started(&account_id);
             self.available_players.insert(&deposit, &available_players_by_deposit);
             self.teams.insert(&account_id, &team);
+            return None;
         } else {
             assert!(available_players_by_deposit.get(&account_id).is_none(), "Already in the waiting list the list");
             let available_players = self.get_available_players(0, 1, &available_players_by_deposit);
@@ -171,13 +172,11 @@ impl Hockey {
             let opponent_id = available_players.get(0).expect("Cannot find opponent id");
             self.teams.insert(&account_id, &team);
 
-            self.start_game(opponent_id.0.clone(), deposit, account_id);
+            return Some(self.start_game(opponent_id.0.clone(), deposit, account_id));
         }
-
-        true
     }
 
-    pub fn start_game(&mut self, opponent_id: AccountId, deposit: Balance, account_id: AccountId) -> GameId {
+    pub fn start_game(&mut self, opponent_id: AccountId, deposit: Balance, account_id: AccountId) -> Game {
         if let Some(opponent_config) = self.available_players.get(&deposit).expect("Deposit not found").get(&opponent_id) {
             let config: GameConfig = opponent_config.into();
             assert_eq!(deposit, config.deposit.unwrap_or(0), "Wrong deposit");
@@ -205,7 +204,7 @@ impl Hockey {
         account_id: AccountId,
         config: GameConfig,
         teams: (TeamMetadata, TeamMetadata)
-    ) -> GameId {
+    ) -> Game {
         let reward = TokenBalance {
             token_id: Some("NEAR".into()),
             balance: config.deposit.unwrap_or(0) * 2,
@@ -221,12 +220,6 @@ impl Hockey {
 
         self.available_games.insert(&game_id, &(account_id.clone(), opponent_id.clone()));
 
-        let available_game = match serde_json::to_string(&game) {
-            Ok(res) => res,
-            Err(err) => panic!("{}", err)
-        };
-        log!("{}", available_game);
-
         self.next_game_id += 1;
 
         let mut available_players_by_deposit = self.available_players.get(&config.deposit.expect("Incorrect game config")).expect("Deposit not found");
@@ -238,7 +231,7 @@ impl Hockey {
         self.internal_update_stats(&account_id, UpdateStatsAction::AddPlayedGame, None, None);
         self.internal_update_stats(&opponent_id, UpdateStatsAction::AddPlayedGame, None, None);
 
-        game_id
+        game
     }
 
     pub fn generate_event(&mut self, game_id: GameId) {

@@ -8,7 +8,7 @@ use crate::*;
 
 
 #[derive(BorshSerialize, BorshDeserialize)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct TokenBalance {
     pub(crate) token_id: Option<String>,
