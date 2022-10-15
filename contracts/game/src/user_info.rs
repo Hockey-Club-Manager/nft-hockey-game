@@ -1,6 +1,8 @@
+use std::hash::Hash;
 use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{AccountId, CryptoHash, env, PromiseOrValue};
+use near_sdk::{AccountId, CryptoHash, env, PromiseOrValue, Promise};
+use crate::external::{ext_manage_team, this_contract};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedSet;
 use near_sdk::env::{attached_deposit, predecessor_account_id};
@@ -45,27 +47,27 @@ impl Hockey {
             user_id: account_id.clone(),
             friends: UnorderedSet::new(
                 StorageKey::Friends {
-                    account_id: hash_account_id(&account_id)
+                    account_id: hash_account_id(account_id.as_str())
                 }
                     .try_to_vec().unwrap()),
             sent_friend_requests: UnorderedSet::new(
                 StorageKey::SentFriendRequests {
-                    account_id: hash_account_id(&account_id)
+                    account_id: hash_account_id(account_id.as_str())
                 }
                     .try_to_vec().unwrap()),
             friend_requests_received: UnorderedSet::new(
                 StorageKey::FriendRequestsReceived {
-                    account_id: hash_account_id(&account_id)
+                    account_id: hash_account_id(account_id.as_str())
                 }
                     .try_to_vec().unwrap()),
             sent_requests_play: UnorderedMap::new(
                 StorageKey::SentFriendRequests {
-                    account_id: hash_account_id(&account_id)
+                    account_id: hash_account_id(account_id.as_str())
                 }
                     .try_to_vec().unwrap()),
             requests_play_received: UnorderedMap::new(
                 StorageKey::RequestsPlayReceived {
-                    account_id: hash_account_id(&account_id)
+                    account_id: hash_account_id(account_id.as_str())
                 }
                     .try_to_vec().unwrap()),
         };
@@ -187,8 +189,33 @@ impl Hockey {
             opponent_id: Some(friend_id.clone())
         };
 
-        ext_manage_team::get_teams(account_id.clone(), friend_id.clone(), &NFT_CONTRACT, 0, 100_000_000_000_000)
-            .then(ext_self::on_get_teams(friend_id.clone(), account_id, config.clone(), &env::current_account_id(), 0, 100_000_000_000_000))
+        ext_manage_team::ext(AccountId::new_unchecked("hcm.parh.testnet".parse().unwrap()))
+            .with_static_gas(Gas(100_000_000_000_000))
+            .get_teams(account_id.clone(), friend_id.clone())
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(Gas(100_000_000_000_000))
+                    .on_get_teams(friend_id.clone(), account_id, config.clone())
+            )
+    }
+
+    #[private]
+    pub fn on_get_teams(&mut self,
+                    opponent_id: AccountId,
+                    account_id: AccountId,
+                    config: GameConfig,
+                    #[callback_result] call_result: Result<(TeamMetadata, TeamMetadata), PromiseError>
+    ) -> bool {
+        if call_result.is_err() {
+            log!("The team is incomplete");
+            Promise::new(account_id).transfer(config.deposit.unwrap());
+            Promise::new(config.opponent_id.unwrap()).transfer(config.deposit.unwrap());
+            return false;
+        }
+        let teams = call_result.unwrap();
+        self.init_game(opponent_id, account_id, config, teams);
+
+        true
     }
 
     pub fn decline_request_play(&mut self, friend_id: AccountId) {
@@ -215,7 +242,7 @@ impl Hockey {
     }
 }
 
-pub fn hash_account_id(account_id: &AccountId) -> CryptoHash {
+pub fn hash_account_id(account_id: &str) -> CryptoHash {
     let mut hash = CryptoHash::default();
     hash.copy_from_slice(&env::sha256(account_id.as_bytes()));
     hash

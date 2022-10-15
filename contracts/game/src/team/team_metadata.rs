@@ -10,7 +10,7 @@ use crate::team::team::Team;
 
 
 #[derive(BorshDeserialize, BorshSerialize)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub struct TeamMetadata {
     pub(crate) fives: HashMap<FiveNumber, FiveIds>,

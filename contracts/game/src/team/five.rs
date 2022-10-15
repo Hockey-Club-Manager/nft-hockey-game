@@ -15,7 +15,7 @@ const DEFENDERS_TEAMWORK: f32 = 1.2;
 
 
 #[derive(BorshDeserialize, BorshSerialize)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[derive(Clone)]
 #[serde(crate = "near_sdk::serde")]
 pub struct FiveIds {
@@ -224,7 +224,7 @@ impl FiveIds {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-#[derive(Serialize, Deserialize, Copy, Clone)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum IceTimePriority {
     SuperLowPriority,
@@ -235,7 +235,7 @@ pub enum IceTimePriority {
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]
-#[derive(PartialEq, Serialize, Deserialize, Copy, Clone)]
+#[derive(PartialEq, Serialize, Deserialize, Copy, Clone, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum Tactics {
     Safe,

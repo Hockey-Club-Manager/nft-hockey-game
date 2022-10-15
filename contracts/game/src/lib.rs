@@ -1,17 +1,15 @@
 use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap, UnorderedSet};
-use near_sdk::{CryptoHash, ext_contract, Promise};
+use near_sdk::{CryptoHash, ext_contract, Gas, Promise, PromiseError};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountId, Balance, BorshStorageKey, env, serde_json, log, near_bindgen, PanicOnDefault, setup_alloc};
+use near_sdk::{AccountId, Balance, BorshStorageKey, env, serde_json, log, near_bindgen, PanicOnDefault};
 use near_sdk::env::{log, panic, predecessor_account_id};
 use game::actions::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, TakeTO};
-use crate::external::ext_manage_team;
-use crate::external::ext_self;
 
+use crate::external::{ext_manage_team,this_contract};
 use crate::manager::{GameConfig, GameConfigOutput, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
 use team::players::player::PlayerPosition;
 use team::players::field_player::FieldPlayer;
 use crate::game::game::{Event, Game, GameState};
-use crate::StorageKey::AvailablePlayers;
 use crate::team::team_metadata::TeamMetadata;
 use crate::user_info::{Account, hash_account_id, UserInfo};
 
@@ -31,8 +29,6 @@ pub type TokenId = String;
 // 1 NEAR
 const MIN_DEPOSIT: Balance = 1_000_000_000_000_000_000_000_000;
 const ONE_YOCTO: Balance = 1;
-
-setup_alloc!();
 
 
 #[derive(BorshSerialize, BorshStorageKey)]
@@ -100,35 +96,62 @@ impl Hockey {
         assert_eq!(games_already_started.len(), 0, "Another game already started");
     }
 
-    pub(crate) fn internal_add_referral(&mut self, account_id: &AccountId, referrer_id: &Option<AccountId>) {
+    pub(crate) fn internal_add_referral(&mut self,
+                                        account_id: &AccountId,
+                                        referrer_id: &Option<AccountId>
+    ) {
         if self.stats.get(account_id).is_none() && self.is_account_exists(referrer_id) {
             if let Some(referrer_id_unwrapped) = referrer_id.clone() {
-                self.internal_update_stats(account_id, UpdateStatsAction::AddReferral, (*referrer_id).clone(), None);
-                self.internal_update_stats(&referrer_id_unwrapped, UpdateStatsAction::AddAffiliate, Some(account_id.clone()), None);
+                self.internal_update_stats(account_id,
+                                           UpdateStatsAction::AddReferral,
+                                           (*referrer_id).clone(),
+                                           None);
+                self.internal_update_stats(&referrer_id_unwrapped,
+                                           UpdateStatsAction::AddAffiliate,
+                                           Some(account_id.clone()),
+                                           None);
                 log!("Referrer {} added for {}", referrer_id_unwrapped, account_id);
             }
         }
     }
 
     #[payable]
-    pub fn make_available(&mut self, config: GameConfig) {
+    pub fn make_available(&mut self, config: GameConfig) -> Promise {
         let account_id: &AccountId = &predecessor_account_id();
         let deposit: Balance = env::attached_deposit();
-        assert!(deposit >= MIN_DEPOSIT, "Deposit is too small. Attached: {}, Required: {}", deposit, MIN_DEPOSIT);
+        assert!(deposit >= MIN_DEPOSIT,
+                "Deposit is too small. Attached: {}, Required: {}",
+                deposit,
+                MIN_DEPOSIT
+        );
 
-        ext_manage_team::get_owner_team(account_id.clone(), &NFT_CONTRACT, 0, 10_000_000_000_000)
-            .then(ext_self::on_get_teams(account_id.clone(), deposit.to_string(), config, &env::current_account_id(), 0, 10_000_000_000_000));
+        ext_manage_team::ext(AccountId::new_unchecked("hcm.parh.testnet".parse().unwrap()))
+            .with_static_gas(Gas(100_000_000_000_000))
+            .get_owner_team(account_id.clone())
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(Gas(100_000_000_000_000))
+                    .on_get_team(account_id.clone(), deposit, config)
+            )
     }
 
     #[private]
-    fn on_get_team(&mut self,
+    pub fn on_get_team(&mut self,
                    account_id: AccountId,
                    deposit: Balance,
                    config: GameConfig,
-                   #[callback] team: TeamMetadata
-    ) {
+                   #[callback_result] call_result: Result<TeamMetadata, PromiseError>
+    ) -> bool {
+        if call_result.is_err() {
+            Promise::new(account_id).transfer(deposit);
+            log!("The team is incomplete");
+            return false;
+        }
+
+        let team = call_result.unwrap();
+
         let mut available_players_by_deposit = self.available_players.get(&deposit).unwrap_or_else(|| {
-            UnorderedMap::new(AvailablePlayers {deposit: hash_account_id(&serde_json::to_string(&deposit).expect(""))}.try_to_vec().unwrap())
+            UnorderedMap::new(StorageKey::AvailablePlayers {deposit: hash_account_id(&serde_json::to_string(&deposit).expect(""))}.try_to_vec().unwrap())
         });
 
         if available_players_by_deposit.len() == 0 {
@@ -150,6 +173,8 @@ impl Hockey {
 
             self.start_game(opponent_id.0.clone());
         }
+
+        true
     }
 
     pub fn start_game(&mut self, opponent_id: AccountId) -> GameId {

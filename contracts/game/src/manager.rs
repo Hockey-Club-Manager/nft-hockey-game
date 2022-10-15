@@ -11,7 +11,7 @@ use crate::*;
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct TokenBalance {
-    pub(crate) token_id: Option<AccountId>,
+    pub(crate) token_id: Option<String>,
     pub(crate) balance: Balance,
 }
 

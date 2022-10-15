@@ -59,13 +59,22 @@ pub trait ExtTokensSales{
     fn check_tokens_sales(&self, token_ids: Vec<TokenId>, nft_contract_id: AccountId);
 }
 
+#[ext_contract(this_contract)]
+pub trait Callback {
+    fn on_check_tokens_sales(&mut self, account_id: AccountId, team_ids: TeamIds) -> Promise;
+}
+
 #[near_bindgen]
 impl Contract {
-    pub fn manage_team(&mut self, team_ids: TeamIds, nft_contact_id: AccountId, market_contract_id: AccountId) {
+    pub fn manage_team(
+        &mut self,
+        team_ids: TeamIds,
+        nft_contact_id: AccountId,
+        market_contract_id: AccountId
+    ) -> Promise {
         let account_id = predecessor_account_id();
 
         let token_ids = self.check_team_ids(&team_ids);
-        self.nft_team_per_owner.insert(&account_id, &team_ids);
 
         ext_check_tokens_sales::check_tokens_sales(
             token_ids,
@@ -73,7 +82,22 @@ impl Contract {
             &market_contract_id,
             NO_DEPOSIT,
             GAS_FOR_CHECK_TOKENS_SALES)
-            .as_return();
+            .then(
+                this_contract::on_check_tokens_sales(
+                    account_id,
+                    team_ids,
+                    &env::current_account_id(),
+                    NO_DEPOSIT,
+                    GAS_FOR_CHECK_TOKENS_SALES
+                )
+            )
+    }
+
+    #[private]
+    pub fn on_check_tokens_sales(&mut self, account_id: AccountId, team_ids: TeamIds) -> bool {
+        self.nft_team_per_owner.insert(&account_id, &team_ids);
+
+        true
     }
 
     pub fn check_team_ids(&self, team_ids: &TeamIds) -> Vec<TokenId> {
@@ -195,15 +219,21 @@ impl Contract {
         };
     }
 
-    pub fn get_teams(&mut self, account_id_1: AccountId, account_id_2: AccountId) -> (TeamMetadata, TeamMetadata) {
+    pub fn get_teams(&self, account_id_1: AccountId, account_id_2: AccountId) -> (TeamMetadata, TeamMetadata) {
         (self.get_owner_team(&account_id_1), self.get_owner_team(&account_id_2))
     }
 
-    pub fn get_owner_team(&mut self, account_id: &AccountId) -> TeamMetadata {
+    pub fn get_owner_team(&self, account_id: &AccountId) -> TeamMetadata {
+        let team = self.nft_team_per_owner.get(account_id).expect("No team");
+
+        self.check_fives(&team.fives);
+        self.check_goalies(&team.goalies);
+        self.check_goalie_substitution(&team.goalie_substitutions);
+
         TeamMetadata {
-            fives: self.nft_team_per_owner.get(account_id).unwrap().fives,
+            fives: team.fives,
             goalies: self.get_goalie_metadata_by_ids(account_id),
-            goalie_substitutions: self.nft_team_per_owner.get(account_id).unwrap().goalie_substitutions,
+            goalie_substitutions: team.goalie_substitutions,
             field_players_metadata: self.get_field_players_metadata(account_id),
         }
     }

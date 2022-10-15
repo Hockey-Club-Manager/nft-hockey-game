@@ -5,7 +5,7 @@ use near_sdk::serde::{Deserialize, Serialize};
 
 
 #[derive(BorshDeserialize, BorshSerialize)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[derive(Clone)]
 pub struct PlayerMetadata {
     pub title: Option<String>,
@@ -37,7 +37,7 @@ pub enum Hand {
 
 #[derive(PartialEq, Clone, Copy, BorshDeserialize, BorshSerialize)]
 #[derive(Eq, PartialOrd, Hash, Ord)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum PlayerPosition {
     #[serde(alias = "C")]
@@ -64,7 +64,7 @@ pub enum PlayerPosition {
 
 #[derive(PartialEq, Clone, Copy, BorshDeserialize, BorshSerialize)]
 #[derive(Eq, PartialOrd, Hash, Ord)]
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(crate = "near_sdk::serde")]
 pub enum GoalieSubstitution {
     #[serde(alias = "GS1")]
