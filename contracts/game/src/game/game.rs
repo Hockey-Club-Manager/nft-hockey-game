@@ -354,7 +354,9 @@ impl Game {
         }
     }
 
-    pub fn generate_event(&self, action: ActionTypes) -> Event {
+    pub fn generate_event(&mut self, action: ActionTypes) -> Event {
+        self.last_action = action;
+
         Event {
             user1: self.user1.clone(),
             user2: self.user2.clone(),
@@ -411,7 +413,7 @@ pub fn get_amount_of_spent_strength(ice_time_priority: IceTimePriority) -> u8 {
 }
 
 impl Game {
-    pub fn get_game_state(&self) -> (GameState, Option<Event>) {
+    pub fn get_game_state(&mut self) -> (GameState, Option<Event>) {
         return if self.is_game_over() {
             (GameState::GameOver { winner_id: self.get_winner_id() },
              Some(self.generate_event(GameFinished)))
@@ -569,7 +571,7 @@ impl Game {
         events
     }
 
-    fn check_end_of_period(&self) -> Option<Event> {
+    fn check_end_of_period(&mut self) -> Option<Event> {
         if [25, 50, 75].contains(&self.turns) {
             return Some(self.generate_event(EndOfPeriod));
         }

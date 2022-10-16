@@ -56,7 +56,8 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
 fn to_field_players(field_players_metadata: &HashMap<TokenId, PlayerMetadata>, user_id: &usize) -> HashMap<TokenId, FieldPlayer> {
     let mut result: HashMap<TokenId, FieldPlayer> = HashMap::new();
     for (token_id, field_player_metadata) in field_players_metadata {
-        let field_player = to_field_player((*field_player_metadata).clone(), user_id);
+        let mut field_player = to_field_player((*field_player_metadata).clone(), user_id);
+        field_player.id = Some(token_id.clone());
         result.insert(token_id.clone(), field_player);
     }
 
