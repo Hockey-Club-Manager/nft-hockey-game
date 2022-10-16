@@ -1,12 +1,13 @@
 use crate::game::actions::action::ActionTypes::{Dangle, PokeCheck};
 use crate::game::actions::action::{DoAction};
-use crate::{Game};
+use crate::{Event, Game};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 
 pub struct DangleAction;
 impl DoAction for DangleAction {
-    fn do_action(&self, game: &mut Game) {
-        game.generate_an_event(Dangle);
+    fn do_action(&self, game: &mut Game) -> Vec<Event> {
+        let mut events = Vec::new();
+        events.push(game.generate_event(Dangle));
 
         let opponent = game.get_opponent_field_player();
         let opponent_stat = get_relative_field_player_stat(
@@ -29,7 +30,9 @@ impl DoAction for DangleAction {
         } else {
             game.player_with_puck = Option::from((opponent.1.get_user_id(), opponent.1.get_player_id()));
 
-            game.generate_an_event(PokeCheck);
+            events.push(game.generate_event(PokeCheck));
         }
+
+        events
     }
 }

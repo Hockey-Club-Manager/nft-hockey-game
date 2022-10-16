@@ -1,4 +1,4 @@
-use crate::{Game, PlayerPosition};
+use crate::{Event, Game, PlayerPosition};
 use crate::game::actions::action::{DoAction};
 use crate::game::actions::action::ActionTypes::{Pass, PassCatched};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
@@ -6,7 +6,7 @@ use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, Right
 
 pub struct PassAction;
 impl DoAction for PassAction {
-    fn do_action(&self, game: &mut Game) {
+    fn do_action(&self, game: &mut Game) -> Vec<Event> {
         let opponent= game.get_opponent_field_player();;
         let mut opponent_stat = get_relative_field_player_stat(&opponent.1, opponent.1.stats.get_iq()) * opponent.0;
 
@@ -25,14 +25,15 @@ impl DoAction for PassAction {
             opponent_stat += center.stats.get_iq();
         }
 
-        if has_won(player_with_puck_stat, opponent_stat) {
+        return if has_won(player_with_puck_stat, opponent_stat) {
             let new_player_with_id = game.get_field_player_id_by_pos(player_with_puck.get_user_id(), &pass_to);
             game.player_with_puck = Option::from((player_with_puck.get_user_id(), new_player_with_id.clone()));
 
-            game.generate_an_event(Pass);
+            vec![game.generate_event(Pass)]
         } else {
             game.player_with_puck = Option::from((opponent.1.get_user_id(), opponent.1.get_player_id()));
-            game.generate_an_event(PassCatched);
+
+            vec![game.generate_event(PassCatched)]
         }
     }
 }

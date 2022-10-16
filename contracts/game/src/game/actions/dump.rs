@@ -1,4 +1,4 @@
-use crate::{FieldPlayer, Game, PlayerPosition, TokenId, UserInfo};
+use crate::{Event, FieldPlayer, Game, PlayerPosition, TokenId, UserInfo};
 use crate::game::actions::action::{ActionTypes, DoAction};
 use crate::game::actions::action::ActionTypes::{Icing, PassCatched};
 use crate::team::five::FiveIds;
@@ -15,24 +15,25 @@ const PROBABILITY_DUMP_OUT_TO_DEFENDER: usize = 50;
 pub struct DumpAction;
 
 impl DoAction for DumpAction {
-    fn do_action(&self, game: &mut Game) {
-        if game.zone_number == 2 {
-            self.do_dump_in(game);
+    fn do_action(&self, game: &mut Game) -> Vec<Event> {
+        return if game.zone_number == 2 {
+            self.do_dump_in(game)
         } else {
-            self.do_dump_out(game);
+            self.do_dump_out(game)
         }
     }
 }
 
 impl DumpAction {
-    fn do_dump_in(&self, game: &mut Game) {
-        if self.is_icing_in_neutral_zone(game) {
-            return;
+    fn do_dump_in(&self, game: &mut Game) -> Vec<Event> {
+        let icing_events = self.is_icing_in_neutral_zone(game);
+        if icing_events.is_none() {
+            self.dump_to_attack_zone(game);
+
+            return vec![game.generate_event(ActionTypes::DumpIn)];
         }
 
-        self.dump_to_attack_zone(game);
-
-        game.generate_an_event(ActionTypes::DumpIn);
+        icing_events.unwrap()
     }
 
     fn dump_to_attack_zone(&self, game: &mut Game) {
@@ -56,7 +57,7 @@ impl DumpAction {
     fn is_icing_in_neutral_zone(
         &self,
         game: &mut Game
-    ) -> bool {
+    ) -> Option<Vec<Event>> {
         let player_with_puck = game.get_player_id_with_puck();
 
         let user = game.get_user_info(player_with_puck.0);
@@ -70,9 +71,12 @@ impl DumpAction {
                         let rnd = Game::get_random_in_range(1, 100, 3);
 
                         if ICING_PROBABILITY >= rnd {
-                            game.generate_an_event(ActionTypes::DumpIn);
-                            game.generate_an_event(Icing);
-                            return true;
+                            let mut events = Vec::new();
+
+                            events.push(game.generate_event(ActionTypes::DumpIn));
+                            events.push(game.generate_event(Icing));
+
+                            return Some(events);
                         }
                     },
                     _ => {}
@@ -80,7 +84,7 @@ impl DumpAction {
             }
         }
 
-        false
+        return None;
     }
 
     // Left winger or right winger
@@ -98,14 +102,15 @@ impl DumpAction {
         }
     }
 
-    fn do_dump_out(&self, game: &mut Game) {
-
-        if self.is_pass_catch(game) {
-            return;
+    fn do_dump_out(&self, game: &mut Game) -> Vec<Event> {
+        let pass_events = self.is_pass_catch(game);
+        if pass_events.is_some() {
+            return pass_events.unwrap();
         }
 
-        if self.is_icing_in_defender_zone(game) {
-            return;
+        let icing_events = self.is_icing_in_defender_zone(game);
+        if icing_events.is_some() {
+            return icing_events.unwrap();
         }
 
         let rnd = Game::get_random_in_range(1, 100, 9);
@@ -116,10 +121,10 @@ impl DumpAction {
             self.dump_neutral_zone(game);
         }
 
-        game.generate_an_event(ActionTypes::DumpOut);
+        vec![game.generate_event(ActionTypes::DumpOut)]
     }
 
-    fn is_pass_catch(&self, game: &mut Game) -> bool {
+    fn is_pass_catch(&self, game: &mut Game) -> Option<Vec<Event>> {
         let rnd = Game::get_random_in_range(1, 100, 7);
 
         if PROBABILITY_PASS_CATCH >= rnd {
@@ -134,13 +139,15 @@ impl DumpAction {
             let field_player_id = opponent_active_five.field_players.get(&interception_position).unwrap();
             game.player_with_puck = Option::from((opponent.user_id, field_player_id.clone()));
 
-            game.generate_an_event(ActionTypes::DumpOut);
-            game.generate_an_event(PassCatched);
+            let mut events = Vec::new();
 
-            return true;
+            events.push(game.generate_event(ActionTypes::DumpOut));
+            events.push(game.generate_event(PassCatched));
+
+            return Some(events);
         }
 
-        false
+        None
     }
 
     fn get_interception_position(&self, player_position: &PlayerPosition) -> PlayerPosition {
@@ -155,7 +162,7 @@ impl DumpAction {
         };
     }
 
-    fn is_icing_in_defender_zone(&self, game: &mut Game) -> bool {
+    fn is_icing_in_defender_zone(&self, game: &mut Game) -> Option<Vec<Event>> {
         let rnd = Game::get_random_in_range(1, 100, 8);
         let player_with_puck = game.get_player_id_with_puck();
 
@@ -166,15 +173,17 @@ impl DumpAction {
             FiveNumber::PenaltyKill1 | FiveNumber::PenaltyKill2 => {},
             _ => {
                 if ICING_PROBABILITY >= rnd {
-                    game.generate_an_event(ActionTypes::DumpOut);
-                    game.generate_an_event(Icing);
+                    let mut events = Vec::new();
 
-                    return true;
+                    events.push(game.generate_event(ActionTypes::DumpOut));
+                    events.push(game.generate_event(Icing));
+
+                    return Some(events);
                 }
             }
         }
 
-        false
+        None
     }
 
     fn dump_neutral_zone(&self, game: &mut Game) {

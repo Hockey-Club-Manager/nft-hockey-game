@@ -95,7 +95,6 @@ impl Game {
             turns: 0,
             last_action: StartGame
         };
-        game.generate_an_event(StartGame);
 
         game
     }
@@ -355,21 +354,15 @@ impl Game {
         }
     }
 
-    pub fn generate_an_event(&self ,action: ActionTypes) {
-        let generated_event = Event {
+    pub fn generate_event(&self, action: ActionTypes) -> Event {
+        Event {
             user1: self.user1.clone(),
             user2: self.user2.clone(),
             time: self.last_event_generation_time.clone(),
             zone_number: self.zone_number.clone(),
             action,
             player_with_puck: self.player_with_puck.clone(),
-        };
-
-        let json_event = match serde_json::to_string(&generated_event) {
-            Ok(res) => res,
-            Err(e) => panic!("{}", e)
-        };
-        log!("{}", json_event);
+        }
     }
 
     pub fn do_penalty(
@@ -377,8 +370,8 @@ impl Game {
         penalty_time: u8,
         penalty_player_id: &TokenId,
         user_id: &UserId,
-        penalty_user_id: &UserId)
-    {
+        penalty_user_id: &UserId
+    ) {
         self.penalty_player(penalty_time, penalty_player_id, penalty_user_id);
 
         let penalty_user = self.get_user_info_mut(penalty_user_id);
@@ -418,29 +411,47 @@ pub fn get_amount_of_spent_strength(ice_time_priority: IceTimePriority) -> u8 {
 }
 
 impl Game {
-    pub fn step(&mut self) -> GameState {
-        self.do_action();
+    pub fn get_game_state(&self) -> (GameState, Option<Event>) {
+        return if self.is_game_over() {
+            (GameState::GameOver { winner_id: self.get_winner_id() },
+             Some(self.generate_event(GameFinished)))
+        } else {
+            let state = GameState::InProgress;
 
-        self.check_teams_to_change_active_five();
+            if self.turns == 75 {
+                (state, Some(self.generate_event(Overtime)))
+            } else {
+                (state, None)
+            }
+        };
+    }
+
+    pub fn step(&mut self) -> Vec<Event> {
+        let mut events = self.do_action();
+
+        events.append(&mut self.check_teams_to_change_active_five());
 
         self.reduce_penalty();
 
-        self.check_end_of_period();
+        let end_of_period_event = self.check_end_of_period();
+        if end_of_period_event.is_some() {
+            events.push(end_of_period_event.unwrap());
+        }
 
-        self.get_game_state()
+        events
     }
 
-    fn do_action(&mut self) {
+    fn do_action(&mut self) -> Vec<Event> {
         let action = Action;
 
-        match self.last_action {
+        let events = match self.last_action {
             StartGame | Goal | EndOfPeriod => {
                 self.zone_number = 2;
-                self.face_off(&Center);
+                self.face_off(&Center)
             },
             Fight | PuckOut | NetOff => {
                 let random_position = self.get_random_position();
-                self.face_off(&random_position);
+                self.face_off(&random_position)
             }
             Save => {
                 self.face_off_after_save()
@@ -453,15 +464,16 @@ impl Game {
                 };
 
                 let random_position = self.get_random_position();
-                self.face_off(&random_position);
+                self.face_off(&random_position)
             },
 
             _ => action.do_action(self)
         };
 
 
-
         self.turns += 1;
+
+        events
     }
 
     fn get_random_position(&self) -> PlayerPosition {
@@ -477,7 +489,7 @@ impl Game {
         positions[rnd]
     }
 
-    fn face_off_after_save(&mut self) {
+    fn face_off_after_save(&mut self) -> Vec<Event> {
         let user_player_id = self.get_player_id_with_puck();
         let position_player_with_puck = self.get_player_pos(&user_player_id.1, user_player_id.0);
 
@@ -503,8 +515,8 @@ impl Game {
         self.face_off(&position)
     }
 
-    fn face_off(&mut self, player_position: &PlayerPosition) {
-        self.generate_an_event(FaceOff);
+    fn face_off(&mut self, player_position: &PlayerPosition) -> Vec<Event> {
+        let mut events = vec![self.generate_event(FaceOff)];
 
         let player1 = self.get_field_player_by_pos(1, player_position);
         let user = self.get_user_info(player1.get_user_id());
@@ -525,7 +537,9 @@ impl Game {
             self.player_with_puck = Option::from((player2.get_user_id(), player2.get_player_id()));
         }
 
-        self.generate_an_event(FaceOffWin);
+        events.push(self.generate_event(FaceOffWin));
+
+        events
     }
 
     fn increase_five_time_field(&mut self) {
@@ -536,41 +550,33 @@ impl Game {
         five2.time_field = Some(five2.time_field.unwrap() + 1);
     }
 
-    fn check_teams_to_change_active_five(&mut self) {
+    fn check_teams_to_change_active_five(&mut self) -> Vec<Event> {
+        let mut events = Vec::new();
+
         if self.user1.team.need_change() {
             self.reduce_strength(self.user1.user_id);
             self.user1.team.change_active_five();
 
-            self.generate_an_event(FirstTeamChangeActiveFive);
+            events.push(self.generate_event(FirstTeamChangeActiveFive));
         }
         if self.user2.team.need_change() {
             self.reduce_strength(self.user2.user_id);
             self.user2.team.change_active_five();
 
-            self.generate_an_event(SecondTeamChangeActiveFive);
+            events.push(self.generate_event(SecondTeamChangeActiveFive));
         }
+
+        events
     }
 
-    fn check_end_of_period(&self) {
+    fn check_end_of_period(&self) -> Option<Event> {
         if [25, 50, 75].contains(&self.turns) {
-            self.generate_an_event(EndOfPeriod);
-        }
-    }
-
-    fn get_game_state(&self) -> GameState {
-        let state = if self.is_game_over() {
-            self.generate_an_event(GameFinished);
-            GameState::GameOver { winner_id: self.get_winner_id() }
-        } else {
-            GameState::InProgress
-        };
-
-        if state == GameState::InProgress && self.turns == 75 {
-            self.generate_an_event(Overtime);
+            return Some(self.generate_event(EndOfPeriod));
         }
 
-        state
+        None
     }
+
 
     fn is_game_over(&self) -> bool {
         if self.turns >= 90 && self.user1.team.score != self.user2.team.score {

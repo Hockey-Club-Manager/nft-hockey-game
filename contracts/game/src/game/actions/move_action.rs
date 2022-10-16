@@ -1,12 +1,12 @@
 use crate::game::actions::action::ActionTypes::{Hit, Move};
 use crate::game::actions::action::{DoAction};
-use crate::{Game};
+use crate::{Event, Game};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 
 pub struct MoveAction;
 impl DoAction for MoveAction {
-    fn do_action(&self, game: &mut Game) {
-        game.generate_an_event(Move);
+    fn do_action(&self, game: &mut Game) -> Vec<Event> {
+        let mut events = vec![game.generate_event(Move)];
 
         let opponent = game.get_opponent_field_player();
         let opponent_stat = get_relative_field_player_stat(
@@ -26,7 +26,9 @@ impl DoAction for MoveAction {
             game.zone_number += relative_side_zone;
         } else {
             game.player_with_puck = Option::from((opponent.1.get_user_id(), opponent.1.get_player_id()));
-            game.generate_an_event(Hit);
+            events.push(game.generate_event(Hit));
         }
+
+        events
     }
 }

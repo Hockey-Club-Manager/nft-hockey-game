@@ -234,19 +234,25 @@ impl Hockey {
         game
     }
 
-    pub fn generate_event(&mut self, game_id: GameId) {
+    pub fn generate_event(&mut self, game_id: GameId) -> Option<Vec<Event>> {
         let game: &mut Game = &mut self.internal_get_game(&game_id);
 
         assert!(game.winner_index.is_none(), "Game already finished");
 
         let time = env::block_timestamp();
         if time - game.last_event_generation_time < 1 {
-            return;
+            return None;
         }
 
+        let mut generated_events = game.step();
         game.last_event_generation_time = time;
 
-        match game.step() {
+        let game_state = game.get_game_state();
+        if game_state.1.is_some(){
+            generated_events.push(game_state.1.unwrap());
+        }
+
+        match game_state.0 {
             GameState::GameOver { winner_id: winner_index} => {
                 let winner_account = if game.user1.user_id == winner_index {
                     game.user1.account_id.clone()
@@ -263,6 +269,8 @@ impl Hockey {
         };
 
         self.games.insert(&game_id, &game);
+
+        Some(generated_events)
     }
 
     // TODO make private on release
@@ -273,6 +281,10 @@ impl Hockey {
 
     pub fn get_next_game_id(&self) -> GameId {
         self.next_game_id
+    }
+
+    pub fn test_log(&mut self) -> &'static str {
+        "test log"
     }
 }
 

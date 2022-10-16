@@ -8,6 +8,7 @@ use crate::game::actions::action::ActionTypes::*;
 
 use crate::team::players::player::PlayerPosition::*;
 use near_sdk::serde::{Deserialize, Serialize};
+use crate::Event;
 use crate::game::actions::shot::ShotAction;
 use crate::game::actions::dangle::DangleAction;
 use crate::game::actions::dump::DumpAction;
@@ -76,20 +77,21 @@ pub enum ActionTypes {
 }
 
 pub trait DoAction {
-    fn do_action(&self, game: &mut Game);
+    fn do_action(&self, game: &mut Game) -> Vec<Event>;
 }
 
 pub struct Action;
 impl Action {
-    pub fn do_action(self, game: &mut Game) {
-        if self.random_action_happened(game) {
-            return;
+    pub fn do_action(self, game: &mut Game) -> Vec<Event> {
+        let events =  self.random_action_happened(game);
+        if events.is_none() {
+            return self.choose_and_do_action(game);
         }
 
-        self.choose_and_do_action(game);
+        return events.unwrap();
     }
 
-    fn random_action_happened(&self, game: &mut Game) -> bool{
+    fn random_action_happened(&self, game: &mut Game) -> Option<Vec<Event>>{
         let random_actions: Vec<Box<dyn RandomAction>> = vec![
             Box::new(Giveaway),
             Box::new(Takeaway),
@@ -102,16 +104,14 @@ impl Action {
 
         for action in &random_actions {
             if action.check_probability(game) {
-                action.do_action(game);
-
-                return true;
+                return Some(action.do_action(game));
             }
         }
 
-        false
+        None
     }
 
-    fn choose_and_do_action(&self, game: &mut Game) {
+    fn choose_and_do_action(&self, game: &mut Game) -> Vec<Event> {
         let mut is_attack_zone = false;
         let user_player_id = game.get_player_id_with_puck();
         if game.zone_number == 3 && user_player_id.0 == 1 || game.zone_number == 1 && user_player_id.0 == 2 {
@@ -124,7 +124,7 @@ impl Action {
 
         let action = self.get_action(is_attack_zone, player_with_puck_role, active_five);
 
-        action.do_action(game);
+        action.do_action(game)
     }
 
     fn get_action(&self, is_attack_zone: bool, role: PlayerRole, active_five: &FiveIds) -> Box<dyn DoAction> {

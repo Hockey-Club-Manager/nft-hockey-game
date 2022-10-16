@@ -6,7 +6,7 @@ use crate::team::players::player::GoalieSubstitution;
 
 #[near_bindgen]
 impl Hockey {
-    pub fn take_to(&mut self, game_id: GameId) {
+    pub fn take_to(&mut self, game_id: GameId) -> Event {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
@@ -26,67 +26,82 @@ impl Hockey {
             panic!("Account id not found!")
         }
 
-        game.generate_an_event(TakeTO);
+        let event = game.generate_event(TakeTO);
 
         self.games.insert(&game_id, &game);
+
+        event
     }
 
-
-    pub fn coach_speech(&mut self, game_id: GameId) {
+    pub fn coach_speech(&mut self, game_id: GameId) -> Event {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
-        if game.user1.account_id == account_id {
+        let event = if game.user1.account_id == account_id {
             if !game.user1.coach_speech_called {
                 self.change_stats_coach_speech(&mut game.user1);
-                game.generate_an_event(CoachSpeech);
+                game.generate_event(CoachSpeech)
             } else {
                 panic!("You have already used Coach speech")
             }
         } else if game.user2.account_id == account_id {
             if !game.user2.coach_speech_called {
                 self.change_stats_coach_speech(&mut game.user2);
-                game.generate_an_event(CoachSpeech);
+                game.generate_event(CoachSpeech)
             } else {
                 panic!("You have already used Coach speech")
             }
-        }
+        } else {
+            panic!("The account is not a member of the game")
+        };
+
         self.games.insert(&game_id, &game);
+
+        event
     }
 
-
-    pub fn goalie_out(&mut self, game_id: GameId, goalie_substitution: GoalieSubstitution) {
+    pub fn goalie_out(&mut self, game_id: GameId, goalie_substitution: GoalieSubstitution) -> Event {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
-        if game.user1.account_id == account_id && !game.user1.is_goalie_out {
+        let event = if game.user1.account_id == account_id && !game.user1.is_goalie_out {
             game.user1.is_goalie_out = true;
             game.user1.team.active_goalie_substitutions = goalie_substitution;
             game.user1.team.goalie_out();
-            game.generate_an_event(GoalieOut);
+            game.generate_event(GoalieOut)
         } else if game.user2.account_id == account_id && !game.user2.is_goalie_out {
             game.user2.is_goalie_out = true;
             game.user2.team.active_goalie_substitutions = goalie_substitution;
             game.user2.team.goalie_out();
-            game.generate_an_event(GoalieOut);
-        }
+            game.generate_event(GoalieOut)
+        } else {
+            panic!("Impossible to remove the goalkeeper")
+        };
+
         self.games.insert(&game_id, &game);
+
+        event
     }
 
-    pub fn goalie_back(&mut self, game_id: GameId) {
+    pub fn goalie_back(&mut self, game_id: GameId) -> Event {
         let account_id = env::predecessor_account_id();
         let mut game: Game = self.internal_get_game(&game_id).into();
 
-        if game.user1.account_id == account_id  && game.user1.is_goalie_out{
+        let event = if game.user1.account_id == account_id  && game.user1.is_goalie_out{
             game.user1.is_goalie_out = false;
             game.user1.team.goalie_out();
-            game.generate_an_event(GoalieBack);
+            game.generate_event(GoalieBack)
         } else if game.user2.account_id == account_id && game.user2.is_goalie_out{
             game.user2.is_goalie_out = false;
             game.user2.team.goalie_out();
-            game.generate_an_event(GoalieBack);
-        }
+            game.generate_event(GoalieBack)
+        } else {
+            panic!("Impossible to return the goalkeeper")
+        };
+
         self.games.insert(&game_id, &game);
+
+        event
     }
 
     pub fn change_tactic(&mut self, five_number: FiveNumber, tactic: Tactics, game_id: GameId) {

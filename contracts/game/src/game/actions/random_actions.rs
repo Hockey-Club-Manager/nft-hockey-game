@@ -1,5 +1,5 @@
 use std::arch::global_asm;
-use crate::{Game, PlayerPosition};
+use crate::{Event, Game, PlayerPosition};
 use crate::game::actions::action::ActionTypes::Battle;
 use crate::game::actions::action::{ActionTypes, DoAction};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
@@ -21,7 +21,7 @@ pub const BIG_PENALTY: u8 = 12; // number of events
 
 pub trait RandomAction {
     fn check_probability(&self, game: &Game) -> bool;
-    fn do_action(&self, game: &mut Game);
+    fn do_action(&self, game: &mut Game) -> Vec<Event>;
 }
 
 pub struct Giveaway;
@@ -35,19 +35,24 @@ impl RandomAction for Giveaway {
         false
     }
 
-    fn do_action(&self, game: &mut Game) {
-        game.generate_an_event(ActionTypes::Giveaway);
+    fn do_action(&self, game: &mut Game) -> Vec<Event> {
+        let mut events = vec![game.generate_event(ActionTypes::Giveaway)];
 
         let rnd = Game::get_random_in_range(1, 100, 12);
 
         if PROBABILITY_BATTLE >= rnd {
-            battle(game);
+            events.push(battle(game));
         } else {
             let opponent_player = game.get_opponent_field_player();
             game.player_with_puck = Option::from((opponent_player.1.get_user_id(), opponent_player.1.get_player_id()));
         }
+
+        events
     }
-} fn battle(game: &mut Game) { let player_with_puck = game.get_player_with_puck(); let opponent_player = game.get_opponent_field_player();
+}
+
+fn battle(game: &mut Game) -> Event {
+    let player_with_puck = game.get_player_with_puck(); let opponent_player = game.get_opponent_field_player();
     let player1_stat = (
         player_with_puck.stats.puck_control +
         player_with_puck.stats.aggressiveness +
@@ -67,7 +72,7 @@ impl RandomAction for Giveaway {
         game.player_with_puck = Option::from((opponent_player.1.get_user_id(), opponent_player.1.get_player_id()));
     }
 
-    game.generate_an_event(Battle);
+    game.generate_event(Battle)
 }
 
 pub struct Takeaway;
@@ -81,17 +86,19 @@ impl RandomAction for Takeaway {
         false
     }
 
-    fn do_action(&self, game: &mut Game) {
-        game.generate_an_event(ActionTypes::Giveaway);
+    fn do_action(&self, game: &mut Game) -> Vec<Event> {
+        let mut events = vec![game.generate_event(ActionTypes::Giveaway)];
 
         let rnd = Game::get_random_in_range(1, 100, 14);
 
         if PROBABILITY_BATTLE >= rnd {
-            battle(game);
+            events.push(battle(game));
         } else {
             let opponent_player = game.get_opponent_field_player();
             game.player_with_puck = Option::from((opponent_player.1.get_user_id(), opponent_player.1.get_player_id()));
         }
+
+        events
     }
 }
 
@@ -106,8 +113,8 @@ impl RandomAction for PuckOut {
         false
     }
 
-    fn do_action(&self, game: &mut Game) {
-        game.generate_an_event(ActionTypes::PuckOut);
+    fn do_action(&self, game: &mut Game) -> Vec<Event> {
+        vec![game.generate_event(ActionTypes::PuckOut)]
     }
 }
 
@@ -122,7 +129,7 @@ impl RandomAction for BigPenalty {
         false
     }
 
-    fn do_action(&self, game: &mut Game) {
+    fn do_action(&self, game: &mut Game) -> Vec<Event> {
         let player_with_puck = game.get_player_with_puck();
         let opponent_player = game.get_opponent_field_player();
 
@@ -147,7 +154,7 @@ impl RandomAction for BigPenalty {
                             &penalty_user_id);
         }
 
-        game.generate_an_event(ActionTypes::BigPenalty);
+        vec![game.generate_event(ActionTypes::BigPenalty)]
     }
 }
 
@@ -162,7 +169,7 @@ impl RandomAction for SmallPenalty {
         false
     }
 
-    fn do_action(&self, game: &mut Game) {
+    fn do_action(&self, game: &mut Game) -> Vec<Event> {
         let player_with_puck = game.get_player_with_puck();
         let opponent_player = game.get_opponent_field_player();
 
@@ -187,7 +194,7 @@ impl RandomAction for SmallPenalty {
                             &penalty_user_id);
         }
 
-        game.generate_an_event(ActionTypes::SmallPenalty);
+        vec![game.generate_event(ActionTypes::SmallPenalty)]
     }
 }
 
@@ -202,7 +209,7 @@ impl RandomAction for Fight {
         false
     }
 
-    fn do_action(&self, game: &mut Game) {
+    fn do_action(&self, game: &mut Game) -> Vec<Event> {
         let player_with_puck = game.get_player_with_puck();
         let user_id_with_puck = player_with_puck.get_user_id();
 
@@ -221,7 +228,7 @@ impl RandomAction for Fight {
             self.reduce_morale_opponent_team(game, &user_id_with_puck);
         }
 
-        game.generate_an_event(ActionTypes::Fight);
+        vec![game.generate_event(ActionTypes::Fight)]
     }
 }
 
@@ -258,7 +265,7 @@ impl RandomAction for NetOff {
         false
     }
 
-    fn do_action(&self, game: &mut Game) {
-        game.generate_an_event(ActionTypes::NetOff);
+    fn do_action(&self, game: &mut Game) -> Vec<Event> {
+        vec![game.generate_event(ActionTypes::NetOff)]
     }
 }
