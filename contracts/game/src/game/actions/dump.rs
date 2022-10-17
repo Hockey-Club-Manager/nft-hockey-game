@@ -3,6 +3,7 @@ use crate::game::actions::action::{ActionTypes, DoAction};
 use crate::game::actions::action::ActionTypes::{Icing, PassCatched};
 use crate::team::five::FiveIds;
 use crate::team::numbers::FiveNumber;
+use crate::team::numbers::FiveNumber::{PenaltyKill1, PenaltyKill2};
 
 
 const ICING_PROBABILITY: usize = 10;
@@ -38,14 +39,16 @@ impl DumpAction {
 
     fn dump_to_attack_zone(&self, game: &mut Game) {
         let user_player_id = game.get_player_id_with_puck();
-        let position_to_dump = self.get_random_lw_rw_pos(game, &user_player_id);
 
         let user = game.get_user_info(user_player_id.0);
         let active_five = user.team.get_active_five();
 
+        let player_position = game.get_player_pos(&user_player_id.1, user_player_id.0);
+        let position_to_dump = self.get_random_pos_to_dump(player_position, &active_five);
+
         let player_id_to_dump = active_five.field_players.get(position_to_dump).unwrap();
 
-        game.player_with_puck = Option::from((user_player_id.0, player_id_to_dump.clone()));
+        game.player_with_puck = Option::from((user.user_id, player_id_to_dump.clone()));
 
         if user_player_id.0 == 1 {
             game.zone_number = 3;
@@ -87,11 +90,17 @@ impl DumpAction {
         return None;
     }
 
-    // Left winger or right winger
-    fn get_random_lw_rw_pos(&self, game: &mut Game, user_player_id: &(usize, TokenId)) -> &PlayerPosition {
-        let rnd = Game::get_random_in_range(1, 100, 4);
+    fn get_random_pos_to_dump(&self, player_position: &PlayerPosition, five: &FiveIds) -> &PlayerPosition {
+        if five.number == PenaltyKill1 || five.number == PenaltyKill2 {
+            let number_of_field_players = five.get_number_of_players();
+            return if number_of_field_players == 4 {
+                &PlayerPosition::RightWing
+            } else {
+                &PlayerPosition::Center
+            }
+        }
 
-        let player_position = game.get_player_pos(&user_player_id.1, user_player_id.0);
+        let rnd = Game::get_random_in_range(1, 100, 4);
 
         return if POSITION_PROBABILITY >= rnd && PlayerPosition::LeftWing != *player_position {
             &PlayerPosition::LeftWing
@@ -195,7 +204,7 @@ impl DumpAction {
 
         let player_id_to_dump = active_five.field_players.get(&position_to_dump).unwrap();
 
-        game.player_with_puck = Option::from((user_player_id.0, player_id_to_dump.clone()));
+        game.player_with_puck = Option::from((user.user_id, player_id_to_dump.clone()));
 
         game.zone_number = 2;
     }

@@ -13,7 +13,7 @@ use crate::{TokenBalance};
 use crate::game::actions::random_actions::BIG_PENALTY;
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::LeftWing;
-use crate::team::five::IceTimePriority;
+use crate::team::five::{FiveIds, IceTimePriority};
 use crate::team::five::Tactics::Neutral;
 use crate::team::numbers::FiveNumber::{First, PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2};
 use crate::team::team::Team;
@@ -75,7 +75,7 @@ impl Game {
         };
 
         let user_info2 = UserInfo {
-            user_id: 1,
+            user_id: 2,
             team: team2,
             account_id: account_id_2,
             take_to_called: false,
@@ -111,30 +111,45 @@ impl Game {
         let user_info = self.get_user_info(user_id);
         let five = user_info.team.get_active_five();
         let player_id = match five.field_players.get(position) {
-            Some(id) => id,
-            None => {
-                match position {
-                    RightWing => {
-                        five.field_players.get(&RightDefender).unwrap()
-                    },
-                    LeftWing => {
-                        let number_of_players = five.field_players.len();
-                        if number_of_players == 4 {
-                            five.field_players.get(&RightWing).unwrap()
-                        } else {
-                            five.field_players.get(&LeftDefender).unwrap()
-                        }
-                    },
-                    _ => panic!("")
+            Some(id) => {
+                if *id == "" {
+                    self.get_player_id_by_penalty_pos(position, five)
+                } else {
+                    id.clone()
                 }
-            }
+            },
+            None => self.get_player_id_by_penalty_pos(position, five)
         };
 
-        user_info.team.get_field_player(player_id)
+        user_info.team.get_field_player(&player_id)
+    }
+
+    fn get_player_id_by_penalty_pos(
+        &self,
+        position: &PlayerPosition,
+        five: &FiveIds
+    ) -> TokenId {
+        match position {
+            RightWing => {
+                let player_id = five.field_players.get(&RightDefender).unwrap();
+                player_id.clone()
+            },
+            LeftWing => {
+                let number_of_players = five.get_number_of_players();
+                let player_id = if number_of_players == 4 {
+                    five.field_players.get(&RightWing).unwrap()
+                } else {
+                    five.field_players.get(&LeftDefender).unwrap()
+                };
+
+                player_id.clone()
+            },
+            _ => panic!("Player id not found. Position: {}", position)
+        }
     }
 
     pub fn get_field_player_by_pos_mut(&mut self, user_id: UserId, position: &PlayerPosition) -> &mut FieldPlayer {
-        let user_info = self.get_user_info_mut(&user_id);
+            let user_info = self.get_user_info_mut(&user_id);
         let player_id = user_info.team.get_active_five().field_players.get(position).unwrap().clone();
 
         user_info.team.get_field_player_mut(&player_id)
@@ -218,7 +233,6 @@ impl Game {
 
     pub fn get_opponent_field_player(&self) -> (f32, &FieldPlayer) {
         let user_player_ids = self.player_with_puck.clone().unwrap();
-
         let position = self.get_coeff_player_pos(&user_player_ids);
 
         return if user_player_ids.0 == 1 {
@@ -251,7 +265,6 @@ impl Game {
 
         let result = self.get_opponent_position(&active_five.field_players,&opponent_active_five.field_players,field_player_pos);
         (result.0, result.1.clone())
-
     }
 
     pub fn get_opponent_position(
@@ -355,7 +368,22 @@ impl Game {
     }
 
     pub fn generate_event(&mut self, action: ActionTypes) -> Event {
-        self.last_action = action;
+        let non_game_events: Vec<ActionTypes> = vec![
+            TakeTO,
+            CoachSpeech,
+            GoalieOut,
+            GoalieBack,
+
+            FirstTeamChangeActiveFive,
+            SecondTeamChangeActiveFive,
+
+            EndedPenaltyForTheFirstTeam,
+            EndedPenaltyForTheSecondTeam,
+        ];
+
+        if !non_game_events.contains(&action) {
+            self.last_action = action;
+        }
 
         Event {
             user1: self.user1.clone(),
@@ -432,8 +460,7 @@ impl Game {
         let mut events = self.do_action();
 
         events.append(&mut self.check_teams_to_change_active_five());
-
-        self.reduce_penalty();
+        events.append(&mut self.reduce_penalty());
 
         let end_of_period_event = self.check_end_of_period();
         if end_of_period_event.is_some() {
@@ -558,17 +585,39 @@ impl Game {
         if self.user1.team.need_change() {
             self.reduce_strength(self.user1.user_id);
             self.user1.team.change_active_five();
+            self.change_player_with_puck(self.user1.user_id);
 
             events.push(self.generate_event(FirstTeamChangeActiveFive));
         }
         if self.user2.team.need_change() {
             self.reduce_strength(self.user2.user_id);
             self.user2.team.change_active_five();
+            self.change_player_with_puck(self.user2.user_id);
 
             events.push(self.generate_event(SecondTeamChangeActiveFive));
         }
 
         events
+    }
+
+    fn change_player_with_puck(&mut self, user_id: UserId) {
+        let wrapped_player_with_puck = self.player_with_puck.clone();
+
+        let player_with_puck = if wrapped_player_with_puck.is_some() {
+            wrapped_player_with_puck.unwrap()
+        } else {
+            return;
+        };
+
+        if player_with_puck.0 != user_id {
+            return;
+        }
+
+        let pos_player_with_puck = self.get_player_pos(&player_with_puck.1, player_with_puck.0);
+        let new_player_with_puck = self.get_field_player_by_pos(user_id, pos_player_with_puck);
+        let player_id = new_player_with_puck.id.clone().expect("Player id not found");
+
+        self.player_with_puck = Some((user_id, player_id));
     }
 
     fn check_end_of_period(&mut self) -> Option<Event> {
@@ -596,18 +645,31 @@ impl Game {
          }
     }
 
-    fn reduce_penalty(&mut self) {
-        self.reduce_user_player_penalty(&1);
-        self.reduce_user_player_penalty(&2);
+    fn reduce_penalty(&mut self) -> Vec<Event> {
+        let mut events = Vec::new();
+
+        let first_team_event = self.reduce_user_player_penalty(&1);
+        if first_team_event.is_some() {
+            events.push(first_team_event.unwrap());
+        }
+
+        let second_team_event = self.reduce_user_player_penalty(&2);
+        if second_team_event.is_some() {
+            events.push(second_team_event.unwrap());
+        }
+
+        events
     }
 
-    fn reduce_user_player_penalty(&mut self, user_id: &UserId) {
+    fn reduce_user_player_penalty(&mut self, user_id: &UserId) -> Option<Event> {
         let user = self.get_user_info_mut(user_id);
 
         let mut number_of_liberated_players = 0 as u8;
         let number_of_players_in_five = user.team.get_five_number_of_player();
 
         let number_of_penalty_players = user.team.penalty_players.len();
+        let mut is_ended_penalty = false;
+
         for i in 0.. number_of_penalty_players {
             if i > 1 {
                 break;
@@ -625,6 +687,7 @@ impl Game {
                     active_five.field_players.insert(RightWing, player_id);
                 } else if number_of_players_in_five == 4 {
                     user.team.active_five = First;
+                    is_ended_penalty = true;
                 }
             }
         }
@@ -632,5 +695,19 @@ impl Game {
         for _ in 0..number_of_liberated_players {
             user.team.penalty_players.remove(0);
         }
+
+        let mut result = if is_ended_penalty {
+            if *user_id == 1 as usize {
+                self.change_player_with_puck(1);
+                Some(self.generate_event(EndedPenaltyForTheFirstTeam))
+            } else {
+                self.change_player_with_puck(2);
+                Some(self.generate_event(EndedPenaltyForTheSecondTeam))
+            }
+        } else {
+            None
+        };
+
+        result
     }
 }

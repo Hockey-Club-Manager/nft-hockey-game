@@ -2,6 +2,7 @@ use std::arch::global_asm;
 use crate::team::players::player::{PlayerPosition, PlayerRole};
 use crate::team::players::field_player::FieldPlayer;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
+use near_sdk::log;
 use crate::team::players::player::PlayerRole::*;
 
 use crate::game::actions::action::ActionTypes::*;
@@ -74,7 +75,11 @@ pub enum ActionTypes {
 
     FirstTeamChangeActiveFive,
     SecondTeamChangeActiveFive,
+
+    EndedPenaltyForTheFirstTeam,
+    EndedPenaltyForTheSecondTeam,
 }
+
 
 pub trait DoAction {
     fn do_action(&self, game: &mut Game) -> Vec<Event>;
@@ -122,6 +127,7 @@ impl Action {
         let active_five = user.team.get_active_five();
         let player_with_puck_role = user.team.get_field_player(&user_player_id.1).player_role;
 
+        log!("{} {}", user_player_id.0, user_player_id.1);
         let action = self.get_action(is_attack_zone, player_with_puck_role, active_five);
 
         action.do_action(game)
@@ -141,14 +147,19 @@ impl Action {
         let rnd = Game::get_random_in_range(1, 101, 0) as f32;
 
         return if !is_attack_zone && percent * action_probability[0] >= rnd {
+            log!("Dump");
             Box::new(DumpAction {})
         } else if is_attack_zone && percent * action_probability[2] >= rnd {
+            log!("Shot");
             Box::new(ShotAction {})
         } else if !is_attack_zone && percent * action_probability[1] >= rnd {
+            log!("Move");
             Box::new(MoveAction {})
         } else if !is_attack_zone && percent * action_probability[0] >= rnd {
+            log!("Dangle");
             Box::new(DangleAction {})
         } else {
+            log!("Pass");
             Box::new(PassAction {})
         }
     }

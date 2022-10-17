@@ -146,6 +146,9 @@ impl Hockey {
     fn change_stats_take_to(&self, user1: &mut UserInfo, user2: &mut UserInfo) {
         for (_five_number, five_ids) in user1.team.fives.clone() {
             for (_player_pos, field_player) in five_ids.field_players {
+                if field_player == "" {
+                    continue;
+                }
                 let field_player = user1.team.get_field_player_mut(&field_player);
                 field_player.stats.increase_strength(5);
                 field_player.stats.increase_iq(3)
@@ -158,6 +161,9 @@ impl Hockey {
 
         for (_five_number, five_ids) in user2.team.fives.clone() {
             for (_player_pos, field_player) in five_ids.field_players {
+                if field_player == "" {
+                    continue;
+                }
                 let field_player = user2.team.get_field_player_mut(&field_player);
                 field_player.stats.increase_strength(3);
                 field_player.stats.morale += 3;
@@ -174,6 +180,9 @@ impl Hockey {
     fn change_stats_coach_speech(&self, user: &mut UserInfo) {
         for (_five_number, five_ids) in user.team.fives.clone() {
             for (_player_pos, field_player) in five_ids.field_players {
+                if field_player == "" {
+                    continue;
+                }
                 let field_player = user.team.get_field_player_mut(&field_player);
                 field_player.stats.increase_strength(5);
             }

@@ -1,4 +1,5 @@
 use std::arch::global_asm;
+use near_sdk::log;
 use crate::{Event, Game, PlayerPosition};
 use crate::game::actions::action::ActionTypes::Battle;
 use crate::game::actions::action::{ActionTypes, DoAction};
@@ -122,6 +123,7 @@ pub struct BigPenalty;
 impl RandomAction for BigPenalty {
     fn check_probability(&self, game: &Game) -> bool {
         let rnd = Game::get_random_in_range(1, 100, 16);
+        log!("rnd: {}", rnd);
         if PROBABILITY_BIG_PENALTY >= rnd {
             return true;
         }
@@ -148,6 +150,11 @@ impl RandomAction for BigPenalty {
             let penalty_player_id = player_with_puck.get_player_id();
             let user_id = opponent_player.1.get_user_id();
             let penalty_user_id = player_with_puck.get_user_id();
+
+
+            let opponent_id = opponent_player.1.id.clone().unwrap();
+            game.player_with_puck = Some((user_id, opponent_id));
+
             game.do_penalty(BIG_PENALTY,
                             &penalty_player_id,
                             &user_id,
@@ -188,6 +195,10 @@ impl RandomAction for SmallPenalty {
             let penalty_player_id = player_with_puck.get_player_id();
             let user_id = opponent_player.1.get_user_id();
             let penalty_user_id = player_with_puck.get_user_id();
+
+            let opponent_id = opponent_player.1.id.clone().unwrap();
+            game.player_with_puck = Some((user_id, opponent_id));
+
             game.do_penalty(SMALL_PENALTY,
                             &penalty_player_id,
                             &user_id,

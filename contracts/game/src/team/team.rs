@@ -10,6 +10,7 @@ use crate::PlayerPosition::{AdditionalPosition, Center, LeftDefender, LeftWing, 
 use crate::team::five::{FiveIds, IceTimePriority};
 use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::team::numbers::FiveNumber::*;
+use crate::team::players::field_player;
 use crate::team::players::goalie::Goalie;
 use crate::team::players::player::{GoalieSubstitution, PlayerRole};
 use crate::team::players::player::PlayerRole::*;
@@ -57,34 +58,32 @@ impl Team {
         let (five_number, count_players_in_five) = self.get_number_players_count_active_five();
 
         if five_number == PenaltyKill1 || five_number == PenaltyKill2 {
-            if count_players_in_five == 3 {
-                let player_position = self.remove_player_id_from_five(penalty_player_id);
+            let player_position = self.remove_player_id_from_five(penalty_player_id);
+            log!("Removed position: {}", player_position);
 
+            if count_players_in_five == 3 {
                 let available_players = self.get_available_players(&brigades, &fives);
 
                 let player_id = self.get_player_id_with_max_defence(&available_players);
                 let active_five = self.get_active_five_mut();
                 active_five.field_players.insert(player_position, player_id);
-            } else {
-                let player_position = self.remove_player_id_from_five(penalty_player_id);
-                if player_position != RightWing {
-                    let rw_id = self.get_player_id_by_pos(&RightWing);
+            } else if player_position != RightWing {
+                let rw_id = self.get_player_id_by_pos(&RightWing);
+                self.remove_player_id_from_five(&rw_id);
 
-                    self.remove_player_id_from_five(&rw_id);
+                let available_players = self.get_available_players(&brigades, &fives);
+                let player_id = self.get_player_id_with_max_defence(&available_players);
 
-                    let available_players = self.get_available_players(&brigades, &fives);
-                    let player_id = self.get_player_id_with_max_defence(&available_players);
+                let active_five = self.get_active_five_mut();
+                active_five.field_players.insert(player_position.clone(), player_id.clone());
+                log!("Insert: {} on position: {}", player_position, player_id);
 
-                    let active_five = self.get_active_five_mut();
-                    active_five.field_players.insert(player_position, player_id);
-
-                    if five_number == PenaltyKill1 {
-                        let five = self.fives.get_mut(&PenaltyKill2).unwrap();
-                        five.field_players.remove(&RightWing);
-                    } else {
-                        let five = self.fives.get_mut(&PenaltyKill1).unwrap();
-                        five.field_players.remove(&RightWing);
-                    }
+                if five_number == PenaltyKill1 {
+                    let five = self.fives.get_mut(&PenaltyKill2).unwrap();
+                    five.field_players.remove(&RightWing);
+                } else {
+                    let five = self.fives.get_mut(&PenaltyKill1).unwrap();
+                    five.field_players.remove(&RightWing);
                 }
             }
         } else {
@@ -104,10 +103,10 @@ impl Team {
 
                 let player_position = self.remove_player_id_from_five(penalty_player_id);
                 let player_id = self.get_player_id_with_max_defence(&available_players);
-
                 let new_active_five = self.get_active_five_mut();
                 new_active_five.time_field = Option::from(0 as u8);
 
+                log!("Inserted player_id {}", player_id.clone());
                 new_active_five.field_players.insert(player_position, player_id);
             } else {
                 let new_active_five = self.get_active_five_mut();
@@ -153,7 +152,15 @@ impl Team {
 
     fn get_number_players_count_active_five(&self) -> (FiveNumber, usize) {
         let active_five = self.get_active_five();
-        (active_five.number, active_five.field_players.len())
+        let mut count: usize = 0;
+
+        for (_pos, id) in &active_five.field_players {
+            if *id != "" {
+                count += 1;
+            }
+        }
+
+        (active_five.number, count)
     }
 
     fn remove_player_id_from_five(&mut self, penalty_player_id: &TokenId) -> PlayerPosition {
@@ -186,12 +193,10 @@ impl Team {
         let mut result: Vec<TokenId> = Vec::new();
 
         for five_number in five_numbers.into_iter() {
-            if !five_numbers.contains(&five_number) {
-                let brigade = self.fives.get(five_number).unwrap();
+            let five = self.fives.get(five_number).unwrap();
 
-                for (_pos, token_id) in &brigade.field_players {
-                    result.push(token_id.clone());
-                }
+            for (_pos, token_id) in &five.field_players {
+                result.push(token_id.clone());
             }
         }
 
@@ -208,18 +213,27 @@ impl Team {
 
     pub fn get_field_player_pos(&self, player_id: &TokenId) -> &PlayerPosition {
         let five = self.get_active_five();
+
         for (pos, id) in &five.field_players {
+            log!("{} = {}", player_id, id);
             if *player_id == *id {
                 return pos;
             }
         }
 
-        panic!("Player not found")
+        panic!("Player not found: {}", player_id)
     }
 
     pub fn get_five_number_of_player(&self) -> usize {
         let active_five = self.get_active_five();
-        active_five.field_players.len()
+        let mut count = 0;
+
+        for (_pos, id) in &active_five.field_players {
+            if *id != "" {
+                count += 1;
+            }
+        }
+        count
     }
 
     pub fn get_active_five(&self) -> &FiveIds {
@@ -269,7 +283,6 @@ impl Team {
     }
     
     pub fn change_active_five(&mut self) {
-
         match self.active_five {
             First => {
                 self.active_five = Second;
@@ -298,6 +311,7 @@ impl Team {
         }
 
         let active_five = self.get_active_five_mut();
+
         active_five.time_field = Option::from(0 as u8);
     }
 
@@ -305,7 +319,7 @@ impl Team {
         let goalie_substitute_id = self.goalie_substitutions.get(&self.active_goalie_substitutions).unwrap().clone();
 
         for (_five_number, five_ids) in &mut self.fives {
-            let number_of_players = five_ids.field_players.len();
+            let number_of_players = five_ids.get_number_of_players();
 
             if number_of_players == 5 {
                 five_ids.field_players.insert(AdditionalPosition, goalie_substitute_id.clone());
@@ -319,7 +333,7 @@ impl Team {
 
     pub fn goalie_back(&mut self) {
         for (_five_number, five_ids) in &mut self.fives {
-            let number_of_players = five_ids.field_players.len();
+            let number_of_players = five_ids.get_number_of_players();
 
             if number_of_players == 4 {
                 five_ids.field_players.remove(&RightWing);

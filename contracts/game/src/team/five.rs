@@ -224,6 +224,17 @@ impl FiveIds {
             player.stats.morale += 2;
         }
     }
+
+    pub fn get_number_of_players(&self) -> usize {
+        let mut count = 0;
+        for (_pos, id) in &self.field_players {
+            if *id == "" {
+                count += 1;
+            }
+        }
+
+        count
+    }
 }
 
 #[derive(BorshDeserialize, BorshSerialize)]

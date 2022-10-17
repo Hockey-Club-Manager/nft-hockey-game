@@ -17,7 +17,9 @@ impl DoAction for PassAction {
         let player_with_puck_id = game.get_player_id_with_puck();
         let player_with_puck_pos = game.get_player_pos(&player_with_puck_id.1, player_with_puck_id.0).clone();
 
-        let pass_to = get_another_random_position(&player_with_puck_pos);
+        let user = game.get_user_info(player_with_puck_id.0);
+        let number_of_player_in_five = user.team.get_five_number_of_player();
+        let pass_to = get_another_random_position(&player_with_puck_pos, number_of_player_in_five);
         let is_diagonal_pass = is_diagonal_pass(vec![player_with_puck_pos.clone(), pass_to]);
 
         if is_diagonal_pass {
@@ -47,18 +49,30 @@ fn is_diagonal_pass(positions: Vec<PlayerPosition>) -> bool {
     false
 }
 
-fn get_another_random_position(player_pos: &PlayerPosition) -> PlayerPosition {
-    let player_positions = get_other_positions(player_pos);
+fn get_another_random_position(
+    player_pos: &PlayerPosition,
+    number_of_players_in_five: usize
+) -> PlayerPosition {
+    let player_positions = get_other_positions(player_pos, number_of_players_in_five);
 
-    let random_pos = Game::get_random_in_range(0, 4, 5);
+    let random_pos = Game::get_random_in_range(0, player_positions.len(), 5);
 
     player_positions[random_pos]
 }
 
-fn get_other_positions(player_pos: &PlayerPosition) -> Vec<PlayerPosition> {
-    let mut player_positions = vec![RightWing, LeftWing, Center, RightDefender, LeftDefender];
+fn get_other_positions(
+    player_pos: &PlayerPosition,
+    number_of_players_in_five: usize
+) -> Vec<PlayerPosition> {
+    let mut player_positions = if number_of_players_in_five == 5 {
+        vec![RightWing, LeftWing, Center, RightDefender, LeftDefender]
+    } else if number_of_players_in_five == 4 {
+        vec![RightWing, Center, RightDefender, LeftDefender]
+    } else {
+        vec![Center, RightDefender, LeftDefender]
+    };
 
-    for num in 0..5 {
+    for num in 0..player_positions.len() {
         if *player_pos == player_positions[num] {
             player_positions.remove(num);
             break;

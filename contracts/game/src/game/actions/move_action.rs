@@ -1,3 +1,4 @@
+use near_sdk::log;
 use crate::game::actions::action::ActionTypes::{Hit, Move};
 use crate::game::actions::action::{DoAction};
 use crate::{Event, Game};
@@ -8,6 +9,7 @@ impl DoAction for MoveAction {
     fn do_action(&self, game: &mut Game) -> Vec<Event> {
         let mut events = vec![game.generate_event(Move)];
 
+        log!("opponent");
         let opponent = game.get_opponent_field_player();
         let opponent_stat = get_relative_field_player_stat(
             &opponent.1,
