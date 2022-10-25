@@ -273,7 +273,6 @@ impl Game {
         opponent_players: &HashMap<PlayerPosition, TokenId>,
         position: &PlayerPosition
     ) -> (f32, &PlayerPosition) {
-
         match position {
             Center => {
                 if opponent_players.get(&AdditionalPosition).is_some() && players.get(&AdditionalPosition).is_some() {
@@ -448,7 +447,7 @@ impl Game {
         } else {
             let state = GameState::InProgress;
 
-            if self.turns == 75 {
+            if self.turns == NUMBER_OF_STEPS {
                 (state, Some(self.generate_event(Overtime)))
             } else {
                 (state, None)
@@ -630,7 +629,7 @@ impl Game {
 
 
     fn is_game_over(&self) -> bool {
-        if self.turns >= 90 && self.user1.team.score != self.user2.team.score {
+        if self.turns >= NUMBER_OF_STEPS && self.user1.team.score != self.user2.team.score {
             true
         } else {
             false
@@ -664,11 +663,12 @@ impl Game {
     fn reduce_user_player_penalty(&mut self, user_id: &UserId) -> Option<Event> {
         let user = self.get_user_info_mut(user_id);
 
-        let mut number_of_liberated_players = 0 as u8;
         let number_of_players_in_five = user.team.get_five_number_of_player();
 
         let number_of_penalty_players = user.team.penalty_players.len();
         let mut is_ended_penalty = false;
+
+        let mut liberated_players: Vec<usize> = Vec::new();
 
         for i in 0.. number_of_penalty_players {
             if i > 1 {
@@ -680,7 +680,7 @@ impl Game {
             player.number_of_penalty_events = Some(player.number_of_penalty_events.unwrap() - 1);
 
             if player.number_of_penalty_events.unwrap() == 0 {
-                number_of_liberated_players += 1;
+                liberated_players.push(i);
 
                 if number_of_players_in_five == 3 {
                     let active_five = user.team.get_active_five_mut();
@@ -692,8 +692,11 @@ impl Game {
             }
         }
 
-        for _ in 0..number_of_liberated_players {
-            user.team.penalty_players.remove(0);
+        let mut index = liberated_players.len();
+        while index > 0 {
+            index -= 1;
+            let penalty_index = liberated_players[index];
+            user.team.penalty_players.remove(penalty_index);
         }
 
         let mut result = if is_ended_penalty {

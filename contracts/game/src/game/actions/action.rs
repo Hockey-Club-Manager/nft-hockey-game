@@ -28,6 +28,11 @@ use crate::user_info::UserInfo;
 #[derive(Clone, Copy, PartialEq, BorshDeserialize, BorshSerialize)]
 #[serde(crate = "near_sdk::serde")]
 pub enum ActionTypes {
+    StartGame,
+    EndOfPeriod,
+    Overtime,
+    GameFinished,
+
     Pass,
     PassCatched,
 
@@ -60,13 +65,7 @@ pub enum ActionTypes {
     Fight,
     Battle,
 
-
-    StartGame,
-    EndOfPeriod,
-    GameFinished,
-
     PuckLose,
-    Overtime,
 
     TakeTO,
     CoachSpeech,

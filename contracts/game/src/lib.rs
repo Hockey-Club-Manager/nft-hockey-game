@@ -29,7 +29,7 @@ pub type TokenId = String;
 // 1 NEAR
 const MIN_DEPOSIT: Balance = 1_000_000_000_000_000_000_000_000;
 const ONE_YOCTO: Balance = 1;
-
+const NUMBER_OF_STEPS: u128 = 75;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKey {
@@ -154,8 +154,8 @@ impl Hockey {
             UnorderedMap::new(StorageKey::AvailablePlayers {deposit: hash_account_id(&serde_json::to_string(&deposit).expect(""))}.try_to_vec().unwrap())
         });
 
-        if available_players_by_deposit.len() == 0 {
-            available_players_by_deposit.insert(&account_id, &VGameConfig::Current(GameConfig{
+        return if available_players_by_deposit.len() == 0 {
+            available_players_by_deposit.insert(&account_id, &VGameConfig::Current(GameConfig {
                 deposit: Some(deposit),
                 opponent_id: config.opponent_id
             }));
@@ -163,7 +163,7 @@ impl Hockey {
             self.internal_check_if_has_game_started(&account_id);
             self.available_players.insert(&deposit, &available_players_by_deposit);
             self.teams.insert(&account_id, &team);
-            return None;
+            None
         } else {
             assert!(available_players_by_deposit.get(&account_id).is_none(), "Already in the waiting list the list");
             let available_players = self.get_available_players(0, 1, &available_players_by_deposit);
@@ -172,7 +172,7 @@ impl Hockey {
             let opponent_id = available_players.get(0).expect("Cannot find opponent id");
             self.teams.insert(&account_id, &team);
 
-            return Some(self.start_game(opponent_id.0.clone(), deposit, account_id));
+            Some(self.start_game(opponent_id.0.clone(), deposit, account_id))
         }
     }
 
@@ -281,10 +281,6 @@ impl Hockey {
 
     pub fn get_next_game_id(&self) -> GameId {
         self.next_game_id
-    }
-
-    pub fn test_log(&mut self) -> &'static str {
-        "test log"
     }
 }
 

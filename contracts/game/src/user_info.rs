@@ -205,17 +205,15 @@ impl Hockey {
                     account_id: AccountId,
                     config: GameConfig,
                     #[callback_result] call_result: Result<(TeamMetadata, TeamMetadata), PromiseError>
-    ) -> bool {
+    ) -> Option<Game> {
         if call_result.is_err() {
             log!("The team is incomplete");
             Promise::new(account_id).transfer(config.deposit.unwrap());
             Promise::new(config.opponent_id.unwrap()).transfer(config.deposit.unwrap());
-            return false;
+            return None;
         }
         let teams = call_result.unwrap();
-        self.init_game(opponent_id, account_id, config, teams);
-
-        true
+        Some(self.init_game(opponent_id, account_id, config, teams))
     }
 
     pub fn decline_request_play(&mut self, friend_id: AccountId) {

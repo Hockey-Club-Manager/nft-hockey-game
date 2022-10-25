@@ -1,5 +1,5 @@
 use crate::*;
-use near_sdk::promise_result_as_success;
+use near_sdk::{log, promise_result_as_success};
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
@@ -218,7 +218,6 @@ impl Contract {
         sale: Sale,
         price: U128,
     ) -> U128 {
-
         // checking for payout information
         let payout_option = promise_result_as_success().and_then(|value| {
             // None means a bad payout from bad NFT contracts
@@ -255,6 +254,9 @@ impl Contract {
         };
         // Going to payout everyone, first return all outstanding bids (accepted offer bid was already removed)
         self.refund_all_bids(&sale.bids);
+
+        let owner_id = sale.owner_id.clone();
+        log!("{{ owner_id: {}, buyer_id: {} }}", owner_id, buyer_id);
 
         // NEAR payouts
         if ft_token_id == "near" {
