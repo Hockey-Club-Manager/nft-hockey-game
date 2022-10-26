@@ -1,4 +1,4 @@
-use near_sdk::{AccountId, Balance, env, log, Promise, PromiseOrValue};
+use near_sdk::{AccountId, Balance, log, Promise, PromiseOrValue};
 use near_sdk::collections::{UnorderedMap, UnorderedSet};
 use near_sdk::json_types::U128;
 use crate::{Game, GameId, Hockey, StorageKey};

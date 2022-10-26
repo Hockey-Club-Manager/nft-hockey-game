@@ -1,8 +1,7 @@
-use crate::{Event, FieldPlayer, Game, PlayerPosition, TokenId, UserInfo};
+use crate::{Game, PlayerPosition, TokenId};
 use crate::game::actions::action::{ActionTypes, DoAction};
 use crate::game::actions::action::ActionTypes::{Icing, PassCatched};
 use crate::team::five::FiveIds;
-use crate::team::numbers::FiveNumber;
 use crate::team::numbers::FiveNumber::{PenaltyKill1, PenaltyKill2};
 
 
@@ -16,7 +15,7 @@ const PROBABILITY_DUMP_OUT_TO_DEFENDER: usize = 50;
 pub struct DumpAction;
 
 impl DoAction for DumpAction {
-    fn do_action(&self, game: &mut Game) -> Vec<Event> {
+    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
         return if game.zone_number == 2 {
             self.do_dump_in(game)
         } else {
@@ -26,15 +25,15 @@ impl DoAction for DumpAction {
 }
 
 impl DumpAction {
-    fn do_dump_in(&self, game: &mut Game) -> Vec<Event> {
-        let icing_events = self.is_icing_in_neutral_zone(game);
-        if icing_events.is_none() {
+    fn do_dump_in(&self, game: &mut Game) -> Vec<ActionTypes> {
+        let icing_actions = self.is_icing_in_neutral_zone(game);
+        if icing_actions.is_none() {
             self.dump_to_attack_zone(game);
 
-            return vec![game.generate_event(ActionTypes::DumpIn)];
+            return vec![ActionTypes::DumpIn];
         }
 
-        icing_events.unwrap()
+        icing_actions.unwrap()
     }
 
     fn dump_to_attack_zone(&self, game: &mut Game) {
@@ -60,26 +59,23 @@ impl DumpAction {
     fn is_icing_in_neutral_zone(
         &self,
         game: &mut Game
-    ) -> Option<Vec<Event>> {
+    ) -> Option<Vec<ActionTypes>> {
         let player_with_puck = game.get_player_id_with_puck();
 
         let user = game.get_user_info(player_with_puck.0);
         let active_five = user.team.get_active_five();
 
         match active_five.number {
-            FiveNumber::PenaltyKill1 | FiveNumber::PenaltyKill2 => {},
+            PenaltyKill1 | PenaltyKill2 => {},
             _ => {
                 match user.team.get_field_player_pos(&player_with_puck.1) {
                     PlayerPosition::LeftDefender | PlayerPosition::RightDefender => {
                         let rnd = Game::get_random_in_range(1, 100, 3);
 
                         if ICING_PROBABILITY >= rnd {
-                            let mut events = Vec::new();
+                            let mut actions = vec![ActionTypes::DumpIn, Icing];
 
-                            events.push(game.generate_event(ActionTypes::DumpIn));
-                            events.push(game.generate_event(Icing));
-
-                            return Some(events);
+                            return Some(actions);
                         }
                     },
                     _ => {}
@@ -90,7 +86,11 @@ impl DumpAction {
         return None;
     }
 
-    fn get_random_pos_to_dump(&self, player_position: &PlayerPosition, five: &FiveIds) -> &PlayerPosition {
+    fn get_random_pos_to_dump(
+        &self,
+        player_position: &PlayerPosition,
+        five: &FiveIds
+    ) -> &PlayerPosition {
         if five.number == PenaltyKill1 || five.number == PenaltyKill2 {
             let number_of_field_players = five.get_number_of_players();
             return if number_of_field_players == 4 {
@@ -111,15 +111,15 @@ impl DumpAction {
         }
     }
 
-    fn do_dump_out(&self, game: &mut Game) -> Vec<Event> {
-        let pass_events = self.is_pass_catch(game);
-        if pass_events.is_some() {
-            return pass_events.unwrap();
+    fn do_dump_out(&self, game: &mut Game) -> Vec<ActionTypes> {
+        let pass_actions = self.is_pass_catch(game);
+        if pass_actions.is_some() {
+            return pass_actions.unwrap();
         }
 
-        let icing_events = self.is_icing_in_defender_zone(game);
-        if icing_events.is_some() {
-            return icing_events.unwrap();
+        let icing_actons = self.is_icing_in_defender_zone(game);
+        if icing_actons.is_some() {
+            return icing_actons.unwrap();
         }
 
         let rnd = Game::get_random_in_range(1, 100, 9);
@@ -130,10 +130,10 @@ impl DumpAction {
             self.dump_neutral_zone(game);
         }
 
-        vec![game.generate_event(ActionTypes::DumpOut)]
+        vec![ActionTypes::DumpOut]
     }
 
-    fn is_pass_catch(&self, game: &mut Game) -> Option<Vec<Event>> {
+    fn is_pass_catch(&self, game: &mut Game) -> Option<Vec<ActionTypes>> {
         let rnd = Game::get_random_in_range(1, 100, 7);
 
         if PROBABILITY_PASS_CATCH >= rnd {
@@ -148,10 +148,7 @@ impl DumpAction {
             let field_player_id = opponent_active_five.field_players.get(&interception_position).unwrap();
             game.player_with_puck = Option::from((opponent.user_id, field_player_id.clone()));
 
-            let mut events = Vec::new();
-
-            events.push(game.generate_event(ActionTypes::DumpOut));
-            events.push(game.generate_event(PassCatched));
+            let mut events = vec![ActionTypes::DumpOut, PassCatched];
 
             return Some(events);
         }
@@ -171,7 +168,7 @@ impl DumpAction {
         };
     }
 
-    fn is_icing_in_defender_zone(&self, game: &mut Game) -> Option<Vec<Event>> {
+    fn is_icing_in_defender_zone(&self, game: &mut Game) -> Option<Vec<ActionTypes>> {
         let rnd = Game::get_random_in_range(1, 100, 8);
         let player_with_puck = game.get_player_id_with_puck();
 
@@ -179,15 +176,12 @@ impl DumpAction {
         let active_five = user.team.get_active_five();
 
         match active_five.number {
-            FiveNumber::PenaltyKill1 | FiveNumber::PenaltyKill2 => {},
+            PenaltyKill1 | PenaltyKill2 => {},
             _ => {
                 if ICING_PROBABILITY >= rnd {
-                    let mut events = Vec::new();
+                    let mut actions = vec![ActionTypes::DumpOut, Icing];
 
-                    events.push(game.generate_event(ActionTypes::DumpOut));
-                    events.push(game.generate_event(Icing));
-
-                    return Some(events);
+                    return Some(actions);
                 }
             }
         }

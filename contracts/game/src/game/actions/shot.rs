@@ -1,10 +1,9 @@
 use crate::game::actions::action::ActionTypes::{Goal, Pass, Rebound, Save, Shot, ShotBlocked, ShotMissed};
-use crate::{Event, FieldPlayer, Game};
-use crate::game::actions::action::DoAction;
-use crate::game::actions::utils::{get_opponent_user, get_relative_field_player_stat, has_won};
+use crate::{Game};
+use crate::game::actions::action::{ActionTypes, DoAction};
+use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 use crate::team::players::goalie::Goalie;
-use crate::team::players::player::PlayerRole;
 use crate::user_info::UserId;
 
 const PROBABILITY_SAVE: usize = 30;
@@ -13,37 +12,37 @@ const PROBABILITY_SHOT_MISSED: usize = 20;
 
 pub struct ShotAction;
 impl DoAction for ShotAction {
-    fn do_action(&self, game: &mut Game) -> Vec<Event> {
-        let mut events = vec![game.generate_event(Shot)];
+    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
+        let mut actions = vec![Shot];
 
         let opponent_field_player_stat = self.get_opponent_field_player_stats(game);
         let player_with_puck = game.get_player_with_puck();
         let player_stat = get_relative_field_player_stat(player_with_puck, player_with_puck.stats.get_shooting());
 
         if !has_won(player_stat, opponent_field_player_stat) {
-            events.push(game.generate_event(ShotBlocked));
+            actions.push(ShotBlocked);
         } else {
             if PROBABILITY_SHOT_MISSED >= Game::get_random_in_range(1, 100, 1) {
-                events.append(&mut self.do_shot_missed(game));
+                actions.push(self.do_shot_missed(game));
             } else {
-                events.append(&mut self.fight_against_goalie(game, player_stat));
+                actions.push(self.fight_against_goalie(game, player_stat));
             }
         }
 
-        events
+        actions
     }
 }
 
 impl ShotAction {
     fn get_opponent_field_player_stats(&self, game: &Game) -> f32 {
-        let opponent_field_player = game.get_opponent_field_player();;
+        let opponent_field_player = game.get_opponent_field_player();
         get_relative_field_player_stat(
             &opponent_field_player.1,
             (opponent_field_player.1.stats.shot_blocking + opponent_field_player.1.stats.defensive_awareness) as f32 / 10.0
         ) * opponent_field_player.0
     }
 
-    fn do_shot_missed(&self, game: &mut Game) -> Vec<Event> {
+    fn do_shot_missed(&self, game: &mut Game) -> ActionTypes {
         let random_user_id = Game::get_random_in_range(1, 2, 19);
         let user_with_puck_id = game.get_user_id_player_with_puck();
 
@@ -59,10 +58,10 @@ impl ShotAction {
         let player_id = game.get_field_player_id_by_pos(random_user_id, &random_position);
         game.player_with_puck = Option::from((random_user_id, player_id));
 
-        vec![game.generate_event(ShotMissed)]
+        ShotMissed
     }
 
-    fn fight_against_goalie(&self, game: &mut Game, field_player_stat: f32) -> Vec<Event> {
+    fn fight_against_goalie(&self, game: &mut Game, field_player_stat: f32) -> ActionTypes {
         let user_id = game.player_with_puck.as_ref().unwrap().0;
         let user = game.get_user_info(user_id);
         let number_goalie = user.team.active_goalie.clone();
@@ -80,7 +79,7 @@ impl ShotAction {
                 self.score_goal(game, &user_id_player_with_puck)
             } else {
                 if PROBABILITY_SAVE >= Game::get_random_in_range(1, 100, 2) {
-                    vec![game.generate_event(Save)]
+                    Save
                 } else {
                     self.do_rebound(game)
                 }
@@ -96,11 +95,11 @@ impl ShotAction {
         }
     }
 
-    fn score_goal(&self, game: &mut Game, user_id: &usize) -> Vec<Event> {
+    fn score_goal(&self, game: &mut Game, user_id: &usize) -> ActionTypes {
         self.change_morale_after_goal(game);
         game.get_user_info_mut(user_id).team.score += 1;
 
-        vec![game.generate_event(Goal)]
+        Goal
     }
 
     fn has_pass_before_shot(&self, game: &Game) -> bool {
@@ -158,7 +157,7 @@ impl ShotAction {
         }
     }
 
-    fn do_rebound(&self, game: &mut Game) -> Vec<Event> {
+    fn do_rebound(&self, game: &mut Game) -> ActionTypes {
         let random_user_id = Game::get_random_in_range(1, 2, 19);
         let user_with_puck_id = game.get_user_id_player_with_puck();
 
@@ -174,6 +173,6 @@ impl ShotAction {
         let player_id = game.get_field_player_id_by_pos(random_user_id, &random_position);
         game.player_with_puck = Option::from((random_user_id, player_id));
 
-        vec![game.generate_event(Rebound)]
+        Rebound
     }
 }

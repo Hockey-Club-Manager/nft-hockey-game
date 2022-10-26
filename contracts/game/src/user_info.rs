@@ -1,13 +1,11 @@
-use std::hash::Hash;
 use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
-use near_sdk::{AccountId, CryptoHash, env, PromiseOrValue, Promise};
-use crate::external::{ext_manage_team, this_contract};
+use near_sdk::{AccountId, CryptoHash, env, Promise};
+use crate::external::{ext_manage_team};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::UnorderedSet;
 use near_sdk::env::{attached_deposit, predecessor_account_id};
 use crate::{Hockey, StorageKey};
-use crate::team::five::Tactics;
 use crate::team::team::Team;
 
 pub type UserId = usize;

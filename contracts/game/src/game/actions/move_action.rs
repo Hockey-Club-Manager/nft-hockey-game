@@ -1,13 +1,13 @@
 use near_sdk::log;
 use crate::game::actions::action::ActionTypes::{Hit, Move};
-use crate::game::actions::action::{DoAction};
-use crate::{Event, Game};
+use crate::game::actions::action::{ActionTypes, DoAction};
+use crate::{Game};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 
 pub struct MoveAction;
 impl DoAction for MoveAction {
-    fn do_action(&self, game: &mut Game) -> Vec<Event> {
-        let mut events = vec![game.generate_event(Move)];
+    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
+        let mut actions = vec![Move];
 
         log!("opponent");
         let opponent = game.get_opponent_field_player();
@@ -28,9 +28,9 @@ impl DoAction for MoveAction {
             game.zone_number += relative_side_zone;
         } else {
             game.player_with_puck = Option::from((opponent.1.get_user_id(), opponent.1.get_player_id()));
-            events.push(game.generate_event(Hit));
+            actions.push(Hit);
         }
 
-        events
+        actions
     }
 }

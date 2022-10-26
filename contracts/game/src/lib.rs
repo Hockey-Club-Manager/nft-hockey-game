@@ -1,12 +1,12 @@
-use near_sdk::collections::{LookupMap, LookupSet, UnorderedMap, UnorderedSet};
+use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::{CryptoHash, ext_contract, Gas, Promise, PromiseError};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, serde_json, log, near_bindgen, PanicOnDefault};
-use near_sdk::env::{log, panic, predecessor_account_id};
+use near_sdk::env::{predecessor_account_id};
 use game::actions::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, TakeTO};
 
-use crate::external::{ext_manage_team,this_contract};
-use crate::manager::{GameConfig, GameConfigOutput, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
+use crate::external::{ext_manage_team};
+use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
 use team::players::player::PlayerPosition;
 use team::players::field_player::FieldPlayer;
 use crate::game::game::{Event, Game, GameState};
@@ -234,7 +234,7 @@ impl Hockey {
         game
     }
 
-    pub fn generate_event(&mut self, game_id: GameId) -> Option<Vec<Event>> {
+    pub fn generate_event(&mut self, game_id: GameId) -> Option<Event> {
         let game: &mut Game = &mut self.internal_get_game(&game_id);
 
         assert!(game.winner_index.is_none(), "Game already finished");
@@ -244,13 +244,15 @@ impl Hockey {
             return None;
         }
 
-        let mut generated_events = game.step();
-        game.last_event_generation_time = time;
+        let mut generated_actions = game.step();
 
         let game_state = game.get_game_state();
         if game_state.1.is_some(){
-            generated_events.push(game_state.1.unwrap());
+            generated_actions.push(game_state.1.unwrap());
         }
+
+        game.last_event_generation_time = time;
+        let generated_event = game.generate_event(&generated_actions);
 
         match game_state.0 {
             GameState::GameOver { winner_id: winner_index} => {
@@ -270,7 +272,7 @@ impl Hockey {
 
         self.games.insert(&game_id, &game);
 
-        Some(generated_events)
+        Some(generated_event)
     }
 
     // TODO make private on release

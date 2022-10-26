@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use crate::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, env, Timestamp};
-use near_sdk::env::panic;
 use near_sdk::serde::{Deserialize, Serialize};
 use crate::team::players::field_player::{FieldPlayer};
 use crate::game::actions::action::{Action, ActionTypes};
@@ -10,13 +9,10 @@ use crate::game::actions::action::ActionTypes::*;
 use crate::team::players::player::{PlayerPosition};
 use crate::team::players::player::PlayerPosition::*;
 use crate::{TokenBalance};
-use crate::game::actions::random_actions::BIG_PENALTY;
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::LeftWing;
 use crate::team::five::{FiveIds, IceTimePriority};
-use crate::team::five::Tactics::Neutral;
 use crate::team::numbers::FiveNumber::{First, PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2};
-use crate::team::team::Team;
 use crate::team::team_metadata::team_metadata_to_team;
 use crate::user_info::UserId;
 
@@ -31,7 +27,7 @@ pub enum GameState {
 #[serde(crate = "near_sdk::serde")]
 pub struct Event {
     pub(crate) player_with_puck: Option<(UserId, TokenId)>,
-    pub(crate) action: ActionTypes,
+    pub(crate) actions: Vec<ActionTypes>,
     pub(crate) zone_number: i8,
     pub(crate) time: Timestamp,
     pub(crate) user1: UserInfo,
@@ -366,7 +362,7 @@ impl Game {
         }
     }
 
-    pub fn generate_event(&mut self, action: ActionTypes) -> Event {
+    pub fn generate_event(&mut self, actions: &Vec<ActionTypes>) -> Event {
         let non_game_events: Vec<ActionTypes> = vec![
             TakeTO,
             CoachSpeech,
@@ -380,8 +376,10 @@ impl Game {
             EndedPenaltyForTheSecondTeam,
         ];
 
-        if !non_game_events.contains(&action) {
-            self.last_action = action;
+        for action in actions {
+            if !non_game_events.contains(action) {
+                self.last_action = *action;
+            }
         }
 
         Event {
@@ -389,7 +387,7 @@ impl Game {
             user2: self.user2.clone(),
             time: self.last_event_generation_time.clone(),
             zone_number: self.zone_number.clone(),
-            action,
+            actions: actions.clone(),
             player_with_puck: self.player_with_puck.clone(),
         }
     }
@@ -440,39 +438,41 @@ pub fn get_amount_of_spent_strength(ice_time_priority: IceTimePriority) -> u8 {
 }
 
 impl Game {
-    pub fn get_game_state(&mut self) -> (GameState, Option<Event>) {
+    pub fn get_game_state(&mut self) -> (GameState, Option<ActionTypes>) {
         return if self.is_game_over() {
-            (GameState::GameOver { winner_id: self.get_winner_id() },
-             Some(self.generate_event(GameFinished)))
+            (
+                GameState::GameOver { winner_id: self.get_winner_id() },
+                Some(GameFinished)
+            )
         } else {
             let state = GameState::InProgress;
 
             if self.turns == NUMBER_OF_STEPS {
-                (state, Some(self.generate_event(Overtime)))
+                (state, Some(Overtime))
             } else {
                 (state, None)
             }
         };
     }
 
-    pub fn step(&mut self) -> Vec<Event> {
-        let mut events = self.do_action();
+    pub fn step(&mut self) -> Vec<ActionTypes> {
+        let mut actions = self.do_action();
 
-        events.append(&mut self.check_teams_to_change_active_five());
-        events.append(&mut self.reduce_penalty());
+        actions.append(&mut self.check_teams_to_change_active_five());
+        actions.append(&mut self.reduce_penalty());
 
         let end_of_period_event = self.check_end_of_period();
         if end_of_period_event.is_some() {
-            events.push(end_of_period_event.unwrap());
+            actions.push(end_of_period_event.unwrap());
         }
 
-        events
+        actions
     }
 
-    fn do_action(&mut self) -> Vec<Event> {
+    fn do_action(&mut self) -> Vec<ActionTypes> {
         let action = Action;
 
-        let events = match self.last_action {
+        let actions = match self.last_action {
             StartGame | Goal | EndOfPeriod => {
                 self.zone_number = 2;
                 self.face_off(&Center)
@@ -501,7 +501,7 @@ impl Game {
 
         self.turns += 1;
 
-        events
+        actions
     }
 
     fn get_random_position(&self) -> PlayerPosition {
@@ -517,7 +517,7 @@ impl Game {
         positions[rnd]
     }
 
-    fn face_off_after_save(&mut self) -> Vec<Event> {
+    fn face_off_after_save(&mut self) -> Vec<ActionTypes> {
         let user_player_id = self.get_player_id_with_puck();
         let position_player_with_puck = self.get_player_pos(&user_player_id.1, user_player_id.0);
 
@@ -543,8 +543,8 @@ impl Game {
         self.face_off(&position)
     }
 
-    fn face_off(&mut self, player_position: &PlayerPosition) -> Vec<Event> {
-        let mut events = vec![self.generate_event(FaceOff)];
+    fn face_off(&mut self, player_position: &PlayerPosition) -> Vec<ActionTypes> {
+        let mut actions = vec![FaceOff];
 
         let player1 = self.get_field_player_by_pos(1, player_position);
         let user = self.get_user_info(player1.get_user_id());
@@ -565,9 +565,9 @@ impl Game {
             self.player_with_puck = Option::from((player2.get_user_id(), player2.get_player_id()));
         }
 
-        events.push(self.generate_event(FaceOffWin));
+        actions.push(FaceOffWin);
 
-        events
+        actions
     }
 
     fn increase_five_time_field(&mut self) {
@@ -578,25 +578,25 @@ impl Game {
         five2.time_field = Some(five2.time_field.unwrap() + 1);
     }
 
-    fn check_teams_to_change_active_five(&mut self) -> Vec<Event> {
-        let mut events = Vec::new();
+    fn check_teams_to_change_active_five(&mut self) -> Vec<ActionTypes> {
+        let mut actions = Vec::new();
 
         if self.user1.team.need_change() {
             self.reduce_strength(self.user1.user_id);
             self.user1.team.change_active_five();
             self.change_player_with_puck(self.user1.user_id);
 
-            events.push(self.generate_event(FirstTeamChangeActiveFive));
+            actions.push(FirstTeamChangeActiveFive);
         }
         if self.user2.team.need_change() {
             self.reduce_strength(self.user2.user_id);
             self.user2.team.change_active_five();
             self.change_player_with_puck(self.user2.user_id);
 
-            events.push(self.generate_event(SecondTeamChangeActiveFive));
+            actions.push(SecondTeamChangeActiveFive);
         }
 
-        events
+        actions
     }
 
     fn change_player_with_puck(&mut self, user_id: UserId) {
@@ -619,14 +619,13 @@ impl Game {
         self.player_with_puck = Some((user_id, player_id));
     }
 
-    fn check_end_of_period(&mut self) -> Option<Event> {
+    fn check_end_of_period(&mut self) -> Option<ActionTypes> {
         if [25, 50, 75].contains(&self.turns) {
-            return Some(self.generate_event(EndOfPeriod));
+            return Some(EndOfPeriod);
         }
 
         None
     }
-
 
     fn is_game_over(&self) -> bool {
         if self.turns >= NUMBER_OF_STEPS && self.user1.team.score != self.user2.team.score {
@@ -644,23 +643,23 @@ impl Game {
          }
     }
 
-    fn reduce_penalty(&mut self) -> Vec<Event> {
-        let mut events = Vec::new();
+    fn reduce_penalty(&mut self) -> Vec<ActionTypes> {
+        let mut actions = Vec::new();
 
-        let first_team_event = self.reduce_user_player_penalty(&1);
-        if first_team_event.is_some() {
-            events.push(first_team_event.unwrap());
+        let first_team_action = self.reduce_user_player_penalty(&1);
+        if first_team_action.is_some() {
+            actions.push(first_team_action.unwrap());
         }
 
-        let second_team_event = self.reduce_user_player_penalty(&2);
-        if second_team_event.is_some() {
-            events.push(second_team_event.unwrap());
+        let second_team_action = self.reduce_user_player_penalty(&2);
+        if second_team_action.is_some() {
+            actions.push(second_team_action.unwrap());
         }
 
-        events
+        actions
     }
 
-    fn reduce_user_player_penalty(&mut self, user_id: &UserId) -> Option<Event> {
+    fn reduce_user_player_penalty(&mut self, user_id: &UserId) -> Option<ActionTypes> {
         let user = self.get_user_info_mut(user_id);
 
         let number_of_players_in_five = user.team.get_five_number_of_player();
@@ -702,10 +701,10 @@ impl Game {
         let mut result = if is_ended_penalty {
             if *user_id == 1 as usize {
                 self.change_player_with_puck(1);
-                Some(self.generate_event(EndedPenaltyForTheFirstTeam))
+                Some(EndedPenaltyForTheFirstTeam)
             } else {
                 self.change_player_with_puck(2);
-                Some(self.generate_event(EndedPenaltyForTheSecondTeam))
+                Some(EndedPenaltyForTheSecondTeam)
             }
         } else {
             None

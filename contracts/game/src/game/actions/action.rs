@@ -1,15 +1,9 @@
-use std::arch::global_asm;
-use crate::team::players::player::{PlayerPosition, PlayerRole};
-use crate::team::players::field_player::FieldPlayer;
+use crate::team::players::player::{PlayerRole};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::log;
 use crate::team::players::player::PlayerRole::*;
 
-use crate::game::actions::action::ActionTypes::*;
-
-use crate::team::players::player::PlayerPosition::*;
 use near_sdk::serde::{Deserialize, Serialize};
-use crate::Event;
 use crate::game::actions::shot::ShotAction;
 use crate::game::actions::dangle::DangleAction;
 use crate::game::actions::dump::DumpAction;
@@ -19,8 +13,7 @@ use crate::game::actions::random_actions::{BigPenalty, Fight, Giveaway, NetOff, 
 
 use crate::game::game::{Game};
 use crate::team::five::{FiveIds, Tactics};
-use crate::team::numbers::{FiveNumber, GoalieNumber};
-use crate::user_info::UserInfo;
+use crate::team::numbers::{FiveNumber};
 
 
 
@@ -81,12 +74,12 @@ pub enum ActionTypes {
 
 
 pub trait DoAction {
-    fn do_action(&self, game: &mut Game) -> Vec<Event>;
+    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes>;
 }
 
 pub struct Action;
 impl Action {
-    pub fn do_action(self, game: &mut Game) -> Vec<Event> {
+    pub fn do_action(self, game: &mut Game) -> Vec<ActionTypes> {
         let events =  self.random_action_happened(game);
         if events.is_none() {
             return self.choose_and_do_action(game);
@@ -95,7 +88,7 @@ impl Action {
         return events.unwrap();
     }
 
-    fn random_action_happened(&self, game: &mut Game) -> Option<Vec<Event>>{
+    fn random_action_happened(&self, game: &mut Game) -> Option<Vec<ActionTypes>> {
         let random_actions: Vec<Box<dyn RandomAction>> = vec![
             Box::new(Giveaway),
             Box::new(Takeaway),
@@ -115,7 +108,7 @@ impl Action {
         None
     }
 
-    fn choose_and_do_action(&self, game: &mut Game) -> Vec<Event> {
+    fn choose_and_do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
         let mut is_attack_zone = false;
         let user_player_id = game.get_player_id_with_puck();
         if game.zone_number == 3 && user_player_id.0 == 1 || game.zone_number == 1 && user_player_id.0 == 2 {

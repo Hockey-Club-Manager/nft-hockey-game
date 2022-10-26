@@ -1,19 +1,14 @@
-use std::cmp::max;
 use crate::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::ops::Index;
-use near_sdk::collections::Vector;
-use crate::{PlayerPosition, UserInfo};
-use crate::PlayerPosition::{AdditionalPosition, Center, LeftDefender, LeftWing, RightDefender, RightWing};
+use crate::{PlayerPosition};
+use crate::PlayerPosition::{AdditionalPosition, LeftWing, RightWing};
 use crate::team::five::{FiveIds, IceTimePriority};
 use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::team::numbers::FiveNumber::*;
-use crate::team::players::field_player;
 use crate::team::players::goalie::Goalie;
-use crate::team::players::player::{GoalieSubstitution, PlayerRole};
-use crate::team::players::player::PlayerRole::*;
+use crate::team::players::player::{GoalieSubstitution};
 
 
 const SUPER_LOW_PRIORITY: u8 = 3;
