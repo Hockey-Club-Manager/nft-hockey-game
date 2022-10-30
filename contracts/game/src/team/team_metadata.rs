@@ -2,10 +2,12 @@ use crate::*;
 use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use near_sdk::serde_json;
+use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 use crate::team::players::goalie::{Goalie};
 use crate::team::players::player::{GoalieSubstitution, PlayerMetadata};
-use crate::team::five::{FiveIds};
+use crate::team::five::{ActiveFive, FiveIds};
 use crate::team::numbers::{FiveNumber, GoalieNumber};
+use crate::team::numbers::FiveNumber::First;
 use crate::team::team::Team;
 
 
@@ -24,8 +26,6 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
     let mut field_players = to_field_players(&team_metadata.field_players_metadata, &user_id);
 
     for (number, mut five_ids) in team_metadata.fives {
-        five_ids.time_field = Option::from(0 as u8);
-
         five_ids.calculate_team_work(&mut field_players);
         fives.insert(number, five_ids);
     }
@@ -35,12 +35,25 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
         goalies.insert(number, to_goalie(goalie, user_id));
     }
 
+    let first_five = fives.get(&First).expect("First five not found");
+    let active_five = ActiveFive {
+        last_number: First,
+        current_number: First,
+        replaced_position: vec![Center, LeftWing, RightWing, LeftDefender, RightDefender],
+        field_players: first_five.field_players.clone(),
+        is_goalie_out: false,
+        ice_time_priority: first_five.ice_time_priority,
+        tactic: first_five.tactic,
+        time_field: Some(0)
+    };
+
     let mut team = Team {
         fives,
-        active_five: FiveNumber::First,
+        active_five,
         field_players,
 
         penalty_players: vec![],
+        players_to_penalty: vec![],
         goalie_substitutions: team_metadata.goalie_substitutions,
         active_goalie_substitutions: GoalieSubstitution::GoalieSubstitution1,
         goalies,

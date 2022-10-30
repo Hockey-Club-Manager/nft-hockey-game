@@ -14,6 +14,37 @@ const TOUGH_ENFORCER_TEAMWORK: f32 = 1.2;
 const DEFENDERS_TEAMWORK: f32 = 1.2;
 
 
+#[derive(Clone, BorshDeserialize, BorshSerialize)]
+#[derive(Serialize, Deserialize)]
+pub struct ActiveFive {
+    pub(crate) last_number: FiveNumber,
+    pub(crate) current_number: FiveNumber,
+    pub(crate) replaced_position: Vec<PlayerPosition>,
+
+    pub(crate) field_players: HashMap<PlayerPosition, TokenId>,
+    pub(crate) is_goalie_out: bool,
+    pub(crate) ice_time_priority: IceTimePriority,
+    pub(crate) tactic: Tactics,
+    pub(crate) time_field: Option<u8>,
+}
+
+impl ActiveFive {
+    pub fn get_number_of_players(&self) -> usize {
+        let mut count = 0;
+        for (_pos, id) in &self.field_players {
+            if *id != "" {
+                count += 1;
+            }
+        }
+
+        count
+    }
+
+    pub fn get_current_five_number(&self) -> FiveNumber {
+        self.current_number
+    }
+}
+
 #[derive(BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize, Debug)]
 #[derive(Clone)]
@@ -23,7 +54,6 @@ pub struct FiveIds {
     pub(crate) number: FiveNumber,
     pub(crate) ice_time_priority: IceTimePriority,
     pub(crate) tactic: Tactics,
-    pub(crate) time_field: Option<u8>,
 }
 
 // teamwork
@@ -228,7 +258,7 @@ impl FiveIds {
     pub fn get_number_of_players(&self) -> usize {
         let mut count = 0;
         for (_pos, id) in &self.field_players {
-            if *id == "" {
+            if *id != "" {
                 count += 1;
             }
         }

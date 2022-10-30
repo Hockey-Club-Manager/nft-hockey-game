@@ -73,6 +73,14 @@ impl Hockey {
         self.accounts.insert(&account_id, &account);
     }
 
+    pub fn set_team_logo(
+        &self,
+        form_name: String,
+        patter_name: String,
+        first_layer_color: String,
+        second_layer_color: String
+    ) { }
+
     pub fn remove_friend(&mut self, friend_id: AccountId) {
         let account_id = predecessor_account_id();
 

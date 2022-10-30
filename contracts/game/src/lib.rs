@@ -25,6 +25,8 @@ type GameId = u64;
 type SRC = String;
 pub type TokenId = String;
 
+// 1 second in nanoseconds
+const SECOND: u64 = 1000000000;
 
 // 1 NEAR
 const MIN_DEPOSIT: Balance = 1_000_000_000_000_000_000_000_000;
@@ -234,15 +236,18 @@ impl Hockey {
         game
     }
 
-    pub fn generate_event(&mut self, game_id: GameId) -> Option<Event> {
+    pub fn generate_event(&mut self, game_id: GameId) -> Event {
         let game: &mut Game = &mut self.internal_get_game(&game_id);
 
         assert!(game.winner_index.is_none(), "Game already finished");
 
         let time = env::block_timestamp();
-        if time - game.last_event_generation_time < 1 {
-            return None;
+        if time == game.last_event_generation_time && game.number_of_generated_events_in_block == 0
+            || time - game.last_event_generation_time < game.event_generation_delay {
+            panic!("Events are generated too often")
         }
+
+        game.number_of_generated_events_in_block -= 1;
 
         let mut generated_actions = game.step();
 
@@ -250,9 +255,6 @@ impl Hockey {
         if game_state.1.is_some(){
             generated_actions.push(game_state.1.unwrap());
         }
-
-        game.last_event_generation_time = time;
-        let generated_event = game.generate_event(&generated_actions);
 
         match game_state.0 {
             GameState::GameOver { winner_id: winner_index} => {
@@ -270,9 +272,12 @@ impl Hockey {
             _ => {}
         };
 
+        game.last_event_generation_time = time;
+        let generated_event = game.generate_event(&generated_actions);
+
         self.games.insert(&game_id, &game);
 
-        Some(generated_event)
+        generated_event
     }
 
     // TODO make private on release
@@ -285,6 +290,7 @@ impl Hockey {
         self.next_game_id
     }
 }
+
 
 #[cfg(test)]
 mod tests {}

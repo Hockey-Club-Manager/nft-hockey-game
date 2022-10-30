@@ -11,7 +11,7 @@ use crate::team::players::player::PlayerPosition::*;
 use crate::{TokenBalance};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::LeftWing;
-use crate::team::five::{FiveIds, IceTimePriority};
+use crate::team::five::{ActiveFive, FiveIds, IceTimePriority};
 use crate::team::numbers::FiveNumber::{First, PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2};
 use crate::team::team_metadata::team_metadata_to_team;
 use crate::user_info::UserId;
@@ -43,11 +43,16 @@ pub struct Game {
     pub(crate) user2: UserInfo,
     pub(crate) reward: TokenBalance,
     pub(crate) winner_index: Option<usize>,
-    pub(crate) last_event_generation_time: Timestamp,
     pub(crate) player_with_puck: Option<(UserId, TokenId)>,
     pub(crate) zone_number: i8,
     pub(crate) turns: u128,
     pub(crate) last_action: ActionTypes,
+
+    pub(crate) last_event_generation_time: Timestamp,
+
+    // in nanoseconds
+    pub(crate) event_generation_delay: u64,
+    pub(crate) number_of_generated_events_in_block: u8,
 }
 
 impl Game {
@@ -86,10 +91,12 @@ impl Game {
             reward,
             winner_index: None,
             last_event_generation_time: env::block_timestamp(),
+            event_generation_delay: SECOND,
             player_with_puck: None,
             zone_number: 2,
             turns: 0,
-            last_action: StartGame
+            last_action: StartGame,
+            number_of_generated_events_in_block: 0
         };
 
         game
@@ -123,7 +130,7 @@ impl Game {
     fn get_player_id_by_penalty_pos(
         &self,
         position: &PlayerPosition,
-        five: &FiveIds
+        five: &ActiveFive
     ) -> TokenId {
         match position {
             RightWing => {
@@ -405,11 +412,12 @@ impl Game {
         penalty_user.team.do_penalty(&penalty_player_id);
 
         let user = self.get_user_info_mut(user_id);
-        let active_five = user.team.active_five;
+        let active_five = user.team.active_five.get_current_five_number();
 
         let brigades = vec![PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2];
         if !brigades.contains(&active_five) {
-            user.team.active_five = PowerPlay1;
+            user.team.active_five.last_number = user.team.active_five.current_number;
+            user.team.active_five.current_number = PowerPlay1;
         }
     }
 
@@ -685,7 +693,9 @@ impl Game {
                     let active_five = user.team.get_active_five_mut();
                     active_five.field_players.insert(RightWing, player_id);
                 } else if number_of_players_in_five == 4 {
-                    user.team.active_five = First;
+                    user.team.active_five.last_number = user.team.active_five.current_number;
+                    user.team.active_five.current_number = First;
+
                     is_ended_penalty = true;
                 }
             }

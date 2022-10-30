@@ -2,9 +2,10 @@ use crate::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::env::current_exe;
 use crate::{PlayerPosition};
 use crate::PlayerPosition::{AdditionalPosition, LeftWing, RightWing};
-use crate::team::five::{FiveIds, IceTimePriority};
+use crate::team::five::{ActiveFive, FiveIds, IceTimePriority};
 use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::team::numbers::FiveNumber::*;
 use crate::team::players::goalie::Goalie;
@@ -23,11 +24,12 @@ const SUPER_HIGH_PRIORITY: u8 = 12;
 #[serde(crate = "near_sdk::serde")]
 pub struct Team {
     pub(crate) fives: HashMap<FiveNumber, FiveIds>,
-    pub(crate) active_five: FiveNumber,
+    pub(crate) active_five: ActiveFive,
 
     pub(crate) field_players: HashMap<TokenId, FieldPlayer>,
 
     pub(crate) penalty_players: Vec<TokenId>,
+    pub(crate) players_to_penalty: Vec<TokenId>,
 
     pub(crate) goalie_substitutions: HashMap<GoalieSubstitution, TokenId>,
     pub(crate) active_goalie_substitutions: GoalieSubstitution,
@@ -82,7 +84,8 @@ impl Team {
                 }
             }
         } else {
-            self.active_five = PenaltyKill1;
+            self.active_five.last_number = self.active_five.current_number;
+            self.active_five.current_number = PenaltyKill1;
 
             let (penalty_player_in_brigade, players_in_brigade) = self.remove_player_from_pk1(penalty_player_id);
 
@@ -155,7 +158,7 @@ impl Team {
             }
         }
 
-        (active_five.number, count)
+        (active_five.current_number, count)
     }
 
     fn remove_player_id_from_five(&mut self, penalty_player_id: &TokenId) -> PlayerPosition {
@@ -231,12 +234,12 @@ impl Team {
         count
     }
 
-    pub fn get_active_five(&self) -> &FiveIds {
-        self.fives.get(&self.active_five).unwrap()
+    pub fn get_active_five(&self) -> &ActiveFive {
+        &self.active_five
     }
 
-    pub fn get_active_five_mut(&mut self) -> &mut FiveIds {
-        self.fives.get_mut(&self.active_five).unwrap()
+    pub fn get_active_five_mut(&mut self) -> &mut ActiveFive {
+        &mut self.active_five
     }
 
     pub fn reduce_morale(&mut self) {
@@ -262,11 +265,9 @@ impl Team {
     }
 
     pub fn need_change(&self) -> bool {
-        let active_five = self.fives.get(&self.active_five).unwrap();
+        let time_field = self.active_five.time_field.unwrap();
 
-        let time_field = active_five.time_field.unwrap();
-
-        let result = match active_five.ice_time_priority {
+        let result = match self.active_five.ice_time_priority {
             IceTimePriority::SuperLowPriority => time_field >= SUPER_LOW_PRIORITY,
             IceTimePriority::LowPriority => time_field >= LOW_PRIORITY,
             IceTimePriority::Normal => time_field >= NORMAL,
@@ -278,65 +279,129 @@ impl Team {
     }
     
     pub fn change_active_five(&mut self) {
-        match self.active_five {
+        let current_number = match self.active_five.current_number {
             First => {
-                self.active_five = Second;
+                Second
             },
             Second => {
-                self.active_five = Third;
+                Third
             },
             Third => {
-                self.active_five = Fourth
+                Fourth
             },
             Fourth => {
-                self.active_five = First;
+                First
             },
             PowerPlay1 => {
-                self.active_five = PowerPlay2;
+                PowerPlay2
             }
             PowerPlay2 => {
-                self.active_five = PowerPlay1
+                PowerPlay1
             },
             PenaltyKill1 => {
-                self.active_five = PenaltyKill2
+                PenaltyKill2
             },
             PenaltyKill2 => {
-                self.active_five = PenaltyKill1
+                PenaltyKill1
+            }
+        };
+
+        self.active_five.last_number = self.active_five.current_number;
+        self.active_five.current_number = current_number;
+        self.active_five.replaced_position.clear();
+        self.active_five.time_field = Option::from(0 as u8);
+    }
+
+    pub fn get_five(&self, number: &FiveNumber) -> &FiveIds {
+        self.fives.get(&number).expect("Five not found")
+    }
+
+    fn get_number_of_field_players(&self, five_number: &FiveNumber) -> usize {
+        self.fives.get(&five_number).expect("Five not found").get_number_of_players()
+    }
+
+    pub fn swap_players_in_active_five(&mut self, player_with_puck: &TokenId) {
+        let current_five_number = self.active_five.current_number.clone();
+        let players = self.get_players_in_five(&current_five_number);
+        let number_of_players_in_current_five = self.get_number_of_field_players(&current_five_number);
+
+        let active_five = self.get_active_five_mut();
+        let number_of_players_in_active_five = active_five.get_number_of_players();
+
+        if active_five.current_number == current_five_number &&
+            number_of_players_in_active_five == number_of_players_in_current_five {
+            return;
+        }
+
+        if number_of_players_in_active_five != number_of_players_in_current_five {
+            if number_of_players_in_current_five == 6 && number_of_players_in_active_five == 5 {
+                let add_pos = active_five.field_players.get(&AdditionalPosition)
+                    .expect("AdditionalPosition not found").clone();
+
+                active_five.field_players.insert(AdditionalPosition, add_pos);
+                active_five.replaced_position.push(AdditionalPosition);
             }
         }
 
-        let active_five = self.get_active_five_mut();
+        for (position, player_id) in &players {
+            let is_replaced_position = active_five.replaced_position.contains(position);
+            let is_player_with_puck = *player_with_puck != *player_id;
 
-        active_five.time_field = Option::from(0 as u8);
+            if !is_player_with_puck && !is_replaced_position {
+                active_five.field_players.insert(position.clone(), player_id.clone());
+                active_five.replaced_position.push(position.clone());
+                return;
+            }
+        }
+    }
+
+    pub fn swap_all_players_in_active_five(&mut self) {
+        let current_five_number = self.active_five.current_number.clone();
+        let players = self.get_players_in_five(&current_five_number);
+
+        let active_five = self.get_active_five_mut();
+        active_five.field_players.clear();
+
+        for (pos, id) in &players {
+           active_five.field_players.insert(pos.clone(), id.clone());
+        }
+
+        if active_five.is_goalie_out {
+            self.goalie_out();
+        }
+    }
+
+    fn get_players_in_five(&self, number: &FiveNumber) -> HashMap<PlayerPosition, TokenId> {
+        self.get_five(number).field_players.clone()
     }
 
     pub fn goalie_out(&mut self) {
         let goalie_substitute_id = self.goalie_substitutions.get(&self.active_goalie_substitutions).unwrap().clone();
+        let active_five = self.get_active_five_mut();
+        active_five.is_goalie_out = true;
+        let number_of_players = active_five.get_number_of_players();
 
-        for (_five_number, five_ids) in &mut self.fives {
-            let number_of_players = five_ids.get_number_of_players();
-
-            if number_of_players == 5 {
-                five_ids.field_players.insert(AdditionalPosition, goalie_substitute_id.clone());
-            } else if number_of_players == 4 {
-                five_ids.field_players.insert(LeftWing, goalie_substitute_id.clone());
-            } else {
-                five_ids.field_players.insert(RightWing, goalie_substitute_id.clone());
-            }
+        if number_of_players == 5 {
+            active_five.field_players.insert(AdditionalPosition, goalie_substitute_id.clone());
+        } else if number_of_players == 4 {
+            active_five.field_players.insert(LeftWing, goalie_substitute_id.clone());
+        } else {
+            active_five.field_players.insert(RightWing, goalie_substitute_id.clone());
         }
     }
 
     pub fn goalie_back(&mut self) {
-        for (_five_number, five_ids) in &mut self.fives {
-            let number_of_players = five_ids.get_number_of_players();
+        let active_five = self.get_active_five_mut();
+        active_five.is_goalie_out = false;
 
-            if number_of_players == 4 {
-                five_ids.field_players.remove(&RightWing);
-            } else if number_of_players == 5 {
-                five_ids.field_players.remove(&LeftWing);
-            } else if number_of_players == 6 {
-                five_ids.field_players.remove(&AdditionalPosition);
-            }
+        let number_of_players = active_five.get_number_of_players();
+
+        if number_of_players == 4 {
+            active_five.field_players.remove(&RightWing);
+        } else if number_of_players == 5 {
+            active_five.field_players.remove(&LeftWing);
+        } else if number_of_players == 6 {
+            active_five.field_players.remove(&AdditionalPosition);
         }
     }
 }

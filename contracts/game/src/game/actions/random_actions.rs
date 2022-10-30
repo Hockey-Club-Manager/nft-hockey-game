@@ -149,7 +149,6 @@ impl RandomAction for BigPenalty {
             let user_id = opponent_player.1.get_user_id();
             let penalty_user_id = player_with_puck.get_user_id();
 
-
             let opponent_id = opponent_player.1.id.clone().unwrap();
             game.player_with_puck = Some((user_id, opponent_id));
 

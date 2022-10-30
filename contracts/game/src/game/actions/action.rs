@@ -1,6 +1,6 @@
 use crate::team::players::player::{PlayerRole};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::log;
+use near_sdk::{AccountId, log};
 use crate::team::players::player::PlayerRole::*;
 
 use near_sdk::serde::{Deserialize, Serialize};
@@ -12,9 +12,9 @@ use crate::game::actions::pass::PassAction;
 use crate::game::actions::random_actions::{BigPenalty, Fight, Giveaway, NetOff, PuckOut, RandomAction, SmallPenalty, Takeaway};
 
 use crate::game::game::{Game};
-use crate::team::five::{FiveIds, Tactics};
+use crate::team::five::{ActiveFive, FiveIds, Tactics};
 use crate::team::numbers::{FiveNumber};
-
+use crate::TokenId;
 
 
 #[derive(Serialize, Deserialize)]
@@ -125,7 +125,7 @@ impl Action {
         action.do_action(game)
     }
 
-    fn get_action(&self, is_attack_zone: bool, role: PlayerRole, active_five: &FiveIds) -> Box<dyn DoAction> {
+    fn get_action(&self, is_attack_zone: bool, role: PlayerRole, active_five: &ActiveFive) -> Box<dyn DoAction> {
         let actions = self.get_probability_of_actions(role, active_five);
 
         let mut percent = 0.0;
@@ -163,7 +163,7 @@ impl Action {
         3 - dangle_probability
         4 - pass_probability
      */
-    fn get_probability_of_actions(&self, role: PlayerRole, active_five: &FiveIds) -> Vec<i32> {
+    fn get_probability_of_actions(&self, role: PlayerRole, active_five: &ActiveFive) -> Vec<i32> {
         let mut actions = match role {
             Playmaker => vec![1, 2, 3, 3, 2],
             Enforcer => vec![4, 2, 1, 1, 3],
@@ -178,7 +178,7 @@ impl Action {
             _ => panic!("Player has no role")
         };
 
-        match active_five.number {
+        match active_five.current_number {
             FiveNumber::PowerPlay1 | FiveNumber::PowerPlay2 => {
                 actions[0] += 3;
                 actions[1] += 2;

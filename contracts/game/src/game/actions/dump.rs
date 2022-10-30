@@ -1,7 +1,7 @@
 use crate::{Game, PlayerPosition, TokenId};
 use crate::game::actions::action::{ActionTypes, DoAction};
 use crate::game::actions::action::ActionTypes::{Icing, PassCatched};
-use crate::team::five::FiveIds;
+use crate::team::five::{ActiveFive, FiveIds};
 use crate::team::numbers::FiveNumber::{PenaltyKill1, PenaltyKill2};
 
 
@@ -65,7 +65,7 @@ impl DumpAction {
         let user = game.get_user_info(player_with_puck.0);
         let active_five = user.team.get_active_five();
 
-        match active_five.number {
+        match active_five.current_number {
             PenaltyKill1 | PenaltyKill2 => {},
             _ => {
                 match user.team.get_field_player_pos(&player_with_puck.1) {
@@ -89,9 +89,9 @@ impl DumpAction {
     fn get_random_pos_to_dump(
         &self,
         player_position: &PlayerPosition,
-        five: &FiveIds
+        five: &ActiveFive
     ) -> &PlayerPosition {
-        if five.number == PenaltyKill1 || five.number == PenaltyKill2 {
+        if five.current_number == PenaltyKill1 || five.current_number == PenaltyKill2 {
             let number_of_field_players = five.get_number_of_players();
             return if number_of_field_players == 4 {
                 &PlayerPosition::RightWing
@@ -175,7 +175,7 @@ impl DumpAction {
         let user = game.get_user_info(player_with_puck.0);
         let active_five = user.team.get_active_five();
 
-        match active_five.number {
+        match active_five.current_number {
             PenaltyKill1 | PenaltyKill2 => {},
             _ => {
                 if ICING_PROBABILITY >= rnd {
