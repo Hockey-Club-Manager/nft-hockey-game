@@ -416,7 +416,6 @@ impl Game {
 
         let brigades = vec![PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2];
         if !brigades.contains(&active_five) {
-            user.team.active_five.last_number = user.team.active_five.current_number;
             user.team.active_five.current_number = PowerPlay1;
         }
     }
@@ -468,6 +467,9 @@ impl Game {
 
         actions.append(&mut self.check_teams_to_change_active_five());
         actions.append(&mut self.reduce_penalty());
+
+        self.swap_players_in_five(&1);
+        self.swap_players_in_five(&2);
 
         let end_of_period_event = self.check_end_of_period();
         if end_of_period_event.is_some() {
@@ -693,7 +695,6 @@ impl Game {
                     let active_five = user.team.get_active_five_mut();
                     active_five.field_players.insert(RightWing, player_id);
                 } else if number_of_players_in_five == 4 {
-                    user.team.active_five.last_number = user.team.active_five.current_number;
                     user.team.active_five.current_number = First;
 
                     is_ended_penalty = true;
@@ -721,5 +722,17 @@ impl Game {
         };
 
         result
+    }
+
+    fn swap_players_in_five(&mut self, user_id: &UserId) {
+        let player_with_puck: Option<TokenId>= if self.player_with_puck.is_some() {
+            Some(self.player_with_puck.clone().unwrap().1)
+        } else {
+            None
+        };
+
+        let user = self.get_user_info_mut(user_id);
+
+        user.team.swap_players_in_active_five(player_with_puck);
     }
 }

@@ -10,6 +10,8 @@ use crate::team::numbers::{FiveNumber, GoalieNumber};
 use crate::team::numbers::FiveNumber::*;
 use crate::team::players::goalie::Goalie;
 use crate::team::players::player::{GoalieSubstitution};
+use crate::team::players::player::GoalieSubstitution::{GoalieSubstitution1, GoalieSubstitution2};
+use crate::user_info::UserId;
 
 
 const SUPER_LOW_PRIORITY: u8 = 3;
@@ -84,7 +86,6 @@ impl Team {
                 }
             }
         } else {
-            self.active_five.last_number = self.active_five.current_number;
             self.active_five.current_number = PenaltyKill1;
 
             let (penalty_player_in_brigade, players_in_brigade) = self.remove_player_from_pk1(penalty_player_id);
@@ -306,7 +307,6 @@ impl Team {
             }
         };
 
-        self.active_five.last_number = self.active_five.current_number;
         self.active_five.current_number = current_number;
         self.active_five.replaced_position.clear();
         self.active_five.time_field = Option::from(0 as u8);
@@ -320,7 +320,7 @@ impl Team {
         self.fives.get(&five_number).expect("Five not found").get_number_of_players()
     }
 
-    pub fn swap_players_in_active_five(&mut self, player_with_puck: &TokenId) {
+    pub fn swap_players_in_active_five(&mut self, player_with_puck: Option<TokenId>) {
         let current_five_number = self.active_five.current_number.clone();
         let players = self.get_players_in_five(&current_five_number);
         let number_of_players_in_current_five = self.get_number_of_field_players(&current_five_number);
@@ -333,23 +333,40 @@ impl Team {
             return;
         }
 
-        if number_of_players_in_active_five != number_of_players_in_current_five {
-            if number_of_players_in_current_five == 6 && number_of_players_in_active_five == 5 {
-                let add_pos = active_five.field_players.get(&AdditionalPosition)
-                    .expect("AdditionalPosition not found").clone();
-
-                active_five.field_players.insert(AdditionalPosition, add_pos);
-                active_five.replaced_position.push(AdditionalPosition);
-            }
-        }
-
         for (position, player_id) in &players {
             let is_replaced_position = active_five.replaced_position.contains(position);
-            let is_player_with_puck = *player_with_puck != *player_id;
+            let is_player_with_puck = match player_with_puck.is_some() {
+                true => {
+                    if *player_id == *player_with_puck.as_ref().unwrap() {
+                        true
+                    } else {
+                        false
+                    }
+                }
+                false => false
+            };
 
             if !is_player_with_puck && !is_replaced_position {
-                active_five.field_players.insert(position.clone(), player_id.clone());
+                let replaced_player_id = active_five.field_players
+                    .insert(position.clone(), player_id.clone());
                 active_five.replaced_position.push(position.clone());
+
+                let goalie_substitution1_id = self.goalie_substitutions
+                    .get(&GoalieSubstitution1)
+                    .expect("Goalie substitution not found");
+
+                let goalie_substitution2_id = self.goalie_substitutions
+                    .get(&GoalieSubstitution2)
+                    .expect("Goalie substitution not found");
+
+                if replaced_player_id.is_some() {
+                    let unwrapped_id = replaced_player_id.unwrap();
+                    if unwrapped_id == *goalie_substitution1_id ||
+                        unwrapped_id == *goalie_substitution2_id {
+                        self.goalie_out();
+                    }
+                }
+
                 return;
             }
         }

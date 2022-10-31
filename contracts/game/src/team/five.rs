@@ -17,7 +17,6 @@ const DEFENDERS_TEAMWORK: f32 = 1.2;
 #[derive(Clone, BorshDeserialize, BorshSerialize)]
 #[derive(Serialize, Deserialize)]
 pub struct ActiveFive {
-    pub(crate) last_number: FiveNumber,
     pub(crate) current_number: FiveNumber,
     pub(crate) replaced_position: Vec<PlayerPosition>,
 

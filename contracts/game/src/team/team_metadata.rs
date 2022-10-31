@@ -37,7 +37,6 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
 
     let first_five = fives.get(&First).expect("First five not found");
     let active_five = ActiveFive {
-        last_number: First,
         current_number: First,
         replaced_position: vec![Center, LeftWing, RightWing, LeftDefender, RightDefender],
         field_players: first_five.field_players.clone(),
