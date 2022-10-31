@@ -52,7 +52,8 @@ pub fn team_metadata_to_team(team_metadata: TeamMetadata, user_id: usize) -> Tea
         field_players,
 
         penalty_players: vec![],
-        players_to_penalty: vec![],
+        players_to_big_penalty: vec![],
+        players_to_small_penalty: vec![],
         goalie_substitutions: team_metadata.goalie_substitutions,
         active_goalie_substitutions: GoalieSubstitution::GoalieSubstitution1,
         goalies,

@@ -2,7 +2,6 @@ use crate::*;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::env::current_exe;
 use crate::{PlayerPosition};
 use crate::PlayerPosition::{AdditionalPosition, LeftWing, RightWing};
 use crate::team::five::{ActiveFive, FiveIds, IceTimePriority};
@@ -31,7 +30,8 @@ pub struct Team {
     pub(crate) field_players: HashMap<TokenId, FieldPlayer>,
 
     pub(crate) penalty_players: Vec<TokenId>,
-    pub(crate) players_to_penalty: Vec<TokenId>,
+    pub(crate) players_to_big_penalty: Vec<TokenId>,
+    pub(crate) players_to_small_penalty: Vec<TokenId>,
 
     pub(crate) goalie_substitutions: HashMap<GoalieSubstitution, TokenId>,
     pub(crate) active_goalie_substitutions: GoalieSubstitution,

@@ -76,9 +76,9 @@ impl Hockey {
     pub fn set_team_logo(
         &self,
         form_name: String,
-        patter_name: String,
-        first_layer_color: String,
-        second_layer_color: String
+        pattern_name: String,
+        first_layer_color_number: String,
+        second_layer_color_number: String
     ) { }
 
     pub fn remove_friend(&mut self, friend_id: AccountId) {

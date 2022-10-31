@@ -735,4 +735,10 @@ impl Game {
 
         user.team.swap_players_in_active_five(player_with_puck);
     }
+
+    pub fn remove_penalty_players(&mut self, user_id: &UserId) {
+        let user_info = self.get_user_info_mut(user_id);
+        user_info.team.players_to_small_penalty.clear();
+        user_info.team.players_to_big_penalty.clear();
+    }
 }
