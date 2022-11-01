@@ -333,6 +333,12 @@ impl Team {
             return;
         }
 
+        let players_in_active_five = active_five.field_players.clone();
+        active_five.field_players.clear();
+
+        let number_of_players_to_replace = 2;
+        let mut number_of_replaced_players = 0;
+
         for (position, player_id) in &players {
             let is_replaced_position = active_five.replaced_position.contains(position);
             let is_player_with_puck = match player_with_puck.is_some() {
@@ -346,30 +352,37 @@ impl Team {
                 false => false
             };
 
-            if !is_player_with_puck && !is_replaced_position {
-                let replaced_player_id = active_five.field_players
-                    .insert(position.clone(), player_id.clone());
+            if !is_player_with_puck && !is_replaced_position && number_of_players_to_replace > number_of_replaced_players {
+                active_five.field_players.insert(position.clone(), player_id.clone());
                 active_five.replaced_position.push(position.clone());
-
-                let goalie_substitution1_id = self.goalie_substitutions
-                    .get(&GoalieSubstitution1)
-                    .expect("Goalie substitution not found");
-
-                let goalie_substitution2_id = self.goalie_substitutions
-                    .get(&GoalieSubstitution2)
-                    .expect("Goalie substitution not found");
-
-                if replaced_player_id.is_some() {
-                    let unwrapped_id = replaced_player_id.unwrap();
-                    if unwrapped_id == *goalie_substitution1_id ||
-                        unwrapped_id == *goalie_substitution2_id {
-                        self.goalie_out();
-                    }
-                }
-
-                return;
+                number_of_replaced_players += 1;
+            } else {
+                let id = players_in_active_five.get(position).unwrap();
+                active_five.field_players.insert(position.clone(), id.clone());
             }
         }
+
+        if self.active_five.is_goalie_out && self.is_goalie_substitutions_in_active_five() {
+            self.goalie_out();
+        }
+    }
+
+    fn is_goalie_substitutions_in_active_five(&self) -> bool {
+        let goalie_sub1_id = self.goalie_substitutions
+            .get(&GoalieSubstitution1)
+            .expect("GoalieSubstitution1 not found");
+
+        let goalie_sub2_id = self.goalie_substitutions
+            .get(&GoalieSubstitution2)
+            .expect("GoalieSubstitution2 not found");
+
+        for (_position, id) in &self.active_five.field_players {
+            if *id == *goalie_sub1_id || *id == *goalie_sub2_id {
+                return true;
+            }
+        }
+
+        false
     }
 
     pub fn swap_all_players_in_active_five(&mut self) {

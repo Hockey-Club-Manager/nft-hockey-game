@@ -74,7 +74,7 @@ impl Hockey {
     }
 
     pub fn set_team_logo(
-        &self,
+        &mut self,
         form_name: String,
         pattern_name: String,
         first_layer_color_number: String,
@@ -83,8 +83,7 @@ impl Hockey {
 
     pub fn remove_friend(&mut self, friend_id: AccountId) {
         let account_id = predecessor_account_id();
-
-
+        
         let mut account = self.accounts.get(&account_id).expect("You are not registered");
         let mut friend = self.accounts.get(&friend_id).expect(&format!("Account not found {}", friend_id.clone()));
 
