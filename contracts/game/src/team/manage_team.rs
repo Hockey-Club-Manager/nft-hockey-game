@@ -65,12 +65,12 @@ impl Hockey {
 
         let event = if game.user1.account_id == account_id && !game.user1.is_goalie_out {
             game.user1.is_goalie_out = true;
-            game.user1.team.active_goalie_substitutions = goalie_substitution;
+            game.user1.team.active_goalie_substitution = goalie_substitution;
             game.user1.team.goalie_out();
             game.generate_event(&vec![GoalieOut])
         } else if game.user2.account_id == account_id && !game.user2.is_goalie_out {
             game.user2.is_goalie_out = true;
-            game.user2.team.active_goalie_substitutions = goalie_substitution;
+            game.user2.team.active_goalie_substitution = goalie_substitution;
             game.user2.team.goalie_out();
             game.generate_event(&vec![GoalieOut])
         } else {

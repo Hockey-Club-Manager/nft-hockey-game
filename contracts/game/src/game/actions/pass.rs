@@ -18,7 +18,7 @@ impl DoAction for PassAction {
         let player_with_puck_pos = game.get_player_pos(&player_with_puck_id.1, player_with_puck_id.0).clone();
 
         let user = game.get_user_info(player_with_puck_id.0);
-        let number_of_player_in_five = user.team.get_five_number_of_player();
+        let number_of_player_in_five = user.team.get_active_five_number_of_player();
         let pass_to = get_another_random_position(&player_with_puck_pos, number_of_player_in_five);
         let is_diagonal_pass = is_diagonal_pass(vec![player_with_puck_pos.clone(), pass_to]);
 

@@ -1,7 +1,9 @@
 use near_sdk::log;
 use crate::{Game};
-use crate::game::actions::action::ActionTypes::Battle;
+use crate::game::actions::action::ActionTypes::{Battle, PenaltyShot, Dangle};
 use crate::game::actions::action::{ActionTypes};
+use crate::game::actions::dangle::DangleAction;
+use crate::game::actions::move_action::MoveAction;
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 
 
@@ -181,18 +183,19 @@ impl RandomAction for SmallPenalty {
         let player_stat2 = opponent_player.1.stats.discipline as f32;
 
         if has_won(player_stat1, player_stat2) {
+            if game.last_action == MoveAction || game.last_action == DangleAction {
+                return vec![PenaltyShot]
+            }
+
             let penalty_player_id = opponent_player.1.get_player_id();
-            let user_id = player_with_puck.get_user_id();
             let penalty_user_id = opponent_player.1.get_user_id();
-            game.do_penalty(SMALL_PENALTY,
-                            &penalty_player_id,
-                            &user_id,
-                            &penalty_user_id);
+            let penalty_user = game.get_user_info_mut(&penalty_user_id);
+            penalty_user.team.players_to_small_penalty.push(penalty_player_id);
         } else {
             let penalty_player_id = player_with_puck.get_player_id();
             let user_id = opponent_player.1.get_user_id();
-            let penalty_user_id = player_with_puck.get_user_id();
 
+            let penalty_user_id = player_with_puck.get_user_id();
             let opponent_id = opponent_player.1.id.clone().unwrap();
             game.player_with_puck = Some((user_id, opponent_id));
 

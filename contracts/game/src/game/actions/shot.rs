@@ -98,8 +98,13 @@ impl ShotAction {
     fn score_goal(&self, game: &mut Game, user_id: &usize) -> ActionTypes {
         self.change_morale_after_goal(game);
         game.get_user_info_mut(user_id).team.score += 1;
-        game.remove_penalty_players(&1);
-        game.remove_penalty_players(&2);
+
+        if *user_id == 1 as usize {
+            game.remove_penalty_players(&2);
+        } else {
+            game.remove_penalty_players(&1);
+        }
+
         Goal
     }
 

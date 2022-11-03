@@ -65,13 +65,14 @@ pub enum ActionTypes {
     GoalieOut,
     GoalieBack,
 
+    PenaltyShot,
+
     FirstTeamChangeActiveFive,
     SecondTeamChangeActiveFive,
 
     EndedPenaltyForTheFirstTeam,
     EndedPenaltyForTheSecondTeam,
 }
-
 
 pub trait DoAction {
     fn do_action(&self, game: &mut Game) -> Vec<ActionTypes>;
@@ -89,15 +90,21 @@ impl Action {
     }
 
     fn random_action_happened(&self, game: &mut Game) -> Option<Vec<ActionTypes>> {
-        let random_actions: Vec<Box<dyn RandomAction>> = vec![
+        let mut random_actions: Vec<Box<dyn RandomAction>> = vec![
             Box::new(Giveaway),
             Box::new(Takeaway),
             Box::new(PuckOut),
-            Box::new(BigPenalty),
-            Box::new(SmallPenalty),
             Box::new(Fight),
             Box::new(NetOff),
         ];
+
+        let number_of_penalty_players1 = game.user1.team.get_number_of_penalty_players();
+        let number_of_penalty_players2 = game.user2.team.get_number_of_penalty_players();
+
+        if number_of_penalty_players1 < 2 && number_of_penalty_players2 < 2 {
+            random_actions.push(Box::new(BigPenalty));
+            random_actions.push(Box::new(SmallPenalty));
+        }
 
         for action in &random_actions {
             if action.check_probability(game) {

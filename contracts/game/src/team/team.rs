@@ -34,7 +34,7 @@ pub struct Team {
     pub(crate) players_to_small_penalty: Vec<TokenId>,
 
     pub(crate) goalie_substitutions: HashMap<GoalieSubstitution, TokenId>,
-    pub(crate) active_goalie_substitutions: GoalieSubstitution,
+    pub(crate) active_goalie_substitution: GoalieSubstitution,
 
     pub(crate) goalies: HashMap<GoalieNumber, Goalie>,
     pub(crate) active_goalie: GoalieNumber,
@@ -43,6 +43,13 @@ pub struct Team {
 }
 
 impl Team {
+    pub fn get_number_of_penalty_players(&self) -> usize {
+        let number_of_players_to_penalty = self.players_to_big_penalty.len()
+            + self.players_to_small_penalty.len();
+
+        number_of_players_to_penalty + self.penalty_players.len()
+    }
+
     pub fn calculate_teamwork(&mut self) {
         for (_five_number, five_ids) in &self.fives {
             let field_players = &mut self.field_players;
@@ -114,6 +121,10 @@ impl Team {
         }
     }
 
+    fn remove_player_from_brigades(&self, player_id: &TokenId) {
+
+    }
+
     fn remove_player_from_pk1(&self, penalty_player_id: &TokenId) -> (bool, Vec<TokenId>) {
         let mut players: Vec<TokenId> = Vec::new();
         let pk1 = self.get_active_five();
@@ -150,7 +161,9 @@ impl Team {
     }
 
     fn get_number_players_count_active_five(&self) -> (FiveNumber, usize) {
-        let active_five = self.get_active_five();
+        let active_five_number = self.active_five.current_number.clone();
+        let active_five = self.get_five(&active_five_number);
+
         let mut count: usize = 0;
 
         for (_pos, id) in &active_five.field_players {
@@ -159,12 +172,13 @@ impl Team {
             }
         }
 
-        (active_five.current_number, count)
+        (active_five.number, count)
     }
 
     fn remove_player_id_from_five(&mut self, penalty_player_id: &TokenId) -> PlayerPosition {
         let player_position = self.get_field_player_pos(penalty_player_id).clone();
-        let active_five = self.get_active_five_mut();
+        let active_five_number = self.active_five.current_number.clone();
+        let active_five = self.get_five_mut(&active_five_number);
 
         active_five.field_players.remove(&player_position);
 
@@ -223,7 +237,22 @@ impl Team {
         panic!("Player not found: {}", player_id)
     }
 
-    pub fn get_five_number_of_player(&self) -> usize {
+    pub fn get_five_number_of_players(&self, number_five: &FiveNumber) -> usize {
+        let current_number_five = self.active_five.current_number;
+        let five = self.get_five(&current_number_five);
+
+        let mut count = 0;
+
+        for (_pos, id) in &five.field_players {
+            if *id != "" {
+                count += 1;
+            }
+        }
+
+        count
+    }
+
+    pub fn get_active_five_number_of_player(&self) -> usize {
         let active_five = self.get_active_five();
         let mut count = 0;
 
@@ -316,6 +345,10 @@ impl Team {
         self.fives.get(&number).expect("Five not found")
     }
 
+    pub fn get_five_mut(&mut self, number: &FiveNumber) -> &mut FiveIds {
+        &mut self.fives.get(&number).expect("Five not found")
+    }
+
     fn get_number_of_field_players(&self, five_number: &FiveNumber) -> usize {
         self.fives.get(&five_number).expect("Five not found").get_number_of_players()
     }
@@ -391,9 +424,11 @@ impl Team {
 
         let active_five = self.get_active_five_mut();
         active_five.field_players.clear();
+        active_five.replaced_position.clear();
 
         for (pos, id) in &players {
-           active_five.field_players.insert(pos.clone(), id.clone());
+            active_five.field_players.insert(pos.clone(), id.clone());
+            active_five.replaced_position.push(pos.clone());
         }
 
         if active_five.is_goalie_out {
@@ -406,7 +441,7 @@ impl Team {
     }
 
     pub fn goalie_out(&mut self) {
-        let goalie_substitute_id = self.goalie_substitutions.get(&self.active_goalie_substitutions).unwrap().clone();
+        let goalie_substitute_id = self.goalie_substitutions.get(&self.active_goalie_substitution).unwrap().clone();
         let active_five = self.get_active_five_mut();
         active_five.is_goalie_out = true;
         let number_of_players = active_five.get_number_of_players();
