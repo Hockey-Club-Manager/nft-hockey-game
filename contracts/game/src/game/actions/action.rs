@@ -27,7 +27,7 @@ pub enum ActionTypes {
     GameFinished,
 
     Pass,
-    PassCatched,
+    PassCaught,
 
     Shot,
     ShotBlocked,

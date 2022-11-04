@@ -14,6 +14,7 @@ use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::LeftWing;
 use crate::team::five::{ActiveFive, FiveIds, IceTimePriority};
 use crate::team::numbers::FiveNumber::{First, PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2};
+use crate::team::players::player::Hand::Left;
 use crate::team::team_metadata::team_metadata_to_team;
 use crate::user_info::UserId;
 
@@ -246,18 +247,6 @@ impl Game {
         }
     }
 
-    pub fn get_opponent_field_player_mut(&mut self) -> (f32, &mut FieldPlayer) {
-        let user_player_ids = self.player_with_puck.clone().unwrap();
-
-        let position = self.get_coeff_player_pos(&user_player_ids);
-
-        return if user_player_ids.0 == 1 {
-            (position.0, self.get_field_player_by_pos_mut(2, &position.1))
-        } else {
-            (position.0, self.get_field_player_by_pos_mut(1, &position.1))
-        }
-    }
-
     fn get_coeff_player_pos(&self, user_player_ids: &(UserId, TokenId)) -> (f32, PlayerPosition) {
         let user = self.get_user_info(user_player_ids.0);
         let active_five = user.team.get_active_five();
@@ -267,93 +256,99 @@ impl Game {
 
         let field_player_pos = user.team.get_field_player_pos(&user_player_ids.1);
 
-        let result = self.get_opponent_position(&active_five.field_players,&opponent_active_five.field_players,field_player_pos);
+        let result = self.get_opponent_position(
+            active_five.get_number_of_players(),
+            opponent_active_five.get_number_of_players(),
+            field_player_pos);
+
         (result.0, result.1.clone())
     }
 
     pub fn get_opponent_position(
         &self,
-        players: &HashMap<PlayerPosition, TokenId>,
-        opponent_players: &HashMap<PlayerPosition, TokenId>,
-        position: &PlayerPosition
+        number_of_players: usize,
+        number_of_opponent_players: usize,
+        field_player_pos: &PlayerPosition
     ) -> (f32, &PlayerPosition) {
-        match position {
-            Center => {
-                if opponent_players.get(&AdditionalPosition).is_some() && players.get(&AdditionalPosition).is_some() {
-                    (1.0, &Center)
-                } else if opponent_players.get(&AdditionalPosition).is_some() {
-                    (1.5, &Center)
-                } else {
-                    (0.5, &Center)
-                }
-            },
+        match field_player_pos {
             AdditionalPosition => {
-                if opponent_players.get(&AdditionalPosition).is_some() {
+                if number_of_players == number_of_opponent_players {
                     (1.0, &AdditionalPosition)
-                } else if players.len() == 4 {
-                    (1.5, &RightDefender)
-                }
-                else {
-                    (1.5, &Center)
-                }
-            },
-            LeftWing => {
-                let number_of_opponent_players = opponent_players.len();
-
-                if number_of_opponent_players == 3 || number_of_opponent_players == 4 {
-                    (1.5, &RightDefender)
+                } else if number_of_opponent_players == 5 || number_of_opponent_players == 3 {
+                    (0.5, &Center)
                 } else {
                     (1.0, &RightDefender)
                 }
             },
-            RightWing => {
-                let number_of_players = players.len();
-                let number_of_opponent_players = opponent_players.len();
-                if (number_of_opponent_players == 5 || number_of_opponent_players == 6) && (number_of_players == 5 || number_of_players == 6) {
-                    (1.0, &LeftDefender)
-                } else if number_of_players > number_of_opponent_players {
-                    (0.5, &LeftDefender)
+            Center => {
+                if number_of_players == 6 && number_of_opponent_players == 3
+                    || number_of_players == 6 && number_of_opponent_players == 5 {
+                    (0.5, &Center)
+                } else if number_of_opponent_players == 6 && number_of_players == 3
+                    || number_of_opponent_players == 6 && number_of_players == 5 {
+                    (1.5, &Center)
                 } else {
-                    (1.5, &LeftDefender)
+                    (1.0, &Center)
+                }
+            },
+            LeftWing => {
+                if number_of_opponent_players == 3 {
+                    (0.5, &RightDefender)
+                } else if number_of_opponent_players == 4 {
+                    (0.5, &RightWing)
+                }
+                else {
+                    (1.0, &RightDefender)
+                }
+            },
+            RightWing => {
+                if (number_of_opponent_players == 5 || number_of_opponent_players == 6)
+                    && (number_of_players == 5 || number_of_players == 6)
+                    || (number_of_players == 5 && number_of_opponent_players == 4) {
+                    (1.0, &LeftDefender)
+                } else if number_of_players == 4 && number_of_opponent_players == 4 {
+                    (1.5, &RightDefender)
+                } else if number_of_players < number_of_opponent_players {
+                    (1.5, &RightDefender)
+                } else {
+                    (0.5, &LeftDefender)
                 }
             },
             LeftDefender => {
-                let number_of_players = players.len();
-                let number_of_opponent_players = opponent_players.len();
-                if (number_of_opponent_players == 5 || number_of_opponent_players == 6) && (number_of_players == 5 || number_of_players == 6) {
+                if (number_of_opponent_players == 5 || number_of_opponent_players == 6)
+                    && (number_of_players == 5 || number_of_players == 6) {
                     (1.0, &RightWing)
-                } else if opponent_players.get(&RightWing).is_some() {
+                } else if number_of_opponent_players >= 4 {
                     if number_of_opponent_players >= number_of_players {
                         (1.5, &RightWing)
                     } else {
                         (0.5, &RightWing)
                     }
-                } else {
+                } else if number_of_players == 3 && number_of_opponent_players == 3 {
                     (1.0, &RightDefender)
+                } else {
+                    (0.5, &RightDefender)
                 }
             },
             RightDefender => {
-                let number_of_players = players.len();
-                let number_of_opponent_players = opponent_players.len();
-                if (number_of_opponent_players == 5 || number_of_opponent_players == 6) && (number_of_players == 5 || number_of_players == 6) {
+                if (number_of_opponent_players == 5 || number_of_opponent_players == 6)
+                    && (number_of_players == 5 || number_of_players == 6) {
                     (1.0, &LeftWing)
-                } else if number_of_players > number_of_opponent_players {
-                    (0.5, &LeftDefender)
+                } else if number_of_players == 5 && number_of_opponent_players == 4
+                    || number_of_players == 4 && number_of_opponent_players == 4 {
+                    (0.5, &RightWing)
+                } else if number_of_opponent_players >= 4 {
+                    if number_of_opponent_players >= number_of_players {
+                        (1.5, &LeftDefender)
+                    } else {
+                        (0.5, &LeftDefender)
+                    }
+                } else if number_of_players == 3 && number_of_opponent_players == 3 {
+                    (1.0, &LeftDefender)
                 } else {
-                    (1.5, &LeftDefender)
+                    (0.5, &LeftDefender)
                 }
             },
-            _ => panic!("Cannot find opponent position")
-        }
-    }
-
-    pub fn f(&self, position: &PlayerPosition) -> &PlayerPosition {
-        match position {
-            Center => &Center,
-            LeftWing => &RightDefender,
-            RightWing => &LeftDefender,
-            LeftDefender => &RightWing,
-            RightDefender => &LeftWing,
             _ => panic!("Cannot find opponent position")
         }
     }
@@ -473,9 +468,12 @@ impl Game {
                 let random_position = self.get_random_position();
                 self.face_off(&random_position)
             },
+            /*
             PenaltyShot => {
 
             }
+            */
+
             _ => action.do_action(self)
         };
 
@@ -500,19 +498,33 @@ impl Game {
     }
 
     fn do_penalties(&mut self, penalty_user_id: UserId) {
-        let penalty_user = self.get_user_info_mut(&penalty_user_id);
         let user_id = if penalty_user_id == 0 {
             1
         } else {
             0
         };
 
-        let players_to_big_penalty = penalty_user.team.players_to_big_penalty.clone();
+        let players_to_big_penalty = self.get_players_to_big_penalty(&user_id);
         self.dp(players_to_big_penalty, &user_id, &penalty_user_id, BIG_PENALTY);
 
-        let players_to_small_penalty = penalty_user.team.players_to_small_penalty.clone();
+        let players_to_small_penalty = self.get_players_to_small_penalty(&user_id);
         self.dp(players_to_small_penalty, &user_id, &penalty_user_id, SMALL_PENALTY);
 
+        self.clear_players_to_penalties(&user_id);
+    }
+
+    fn get_players_to_big_penalty(&self, penalty_user_id: &UserId) -> Vec<TokenId> {
+        let penalty_user = self.get_user_info(penalty_user_id.clone());
+        penalty_user.team.players_to_big_penalty.clone()
+    }
+
+    fn get_players_to_small_penalty(&self, penalty_user_id: &UserId) -> Vec<TokenId> {
+        let penalty_user = self.get_user_info(penalty_user_id.clone());
+        penalty_user.team.players_to_small_penalty.clone()
+    }
+
+    fn clear_players_to_penalties(&mut self, penalty_user_id: &UserId) {
+        let penalty_user = self.get_user_info_mut(penalty_user_id);
         penalty_user.team.players_to_small_penalty.clear();
         penalty_user.team.players_to_big_penalty.clear();
     }
@@ -545,14 +557,15 @@ impl Game {
 
         let penalty_user = self.get_user_info_mut(penalty_user_id);
         penalty_user.team.do_penalty(&penalty_player_id);
+        penalty_user.team.swap_all_players_in_active_five();
 
         let active_five_number = penalty_user.team.active_five.get_current_five_number();
         let number_of_players = penalty_user.team.get_five_number_of_players(&active_five_number);
 
-        self.change_active_five_to_pp(user_id, number_of_players);
+        self.check_and_change_active_five_to_pp(user_id, number_of_players);
     }
 
-    fn change_active_five_to_pp(&mut self, user_id: &UserId, opponent_number_of_players: usize) {
+    fn check_and_change_active_five_to_pp(&mut self, user_id: &UserId, opponent_number_of_players: usize) {
         let user = self.get_user_info_mut(user_id);
         let active_five_number = user.team.active_five.get_current_five_number();
         let number_of_players = user.team.get_five_number_of_players(&active_five_number);
@@ -560,6 +573,7 @@ impl Game {
         let brigades = vec![PowerPlay1, PowerPlay2];
         if !brigades.contains(&active_five_number) && number_of_players > opponent_number_of_players {
             user.team.active_five.current_number = PowerPlay1;
+            user.team.swap_all_players_in_active_five();
         }
     }
 
@@ -598,7 +612,9 @@ impl Game {
 
     fn face_off_after_save(&mut self) -> Vec<ActionTypes> {
         let user_player_id = self.get_player_id_with_puck();
-        let position_player_with_puck = self.get_player_pos(&user_player_id.1, user_player_id.0);
+        let position_player_with_puck = self.get_player_pos(
+            &user_player_id.1,
+            user_player_id.0);
 
         let user = self.get_user_info(user_player_id.0);
         let active_five = user.team.get_active_five();
@@ -608,10 +624,16 @@ impl Game {
 
         let position = match position_player_with_puck {
             LeftWing | LeftDefender => {
-                *self.get_opponent_position(&active_five.field_players, &opponent_active_five.field_players, &LeftWing).1
+                *self.get_opponent_position(
+                    active_five.get_number_of_players(),
+                    opponent_active_five.get_number_of_players(),
+                    &LeftWing).1
             },
             RightWing | RightDefender => {
-                *self.get_opponent_position(&active_five.field_players, &opponent_active_five.field_players, &RightWing).1
+                *self.get_opponent_position(
+                    active_five.get_number_of_players(),
+                    opponent_active_five.get_number_of_players(),
+                    &RightWing).1
             },
             Center => {
                 self.get_random_position()
@@ -632,11 +654,17 @@ impl Game {
         let opponent_user = self.get_opponent_info(user.user_id);
         let opponent_five = opponent_user.team.get_active_five();
 
-        let opponent_pos = self.get_opponent_position(&active_five.field_players, &opponent_five.field_players, player_position);
+        let opponent_pos = self.get_opponent_position(
+            active_five.get_number_of_players(),
+            opponent_five.get_number_of_players(),
+            player_position);
         let player2 = self.get_field_player_by_pos(2, opponent_pos.1);
 
-        let compared_stat1 = get_relative_field_player_stat(player1, player1.stats.face_offs as f32);
-        let compared_stat2= get_relative_field_player_stat(player2, player2.stats.face_offs as f32) * opponent_pos.0;
+        let compared_stat1 = get_relative_field_player_stat(
+            player1, player1.stats.face_offs as f32);
+
+        let compared_stat2= get_relative_field_player_stat(
+            player2, player2.stats.face_offs as f32) * opponent_pos.0;
 
         if has_won(compared_stat1, compared_stat2) {
             self.player_with_puck = Option::from((player1.get_user_id(), player1.get_player_id()));

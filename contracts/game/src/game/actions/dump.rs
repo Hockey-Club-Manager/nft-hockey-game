@@ -1,6 +1,6 @@
 use crate::{Game, PlayerPosition, TokenId};
 use crate::game::actions::action::{ActionTypes, DoAction};
-use crate::game::actions::action::ActionTypes::{Icing, PassCatched};
+use crate::game::actions::action::ActionTypes::{Icing, PassCaught};
 use crate::team::five::{ActiveFive, FiveIds};
 use crate::team::numbers::FiveNumber::{PenaltyKill1, PenaltyKill2};
 
@@ -148,7 +148,7 @@ impl DumpAction {
             let field_player_id = opponent_active_five.field_players.get(&interception_position).unwrap();
             game.player_with_puck = Option::from((opponent.user_id, field_player_id.clone()));
 
-            let mut events = vec![ActionTypes::DumpOut, PassCatched];
+            let mut events = vec![ActionTypes::DumpOut, PassCaught];
 
             return Some(events);
         }

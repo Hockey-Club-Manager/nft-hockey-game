@@ -1,6 +1,6 @@
 use crate::{Game, PlayerPosition};
 use crate::game::actions::action::{ActionTypes, DoAction};
-use crate::game::actions::action::ActionTypes::{Pass, PassCatched};
+use crate::game::actions::action::ActionTypes::{Pass, PassCaught};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
@@ -35,7 +35,7 @@ impl DoAction for PassAction {
         } else {
             game.player_with_puck = Option::from((opponent.1.get_user_id(), opponent.1.get_player_id()));
 
-            vec![PassCatched]
+            vec![PassCaught]
         }
     }
 }

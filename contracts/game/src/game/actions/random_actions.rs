@@ -1,10 +1,11 @@
 use near_sdk::log;
-use crate::{Game};
-use crate::game::actions::action::ActionTypes::{Battle, PenaltyShot, Dangle};
+use crate::{FieldPlayer, Game, TokenId};
+use crate::game::actions::action::ActionTypes::{Battle, PenaltyShot, Dangle, Move};
 use crate::game::actions::action::{ActionTypes};
 use crate::game::actions::dangle::DangleAction;
 use crate::game::actions::move_action::MoveAction;
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
+use crate::user_info::UserId;
 
 
 const PROBABILITY_GIVEAWAY: usize = 6;
@@ -135,34 +136,42 @@ impl RandomAction for BigPenalty {
         let player_with_puck = game.get_player_with_puck();
         let opponent_player = game.get_opponent_field_player();
 
-        let player_stat1 = player_with_puck.stats.get_discipline();
-        let player_stat2 = opponent_player.1.stats.get_discipline();
+        let player_stat1 = player_with_puck.stats.discipline as f32;
+        let player_stat2 = opponent_player.1.stats.discipline as f32;
 
         if has_won(player_stat1, player_stat2) {
+            // The rules were violated by the opponent of the player with the puck
+            if game.last_action == Move || game.last_action == Dangle {
+                return vec![PenaltyShot]
+            }
             let penalty_player_id = opponent_player.1.get_player_id();
-            let user_id = player_with_puck.get_user_id();
             let penalty_user_id = opponent_player.1.get_user_id();
-            game.do_penalty(BIG_PENALTY,
-                            &penalty_player_id,
-                            &user_id,
-                            &penalty_user_id);
+
+            move_player_to_big_penalties(game, penalty_player_id,
+                                           penalty_user_id);
         } else {
-            let penalty_player_id = player_with_puck.get_player_id();
+            // The player with the puck broke the rules
+
+            let opponent_player_id = opponent_player.1.get_player_id();
             let user_id = opponent_player.1.get_user_id();
+
+            let penalty_player_id = player_with_puck.get_player_id();
             let penalty_user_id = player_with_puck.get_user_id();
+            move_player_to_big_penalties(game, penalty_player_id,
+                                           penalty_user_id);
 
-            let opponent_id = opponent_player.1.id.clone().unwrap();
-            game.player_with_puck = Some((user_id, opponent_id));
-
-            game.do_penalty(BIG_PENALTY,
-                            &penalty_player_id,
-                            &user_id,
-                            &penalty_user_id);
+            game.player_with_puck = Some((user_id, opponent_player_id));
         }
 
         vec![ActionTypes::BigPenalty]
     }
 }
+
+fn move_player_to_big_penalties(game: &mut Game, player_id: TokenId, user_id: UserId) {
+    let penalty_user = game.get_user_info_mut(&user_id);
+    penalty_user.team.players_to_big_penalty.push(player_id);
+}
+
 
 pub struct SmallPenalty;
 impl RandomAction for SmallPenalty {
@@ -183,30 +192,36 @@ impl RandomAction for SmallPenalty {
         let player_stat2 = opponent_player.1.stats.discipline as f32;
 
         if has_won(player_stat1, player_stat2) {
-            if game.last_action == MoveAction || game.last_action == DangleAction {
+            // The rules were violated by the opponent of the player with the puck
+            if game.last_action == Move || game.last_action == Dangle {
                 return vec![PenaltyShot]
             }
-
             let penalty_player_id = opponent_player.1.get_player_id();
             let penalty_user_id = opponent_player.1.get_user_id();
-            let penalty_user = game.get_user_info_mut(&penalty_user_id);
-            penalty_user.team.players_to_small_penalty.push(penalty_player_id);
+
+            move_player_to_small_penalties(game, penalty_player_id,
+                                           penalty_user_id);
         } else {
-            let penalty_player_id = player_with_puck.get_player_id();
+            // The player with the puck broke the rules
+
+            let opponent_player_id = opponent_player.1.get_player_id();
             let user_id = opponent_player.1.get_user_id();
 
+            let penalty_player_id = player_with_puck.get_player_id();
             let penalty_user_id = player_with_puck.get_user_id();
-            let opponent_id = opponent_player.1.id.clone().unwrap();
-            game.player_with_puck = Some((user_id, opponent_id));
+            move_player_to_small_penalties(game, penalty_player_id,
+                                           penalty_user_id);
 
-            game.do_penalty(SMALL_PENALTY,
-                            &penalty_player_id,
-                            &user_id,
-                            &penalty_user_id);
+            game.player_with_puck = Some((user_id, opponent_player_id));
         }
 
         vec![ActionTypes::SmallPenalty]
     }
+}
+
+fn move_player_to_small_penalties(game: &mut Game, player_id: TokenId, user_id: UserId) {
+    let penalty_user = game.get_user_info_mut(&user_id);
+    penalty_user.team.players_to_small_penalty.push(player_id);
 }
 
 pub struct Fight;
