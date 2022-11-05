@@ -1,4 +1,4 @@
-use crate::game::actions::action::ActionTypes::{Dangle, PokeCheck};
+use crate::game::actions::action::ActionTypes::{Dangle, Offside, PokeCheck};
 use crate::game::actions::action::{ActionTypes, DoAction};
 use crate::{Game};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
@@ -8,6 +8,13 @@ impl DoAction for DangleAction {
     fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
         let mut actions = Vec::new();
         actions.push(Dangle);
+
+        let rnd_offside = Game::get_random_in_range(1, 100, 21);
+        if rnd_offside <= 15 {
+            actions.push(Offside);
+            game.zone_number = 2;
+            return actions;
+        }
 
         let opponent = game.get_opponent_field_player();
         let opponent_stat = get_relative_field_player_stat(

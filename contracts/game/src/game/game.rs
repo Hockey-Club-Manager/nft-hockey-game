@@ -452,14 +452,18 @@ impl Game {
                 self.zone_number = 2;
                 self.face_off(&Center)
             },
-            Fight | PuckOut | NetOff => {
+            PuckOut | NetOff => {
                 let random_position = self.get_random_position();
+                self.face_off(&random_position)
+            },
+            Offside => {
+                let random_position = self.get_random_position_after_offside();
                 self.face_off(&random_position)
             }
             Save => {
                 self.face_off_after_save()
             },
-            SmallPenalty | BigPenalty | Icing => {
+            SmallPenalty | BigPenalty | Icing | Fight  => {
                 self.zone_number = match self.get_user_id_player_with_puck() {
                     1 => 1,
                     2 => 3,
@@ -620,6 +624,19 @@ impl Game {
             2 => vec![Center],
             3 => vec![LeftWing, RightWing],
             _ => panic!("Undefined zone number")
+        };
+
+        let rnd = Game::get_random_in_range(1, positions.len(), 22);
+
+        positions[rnd]
+    }
+
+    fn get_random_position_after_offside(&self) -> PlayerPosition {
+        let user_id = self.get_user_id_player_with_puck();
+        let positions = if user_id == 1 {
+            vec![LeftWing, RightWing]
+        } else {
+            vec![LeftDefender, RightDefender]
         };
 
         let rnd = Game::get_random_in_range(1, positions.len(), 22);

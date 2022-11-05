@@ -42,6 +42,8 @@ pub enum ActionTypes {
     Move,
     Hit,
 
+    Offside,
+
     Dangle,
     PokeCheck,
 
