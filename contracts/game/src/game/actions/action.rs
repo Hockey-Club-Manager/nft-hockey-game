@@ -76,6 +76,10 @@ pub enum ActionTypes {
     EndedPenaltyForTheSecondTeam,
 }
 
+pub enum ActionData {
+
+}
+
 pub trait DoAction {
     fn do_action(&self, game: &mut Game) -> Vec<ActionTypes>;
 }

@@ -55,7 +55,8 @@ pub struct Game {
 
     // in nanoseconds
     pub(crate) event_generation_delay: u64,
-    pub(crate) number_of_generated_events_in_block: u8,
+    pub(crate) max_number_of_generated_events_in_block: u8,
+    pub(crate) number_of_generated_events_in_current_block: u8,
 }
 
 impl Game {
@@ -93,13 +94,14 @@ impl Game {
             user2: user_info2,
             reward,
             winner_index: None,
-            last_event_generation_time: env::block_timestamp(),
-            event_generation_delay: SECOND,
+            event_generation_delay: 0,
             player_with_puck: None,
             zone_number: 2,
             turns: 0,
             last_action: StartGame,
-            number_of_generated_events_in_block: 0
+            last_event_generation_time: env::block_timestamp(),
+            number_of_generated_events_in_current_block: 0,
+            max_number_of_generated_events_in_block: 2
         };
 
         game
@@ -428,6 +430,7 @@ impl Game {
     pub fn step(&mut self) -> Vec<ActionTypes> {
         let mut actions = self.do_action();
 
+        self.increase_five_time_field();
         actions.append(&mut self.check_teams_to_change_active_five());
         actions.append(&mut self.reduce_penalty());
 
@@ -450,17 +453,21 @@ impl Game {
         let actions = match self.last_action {
             StartGame | Goal | EndOfPeriod => {
                 self.zone_number = 2;
+                self.event_generation_delay += 3 * SECOND;
                 self.face_off(&Center)
             },
             PuckOut | NetOff => {
                 let random_position = self.get_random_position();
+                self.event_generation_delay += 3 * SECOND;
                 self.face_off(&random_position)
             },
             Offside => {
                 let random_position = self.get_random_position_after_offside();
+                self.event_generation_delay += 3 * SECOND;
                 self.face_off(&random_position)
             }
             Save => {
+                self.event_generation_delay += 3 * SECOND;
                 self.face_off_after_save()
             },
             SmallPenalty | BigPenalty | Icing | Fight  => {
@@ -471,15 +478,16 @@ impl Game {
                 };
 
                 let random_position = self.get_random_position();
+                self.event_generation_delay += 3 * SECOND;
                 self.face_off(&random_position)
             },
             PenaltyShot => {
+                self.event_generation_delay += 5 * SECOND;
                 self.do_penalty_shot()
             }
 
             _ => action.do_action(self)
         };
-
 
         self.turns += 1;
 
@@ -725,39 +733,17 @@ impl Game {
         if self.user1.team.need_change() {
             self.reduce_strength(self.user1.user_id);
             self.user1.team.change_active_five();
-            self.change_player_with_puck(self.user1.user_id);
 
             actions.push(FirstTeamChangeActiveFive);
         }
         if self.user2.team.need_change() {
             self.reduce_strength(self.user2.user_id);
             self.user2.team.change_active_five();
-            self.change_player_with_puck(self.user2.user_id);
 
             actions.push(SecondTeamChangeActiveFive);
         }
 
         actions
-    }
-
-    fn change_player_with_puck(&mut self, user_id: UserId) {
-        let wrapped_player_with_puck = self.player_with_puck.clone();
-
-        let player_with_puck = if wrapped_player_with_puck.is_some() {
-            wrapped_player_with_puck.unwrap()
-        } else {
-            return;
-        };
-
-        if player_with_puck.0 != user_id {
-            return;
-        }
-
-        let pos_player_with_puck = self.get_player_pos(&player_with_puck.1, player_with_puck.0);
-        let new_player_with_puck = self.get_field_player_by_pos(user_id, pos_player_with_puck);
-        let player_id = new_player_with_puck.id.clone().expect("Player id not found");
-
-        self.player_with_puck = Some((user_id, player_id));
     }
 
     fn check_end_of_period(&mut self) -> Option<ActionTypes> {

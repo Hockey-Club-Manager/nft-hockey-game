@@ -242,12 +242,25 @@ impl Hockey {
         assert!(game.winner_index.is_none(), "Game already finished");
 
         let time = env::block_timestamp();
-        if time == game.last_event_generation_time && game.number_of_generated_events_in_block == 0
-            || time - game.last_event_generation_time < game.event_generation_delay {
+        let d_time = time - game.last_event_generation_time;
+
+        if  d_time == 0
+            && game.number_of_generated_events_in_current_block == game.max_number_of_generated_events_in_block
+            || d_time < game.event_generation_delay {
             panic!("Events are generated too often")
         }
 
-        game.number_of_generated_events_in_block -= 1;
+        if d_time == 0 {
+            game.number_of_generated_events_in_current_block += 1;
+            if game.number_of_generated_events_in_current_block == game.max_number_of_generated_events_in_block {
+                game.event_generation_delay = SECOND;
+            }
+        } else {
+            game.event_generation_delay = 0;
+            game.number_of_generated_events_in_current_block = 1;
+        }
+
+        game.last_event_generation_time = time;
 
         let mut generated_actions = game.step();
 
@@ -272,7 +285,6 @@ impl Hockey {
             _ => {}
         };
 
-        game.last_event_generation_time = time;
         let generated_event = game.generate_event(&generated_actions);
 
         self.games.insert(&game_id, &game);
