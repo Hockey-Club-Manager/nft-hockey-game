@@ -428,13 +428,13 @@ impl Game {
     pub fn step(&mut self) -> Vec<ActionTypes> {
         let mut actions = self.do_action();
 
-        self.check_and_do_penalties();
-
         actions.append(&mut self.check_teams_to_change_active_five());
         actions.append(&mut self.reduce_penalty());
 
         self.swap_players_in_five(&1);
         self.swap_players_in_five(&2);
+
+        self.check_and_do_penalties();
 
         let end_of_period_event = self.check_end_of_period();
         if end_of_period_event.is_some() {
@@ -469,11 +469,9 @@ impl Game {
                 let random_position = self.get_random_position();
                 self.face_off(&random_position)
             },
-            /*
             PenaltyShot => {
-
+                self.do_penalty_shot()
             }
-            */
 
             _ => action.do_action(self)
         };
@@ -591,12 +589,30 @@ impl Game {
         player.number_of_penalty_events = Some(penalty_time);
     }
 
-    // TODO
-    /*
     fn do_penalty_shot(&mut self) -> Vec<ActionTypes> {
-        let (user_id, player_id) = self.player_with_puck.unwrap();
+        let player_with_puck = self.get_player_with_puck();
+        let player_stat = (player_with_puck.stats.get_skating()
+            + player_with_puck.stats.get_shooting()
+            + player_with_puck.stats.morale as f32
+            + player_with_puck.stats.get_iq()) / 4.0;
+
+        let (user_id, _player_id) = self.player_with_puck.clone()
+            .expect("Cannot find player with puck");
+
+        let user_opponent = self.get_opponent_info(user_id);
+        let number_goalie = user_opponent.team.active_goalie.clone();
+        let opponent_goalie = user_opponent.team.goalies.get(&number_goalie).unwrap();
+
+        let goalie_stat = (opponent_goalie.stats.get_reflexes()
+            + opponent_goalie.stats.morale as f32) / 2.0;
+
+        return if has_won(player_stat, goalie_stat) {
+            self.get_user_info_mut(&user_id).team.score += 1;
+            vec![Goal]
+        } else {
+            vec![Save]
+        }
     }
-     */
 
     fn get_random_position(&self) -> PlayerPosition {
         let positions = match self.zone_number {

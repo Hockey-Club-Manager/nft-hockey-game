@@ -62,15 +62,15 @@ impl ShotAction {
     }
 
     fn fight_against_goalie(&self, game: &mut Game, field_player_stat: f32) -> ActionTypes {
-        let user_id = game.player_with_puck.as_ref().unwrap().0;
-        let user = game.get_user_info(user_id);
-        let number_goalie = user.team.active_goalie.clone();
-        let opponent_goalie = user.team.goalies.get(&number_goalie).unwrap();
-
         let user_id_player_with_puck = game.get_user_id_player_with_puck();
         return if self.is_goalie_out(game, &user_id_player_with_puck) {
             self.score_goal(game, &user_id_player_with_puck)
         } else {
+            let user_id = game.player_with_puck.as_ref().unwrap().0;
+            let user_opponent = game.get_opponent_info(user_id);
+            let number_goalie = user_opponent.team.active_goalie.clone();
+            let opponent_goalie = user_opponent.team.goalies.get(&number_goalie).unwrap();
+
             let pass_before_shot = self.has_pass_before_shot(game);
             let reflexes = opponent_goalie.get_reflexes_rel_pass(pass_before_shot);
             let goalie_stat = self.get_relative_goalie_stat(opponent_goalie, reflexes);

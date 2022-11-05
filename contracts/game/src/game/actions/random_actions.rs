@@ -144,6 +144,7 @@ impl RandomAction for BigPenalty {
             if game.last_action == Move || game.last_action == Dangle {
                 return vec![PenaltyShot]
             }
+
             let penalty_player_id = opponent_player.1.get_player_id();
             let penalty_user_id = opponent_player.1.get_user_id();
 
@@ -244,9 +245,22 @@ impl RandomAction for Fight {
         let compared_stat1 = get_relative_field_player_stat(player_with_puck, player_with_puck.stats.fighting_skill as f32);
         let compared_stat2= get_relative_field_player_stat(opponent_player.1, opponent_player.1.stats.fighting_skill as f32) * opponent_player.0;
 
-        if has_won(compared_stat2, compared_stat1) {
-            game.player_with_puck = Option::from((opponent_player.1.get_user_id(), opponent_player.1.get_player_id()));
+        let player1_id = player_with_puck.get_player_id();
+        let user1_id = player_with_puck.get_user_id();
+        let player2_id = opponent_player.1.get_player_id();
+        let user2_id = opponent_player.1.get_user_id();
 
+        game.do_penalty(BIG_PENALTY,
+                        &player1_id,
+                        &user2_id,
+                        &user1_id);
+
+        game.do_penalty(BIG_PENALTY,
+                        &player2_id,
+                        &user1_id,
+                        &user2_id);
+
+        if has_won(compared_stat2, compared_stat1) {
             self.increase_morale_opponent_team(game, &user_id_with_puck);
             self.reduce_morale_team_with_puck(game, &user_id_with_puck);
         } else {

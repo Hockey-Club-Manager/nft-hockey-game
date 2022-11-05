@@ -89,10 +89,9 @@ impl Team {
     }
 
     fn do_penalty_for_pk(&mut self, penalty_player_id: &TokenId, count_players_in_five: usize) {
-        if count_players_in_five == 3 {
-            self.replace_penalty_player(penalty_player_id);
-        } else {
-            self.replace_penalty_player(penalty_player_id);
+        self.replace_penalty_player(penalty_player_id);
+
+        if count_players_in_five > 3 {
             self.remove_extra_players();
         }
     }
