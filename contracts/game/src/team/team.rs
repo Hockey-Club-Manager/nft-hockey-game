@@ -10,6 +10,7 @@ use crate::team::numbers::FiveNumber::*;
 use crate::team::players::goalie::Goalie;
 use crate::team::players::player::{GoalieSubstitution};
 use crate::team::players::player::GoalieSubstitution::{GoalieSubstitution1, GoalieSubstitution2};
+use crate::team::players::player::Hand::Left;
 use crate::user_info::UserId;
 
 
@@ -245,6 +246,31 @@ impl Team {
         player_id_with_max_iq
     }
 
+    pub fn release_removed_players_in_brigades(&mut self) {
+        let fives = vec![First, Second, Third, Fourth];
+
+        let pps = vec![PowerPlay1, PowerPlay2];
+        self.release_removed_players(&fives, &pps, &LeftWing);
+
+        let pks = vec![PenaltyKill1, PenaltyKill2];
+        self.release_removed_players(&fives, &pks, &RightWing);
+    }
+
+    fn release_removed_players(
+        &mut self,
+        fives: &Vec<FiveNumber>,
+        brigades: &Vec<FiveNumber>,
+        vacated_position: &PlayerPosition
+    ) {
+        for brigade_number in brigades{
+            let available_players = self.get_available_players(&brigades, &fives);
+            let player_id = self.get_player_id_with_max_iq(&available_players);
+
+            let brigade = self.get_five_mut(brigade_number);
+            brigade.field_players.insert(vacated_position.clone(), player_id);
+        }
+    }
+
     fn get_players_in_fives(&self, five_numbers: &Vec<FiveNumber>) -> Vec<TokenId> {
         let mut result: Vec<TokenId> = Vec::new();
 
@@ -392,6 +418,9 @@ impl Team {
     }
 
     pub fn swap_players_in_active_five(&mut self, player_with_puck: Option<TokenId>) {
+        let players_to_big_penalty = self.players_to_big_penalty.clone();
+        let players_to_small_penalty = self.players_to_small_penalty.clone();
+
         let current_five_number = self.active_five.current_number.clone();
         let players = self.get_players_in_five(&current_five_number);
         let number_of_players_in_current_five = self.get_number_of_field_players(&current_five_number);
@@ -412,18 +441,13 @@ impl Team {
 
         for (position, player_id) in &players {
             let is_replaced_position = active_five.replaced_position.contains(position);
-            let is_player_with_puck = match player_with_puck.is_some() {
-                true => {
-                    if *player_id == *player_with_puck.as_ref().unwrap() {
-                        true
-                    } else {
-                        false
-                    }
-                }
-                false => false
-            };
+            let is_player_available = is_player_available(player_id,
+                                                          &player_with_puck,
+                                                          &players_to_big_penalty,
+                                                          &players_to_small_penalty);
 
-            if !is_player_with_puck && !is_replaced_position && number_of_players_to_replace > number_of_replaced_players {
+            if is_player_available && !is_replaced_position
+                && number_of_players_to_replace > number_of_replaced_players {
                 active_five.field_players.insert(position.clone(), player_id.clone());
                 active_five.replaced_position.push(position.clone());
                 number_of_replaced_players += 1;
@@ -507,4 +531,27 @@ impl Team {
             active_five.field_players.remove(&AdditionalPosition);
         }
     }
+}
+
+
+fn is_player_available(
+    player_id: &TokenId,
+    player_with_puck: &Option<TokenId>,
+    players_to_big_penalty: &Vec<TokenId>,
+    players_to_small_penalty: &Vec<TokenId>
+) -> bool {
+    match player_with_puck.is_some() {
+        true => {
+            if *player_id == *player_with_puck.as_ref().unwrap() {
+                return false;
+            }
+        }
+        false => {}
+    };
+
+    if players_to_small_penalty.contains(player_id) && players_to_big_penalty.contains(player_id) {
+        return false;
+    }
+
+    true
 }

@@ -13,6 +13,7 @@ use crate::game::actions::random_actions::{BIG_PENALTY, SMALL_PENALTY};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::LeftWing;
 use crate::team::five::{ActiveFive, FiveIds, IceTimePriority};
+use crate::team::numbers::FiveNumber;
 use crate::team::numbers::FiveNumber::{First, PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2};
 use crate::team::players::player::Hand::Left;
 use crate::team::team_metadata::team_metadata_to_team;
@@ -753,6 +754,7 @@ impl Game {
     fn reduce_penalty(&mut self) -> Vec<ActionTypes> {
         let mut actions = Vec::new();
 
+        /* TODO
         let first_team_action = self.reduce_user_player_penalty(&1);
         if first_team_action.is_some() {
             actions.push(first_team_action.unwrap());
@@ -762,22 +764,18 @@ impl Game {
         if second_team_action.is_some() {
             actions.push(second_team_action.unwrap());
         }
-
+        */
         actions
     }
 
-    fn reduce_user_player_penalty(&mut self, user_id: &UserId) -> Option<ActionTypes> {
+    fn reduce_user_player_penalty(&mut self, user_id: &UserId) {
         let user = self.get_user_info_mut(user_id);
-
-        let active_five_number = user.team.active_five.current_number;
-        let number_of_players_in_five = user.team.get_five_number_of_players(&active_five_number);
-
         let number_of_penalty_players = user.team.penalty_players.len();
-        let mut is_ended_penalty = false;
 
         let mut liberated_players: Vec<usize> = Vec::new();
 
         for i in 0.. number_of_penalty_players {
+            // Simultaneous report for only two deletions
             if i > 1 {
                 break;
             }
@@ -788,15 +786,6 @@ impl Game {
 
             if player.number_of_penalty_events.unwrap() == 0 {
                 liberated_players.push(i);
-
-                if number_of_players_in_five == 3 {
-                    let active_five = user.team.get_active_five_mut();
-                    active_five.field_players.insert(RightWing, player_id);
-                } else if number_of_players_in_five == 4 {
-                    user.team.active_five.current_number = First;
-
-                    is_ended_penalty = true;
-                }
             }
         }
 
@@ -805,21 +794,12 @@ impl Game {
             index -= 1;
             let penalty_index = liberated_players[index];
             user.team.penalty_players.remove(penalty_index);
+
         }
 
-        let mut result = if is_ended_penalty {
-            if *user_id == 1 as usize {
-                self.change_player_with_puck(1);
-                Some(EndedPenaltyForTheFirstTeam)
-            } else {
-                self.change_player_with_puck(2);
-                Some(EndedPenaltyForTheSecondTeam)
-            }
-        } else {
-            None
-        };
-
-        result
+        for _ in 0..liberated_players.len() {
+            self.put_players_on_field(user_id);
+        }
     }
 
     fn swap_players_in_five(&mut self, user_id: &UserId) {
@@ -834,9 +814,39 @@ impl Game {
         user.team.swap_players_in_active_five(player_with_puck);
     }
 
+    // If a goal is scored
     pub fn remove_penalty_players(&mut self, user_id: &UserId) {
         let user_info = self.get_user_info_mut(user_id);
-        user_info.team.players_to_small_penalty.clear();
-        user_info.team.players_to_big_penalty.clear();
+
+        let small_penalties_len = user_info.team.players_to_small_penalty.len();
+        if small_penalties_len != 0 {
+            user_info.team.players_to_small_penalty.remove(small_penalties_len - 1);
+            return;
+        }
+
+        let big_penalties_len = user_info.team.players_to_big_penalty.len();
+        if big_penalties_len != 0 {
+            user_info.team.players_to_small_penalty.remove(big_penalties_len - 1);
+            return;
+        }
+
+        if user_info.team.penalty_players.len() != 0 {
+            user_info.team.penalty_players.remove(0);
+            self.put_players_on_field(user_id);
+        }
+    }
+
+    // If the number of players in pk = 3 we need to release the 4th in pks and the 5th in pps
+    fn put_players_on_field(&mut self, user_id: &UserId) {
+        let user_info = self.get_user_info_mut(user_id);
+
+        let number_of_players_in_pks = user_info.team
+            .get_five_number_of_players(&PenaltyKill1);
+
+        if number_of_players_in_pks == 3 {
+            user_info.team.release_removed_players_in_brigades();
+        } else {
+            user_info.team.active_five.current_number = First;
+        }
     }
 }
