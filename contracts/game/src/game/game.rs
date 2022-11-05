@@ -847,6 +847,7 @@ impl Game {
             user_info.team.release_removed_players_in_brigades();
         } else {
             user_info.team.active_five.current_number = First;
+            user_info.team.insert_player_to_active_five(&LeftWing);
         }
     }
 }

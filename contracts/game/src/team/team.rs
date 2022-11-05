@@ -254,6 +254,25 @@ impl Team {
 
         let pks = vec![PenaltyKill1, PenaltyKill2];
         self.release_removed_players(&fives, &pks, &RightWing);
+
+        if pps.contains(&self.active_five.current_number) {
+            self.insert_player_to_active_five(&LeftWing);
+        } else if pks.contains(&self.active_five.current_number) {
+            self.insert_player_to_active_five(&RightWing);
+        }
+    }
+
+    pub fn insert_player_to_active_five(&mut self, player_position: &PlayerPosition) {
+        let right_wing_id = self.get_player_id_by_pos(player_position);
+
+        self.active_five.field_players.insert(player_position.clone(), right_wing_id);
+        self.active_five.replaced_position.push(player_position.clone());
+    }
+
+    fn get_player_id_by_pos(&self, player_position: &PlayerPosition) -> TokenId {
+        let five = self.get_five(&self.active_five.current_number);
+        five.field_players.get(player_position)
+            .expect("Cannot find right winger").clone()
     }
 
     fn release_removed_players(
