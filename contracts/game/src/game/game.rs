@@ -9,6 +9,7 @@ use crate::game::actions::action::ActionData::*;
 use crate::team::players::player::{PlayerPosition};
 use crate::team::players::player::PlayerPosition::*;
 use crate::{TokenBalance};
+use crate::ActionTypes::{BigPenalty, SmallPenalty};
 use crate::game::actions::random_actions::{BIG_PENALTY, SMALL_PENALTY};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::LeftWing;
@@ -438,7 +439,7 @@ impl Game {
             }
         };
 
-        self.check_and_do_penalties();
+        actions.append(&mut self.check_and_do_penalties());
 
         let end_of_period_event = self.check_end_of_period();
         if end_of_period_event.is_some() {
@@ -536,34 +537,38 @@ impl Game {
         }
     }
 
-    fn check_and_do_penalties(&mut self) {
+    fn check_and_do_penalties(&mut self) -> Vec<ActionData> {
         match self.player_with_puck.clone() {
-            None => {}
+            None =>  vec![],
             Some((user_id, _player_id)) => {
                 let opponent_id = if user_id == 0 {
                     1
                 } else {
                     0
                 };
-                self.do_penalties(opponent_id);
+                self.do_penalties(opponent_id)
             }
-        };
+        }
     }
 
-    fn do_penalties(&mut self, penalty_user_id: UserId) {
+    fn do_penalties(&mut self, penalty_user_id: UserId) -> Vec<ActionData> {
         let user_id = if penalty_user_id == 0 {
             1
         } else {
             0
         };
 
+        let mut actions = Vec::new();
+
         let players_to_big_penalty = self.get_players_to_big_penalty(&user_id);
-        self.dp(players_to_big_penalty, &user_id, &penalty_user_id, BIG_PENALTY);
+        actions.append(&mut self.dp(players_to_big_penalty, &user_id, &penalty_user_id, BIG_PENALTY));
 
         let players_to_small_penalty = self.get_players_to_small_penalty(&user_id);
-        self.dp(players_to_small_penalty, &user_id, &penalty_user_id, SMALL_PENALTY);
+        actions.append(&mut self.dp(players_to_small_penalty, &user_id, &penalty_user_id, SMALL_PENALTY));
 
         self.clear_players_to_penalties(&user_id);
+
+        actions
     }
 
     fn get_players_to_big_penalty(&self, penalty_user_id: &UserId) -> Vec<TokenId> {
@@ -588,15 +593,19 @@ impl Game {
         user_id: &UserId,
         penalty_user_id: &UserId,
         penalty_time: u8
-    ) {
+    ) -> Vec<ActionData> {
+        let mut actions = Vec::new();
+
         for player_id in &players_to_penalty {
-            self.do_penalty(
+            actions.push(self.do_penalty(
                 penalty_time,
                 &player_id,
                 &user_id,
                 &penalty_user_id
-            );
+            ));
         }
+
+        actions
     }
 
     pub fn do_penalty(
@@ -605,17 +614,35 @@ impl Game {
         penalty_player_id: &TokenId,
         user_id: &UserId,
         penalty_user_id: &UserId
-    ) {
+    ) -> ActionData {
+        let action_type = if penalty_time == BIG_PENALTY {
+            BigPenalty
+        } else {
+            SmallPenalty
+        };
+        let penalty_user = self.get_user_info(penalty_user_id.clone());
+        let penalty_player = penalty_user.team.get_field_player(penalty_player_id);
+
+        let action = Penalty {
+            action_type,
+            account_id: penalty_user.account_id.clone(),
+            player_img: penalty_player.img.clone().expect("Player img not found"),
+            player_name: penalty_player.name.clone().expect("Player name not found"),
+            player_number: penalty_player.number,
+        };
+
         self.penalty_player(penalty_time, penalty_player_id, penalty_user_id);
 
-        let penalty_user = self.get_user_info_mut(penalty_user_id);
-        penalty_user.team.do_penalty(&penalty_player_id);
-        penalty_user.team.swap_all_players_in_active_five();
+        let penalty_user_mut = self.get_user_info_mut(penalty_user_id);
+        penalty_user_mut.team.do_penalty(&penalty_player_id);
+        penalty_user_mut.team.swap_all_players_in_active_five();
 
-        let active_five_number = penalty_user.team.active_five.get_current_five_number();
-        let number_of_players = penalty_user.team.get_five_number_of_players(&active_five_number);
+        let active_five_number = penalty_user_mut.team.active_five.get_current_five_number();
+        let number_of_players = penalty_user_mut.team.get_five_number_of_players(&active_five_number);
 
         self.check_and_change_active_five_to_pp(user_id, number_of_players);
+
+        action
     }
 
     fn check_and_change_active_five_to_pp(&mut self, user_id: &UserId, opponent_number_of_players: usize) {

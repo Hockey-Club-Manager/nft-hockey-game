@@ -257,7 +257,7 @@ pub enum ActionData {
     },
     Penalty {
         action_type: ActionTypes,
-        account_id: String,
+        account_id: AccountId,
 
         player_img: String,
         player_name: String,
