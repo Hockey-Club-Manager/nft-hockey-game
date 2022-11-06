@@ -69,7 +69,7 @@ impl Team {
             self.do_penalty_for_pk(penalty_player_id, count_players_in_five);
         } else {
             self.replace_penalty_player(penalty_player_id);
-            self.active_five.current_number = First;
+            self.active_five.current_number = PenaltyKill1;
         }
     }
 
@@ -502,7 +502,7 @@ impl Team {
         false
     }
 
-    pub fn swap_all_players_in_active_five(&mut self) {
+    pub fn swap_all_players_in_active_five(&mut self, player_with_puck: &Option<(UserId, TokenId)>) {
         let current_five_number = self.active_five.current_number.clone();
         let players = self.get_players_in_five(&current_five_number);
 
@@ -511,8 +511,21 @@ impl Team {
         active_five.replaced_position.clear();
 
         for (pos, id) in &players {
-            active_five.field_players.insert(pos.clone(), id.clone());
-            active_five.replaced_position.push(pos.clone());
+            let is_available = match player_with_puck {
+                Some((_user_id, player_id)) => {
+                    if *player_id != *id {
+                        true
+                    } else {
+                        false
+                    }
+                },
+                None => true
+            };
+
+            if is_available {
+                active_five.field_players.insert(pos.clone(), id.clone());
+                active_five.replaced_position.push(pos.clone());
+            }
         }
 
         if active_five.is_goalie_out {

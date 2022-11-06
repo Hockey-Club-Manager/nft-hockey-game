@@ -468,6 +468,7 @@ impl Game {
                 self.zone_number = 2;
                 self.event_generation_delay += 3 * SECOND;
 
+                self.player_with_puck = None;
                 self.swap_all_players_in_fives();
                 self.face_off(&Center)
             },
@@ -475,6 +476,7 @@ impl Game {
                 let random_position = self.get_random_position();
                 self.event_generation_delay += 3 * SECOND;
 
+                self.player_with_puck = None;
                 self.swap_all_players_in_fives();
                 self.face_off(&random_position)
             },
@@ -482,6 +484,7 @@ impl Game {
                 let random_position = self.get_random_position_after_offside();
                 self.event_generation_delay += 3 * SECOND;
 
+                self.player_with_puck = None;
                 self.swap_all_players_in_fives();
                 self.face_off(&random_position)
             }
@@ -500,8 +503,9 @@ impl Game {
 
                 let random_position = self.get_random_position();
                 self.event_generation_delay += 3 * SECOND;
-                self.swap_all_players_on_opponent_team();
 
+                self.player_with_puck = None;
+                self.swap_all_players_on_opponent_team();
                 self.face_off(&random_position)
             },
             Penalty {..} | Fight {..} | FightWon {..}  => {
@@ -513,6 +517,9 @@ impl Game {
 
                 let random_position = self.get_random_position();
                 self.event_generation_delay += 3 * SECOND;
+
+                self.player_with_puck = None;
+                self.swap_all_players_in_fives();
                 self.face_off(&random_position)
             },
             PenaltyShot {..} => {
@@ -529,22 +536,25 @@ impl Game {
     }
 
     fn swap_all_players_in_fives(&mut self) {
+        let player_with_puck = self.player_with_puck.clone();
         let user1 = self.get_user_info_mut(&1);
-        user1.team.swap_all_players_in_active_five();
+        user1.team.swap_all_players_in_active_five(&player_with_puck);
 
         let user2 = self.get_user_info_mut(&2);
-        user2.team.swap_all_players_in_active_five();
+        user2.team.swap_all_players_in_active_five(&player_with_puck);
     }
 
     fn swap_all_players_on_opponent_team(&mut self) {
+        let player_with_puck = self.player_with_puck.clone();
+
         let user_id = self.get_user_id_player_with_puck();
 
         if user_id == 1 {
             let user2 = self.get_user_info_mut(&2);
-            user2.team.swap_all_players_in_active_five();
+            user2.team.swap_all_players_in_active_five(&player_with_puck);
         } else {
             let user1 = self.get_user_info_mut(&1);
-            user1.team.swap_all_players_in_active_five();
+            user1.team.swap_all_players_in_active_five(&player_with_puck);
         }
     }
 
@@ -631,6 +641,8 @@ impl Game {
         } else {
             SmallPenalty
         };
+
+        let player_with_puck = self.player_with_puck.clone();
         let penalty_user = self.get_user_info(penalty_user_id.clone());
         let penalty_player = penalty_user.team.get_field_player(penalty_player_id);
 
@@ -646,7 +658,8 @@ impl Game {
 
         let penalty_user_mut = self.get_user_info_mut(penalty_user_id);
         penalty_user_mut.team.do_penalty(&penalty_player_id);
-        penalty_user_mut.team.swap_all_players_in_active_five();
+
+        penalty_user_mut.team.swap_all_players_in_active_five(&player_with_puck);
 
         let active_five_number = penalty_user_mut.team.active_five.get_current_five_number();
         let number_of_players = penalty_user_mut.team.get_five_number_of_players(&active_five_number);
@@ -664,7 +677,6 @@ impl Game {
         let brigades = vec![PowerPlay1, PowerPlay2];
         if !brigades.contains(&active_five_number) && number_of_players > opponent_number_of_players {
             user.team.active_five.current_number = PowerPlay1;
-            user.team.swap_all_players_in_active_five();
         }
     }
 
