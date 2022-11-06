@@ -453,7 +453,18 @@ impl Game {
         let action = Action;
 
         let actions = match self.last_action {
-            StartGame {..} | Goal { .. } | EndOfPeriod {..} => {
+            StartGame {..} => {
+                self.zone_number = 2;
+                self.event_generation_delay += 3 * SECOND;
+
+                let mut actions = vec![StartGame {
+                    action_type: ActionTypes::StartGame
+                }];
+                actions.append(&mut self.face_off(&Center));
+
+                actions
+            },
+            Goal { .. } | EndOfPeriod {..} => {
                 self.zone_number = 2;
                 self.event_generation_delay += 3 * SECOND;
 
