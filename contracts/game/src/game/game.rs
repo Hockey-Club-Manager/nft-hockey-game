@@ -854,21 +854,16 @@ impl Game {
     fn reduce_penalty(&mut self) -> Vec<ActionData> {
         let mut actions = Vec::new();
 
-        /* TODO
-        let first_team_action = self.reduce_user_player_penalty(&1);
-        if first_team_action.is_some() {
-            actions.push(first_team_action.unwrap());
-        }
+        let mut first_team_action = self.reduce_user_player_penalty(&1);
+        actions.append(&mut first_team_action);
 
-        let second_team_action = self.reduce_user_player_penalty(&2);
-        if second_team_action.is_some() {
-            actions.push(second_team_action.unwrap());
-        }
-        */
+        let mut second_team_action = self.reduce_user_player_penalty(&2);
+        actions.append(&mut second_team_action);
+
         actions
     }
 
-    fn reduce_user_player_penalty(&mut self, user_id: &UserId) {
+    fn reduce_user_player_penalty(&mut self, user_id: &UserId) -> Vec<ActionData> {
         let user = self.get_user_info_mut(user_id);
         let number_of_penalty_players = user.team.penalty_players.len();
 
@@ -890,16 +885,26 @@ impl Game {
         }
 
         let mut index = liberated_players.len();
+        let mut actions = Vec::new();
         while index > 0 {
             index -= 1;
             let penalty_index = liberated_players[index];
-            user.team.penalty_players.remove(penalty_index);
 
+            let player_id = user.team.penalty_players.remove(penalty_index);
+            let player = user.team.get_field_player(&player_id);
+
+            actions.push(EndedPenalty {
+                action_type: ActionTypes::EndedPenalty,
+                account_id: user.account_id.clone(),
+                player_number: player.number,
+            })
         }
 
         for _ in 0..liberated_players.len() {
             self.put_players_on_field(user_id);
         }
+
+        actions
     }
 
     fn swap_players_in_five(&mut self, user_id: &UserId) {
