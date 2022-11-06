@@ -255,15 +255,7 @@ pub enum ActionData {
     PuckOut {
         action_type: ActionTypes,
     },
-    BigPenalty {
-        action_type: ActionTypes,
-        account_id: String,
-
-        player_img: String,
-        player_name: String,
-        player_number: u8,
-    },
-    SmallPenalty {
+    Penalty {
         action_type: ActionTypes,
         account_id: String,
 

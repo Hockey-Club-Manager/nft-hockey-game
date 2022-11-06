@@ -371,20 +371,12 @@ impl Game {
         }
     }
 
-    // TODO
     pub fn generate_event(&mut self, actions: &Vec<ActionData>) -> Event {
-        let non_game_events: Vec<ActionTypes> = vec![
-            ActionTypes::TakeTO,
-            ActionTypes::CoachSpeech,
-            ActionTypes::GoalieOut,
-            ActionTypes::GoalieBack,
-        ];
-
         for action in actions {
             match action {
                 TakeTO {..} | CoachSpeech {..} | GoalieBack {..}
                 | GoalieOut {..} | EndedPenalty {..} | DelayedPenaltySignal {..}
-                | BigPenalty {..} | SmallPenalty {..} => {},
+                | Penalty {..} => {},
                 _ => {
                     self.last_action = action.clone();
                 }
@@ -500,7 +492,7 @@ impl Game {
 
                 self.face_off(&random_position)
             },
-            SmallPenalty {..} | BigPenalty {..} | Fight {..} | FightWon {..}  => {
+            Penalty {..} | Fight {..} | FightWon {..}  => {
                 self.zone_number = match self.get_user_id_player_with_puck() {
                     1 => 1,
                     2 => 3,
@@ -834,6 +826,9 @@ impl Game {
             } else {
                 1
             };
+
+            self.swap_users();
+
             return Some(EndOfPeriod { action_type: ActionTypes::EndOfPeriod, number: period });
         }
 
@@ -953,6 +948,29 @@ impl Game {
         } else {
             user_info.team.active_five.current_number = First;
             user_info.team.insert_player_to_active_five(&LeftWing);
+        }
+    }
+
+    fn swap_users(&mut self) {
+        let temp_user = self.user1.clone();
+        self.user1 = self.user2.clone();
+        self.user2 = temp_user;
+
+        self.user1.user_id = 1;
+        self.user2.user_id = 2;
+
+        for (_, player) in &mut self.user1.team.field_players {
+            player.user_id = Some(1);
+        }
+        for (_, goalie) in &mut self.user1.team.goalies {
+            goalie.user_id = Some(1);
+        }
+
+        for (_, player) in &mut self.user2.team.field_players {
+            player.user_id = Some(2);
+        }
+        for (_, goalie) in &mut self.user2.team.goalies {
+            goalie.user_id = Some(2);
         }
     }
 }
