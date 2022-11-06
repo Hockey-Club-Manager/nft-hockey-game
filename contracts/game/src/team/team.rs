@@ -44,6 +44,10 @@ pub struct Team {
 }
 
 impl Team {
+    pub fn get_active_goalie(&self) -> &Goalie {
+        self.goalies.get(&self.active_goalie).expect("Goalie not found")
+    }
+
     pub fn get_number_of_penalty_players(&self) -> usize {
         let number_of_players_to_penalty = self.players_to_big_penalty.len()
             + self.players_to_small_penalty.len();
@@ -521,7 +525,13 @@ impl Team {
     }
 
     pub fn goalie_out(&mut self) {
-        let goalie_substitute_id = self.goalie_substitutions.get(&self.active_goalie_substitution).unwrap().clone();
+        let mut goalie_substitute_id = self.goalie_substitutions.get(&self.active_goalie_substitution).unwrap().clone();
+        if !self.is_goalie_substitutions_available(&goalie_substitute_id) {
+            let fives = vec![First, Second, Third, Fourth];
+            let available_players = self.get_available_players(&vec![], &fives);
+            goalie_substitute_id = self.get_player_id_with_max_iq(&available_players);
+        }
+
         let active_five = self.get_active_five_mut();
         active_five.is_goalie_out = true;
         let number_of_players = active_five.get_number_of_players();
@@ -533,6 +543,23 @@ impl Team {
         } else {
             active_five.field_players.insert(RightWing, goalie_substitute_id.clone());
         }
+    }
+
+    fn is_goalie_substitutions_available(&self, substitution_id: &TokenId) -> bool {
+        if self.penalty_players.contains(substitution_id) {
+            return false;
+        } else if self.players_to_big_penalty.contains(substitution_id) {
+            return false;
+        } else if self.players_to_small_penalty.contains(substitution_id) {
+            return false;
+        }
+
+        for (_, player_id) in &self.get_active_five().field_players {
+            if *player_id == *substitution_id {
+                return false;
+            }
+        }
+        return true;
     }
 
     pub fn goalie_back(&mut self) {

@@ -129,7 +129,12 @@ impl From<Stats> for StatsOutput {
 }
 
 impl Hockey {
-    pub(crate) fn internal_distribute_reward(&mut self, token_balance: &TokenBalance, winner_id: &AccountId, game_id: GameId) {
+    pub(crate) fn internal_distribute_reward(
+        &mut self,
+        token_balance: &TokenBalance,
+        winner_id: &AccountId,
+        game_id: GameId
+    ) -> Balance {
         // TODO add for FT
         let amount = token_balance.balance;
         let fee = amount / 10;
@@ -160,6 +165,7 @@ impl Hockey {
 
         // finish
         // TODO add to stats
+        winner_reward
     }
 
     pub(crate) fn internal_update_stats(&mut self,

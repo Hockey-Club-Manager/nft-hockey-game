@@ -1,6 +1,6 @@
-use crate::game::actions::action::ActionTypes::{Goal, Pass, Rebound, Save, Shot, ShotBlocked, ShotMissed};
-use crate::{Game};
-use crate::game::actions::action::{ActionTypes, DoAction};
+use crate::game::actions::action::ActionData::{Goal, Pass, Rebound, Save, Shot, ShotBlocked, ShotMissed};
+use crate::{Game, PlayerPosition};
+use crate::game::actions::action::{ActionData, ActionTypes, DoAction};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 use crate::team::players::goalie::Goalie;
@@ -12,15 +12,38 @@ const PROBABILITY_SHOT_MISSED: usize = 20;
 
 pub struct ShotAction;
 impl DoAction for ShotAction {
-    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
-        let mut actions = vec![Shot];
-
+    fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
         let opponent_field_player_stat = self.get_opponent_field_player_stats(game);
         let player_with_puck = game.get_player_with_puck();
-        let player_stat = get_relative_field_player_stat(player_with_puck, player_with_puck.stats.get_shooting());
+        let player_stat = get_relative_field_player_stat(
+            player_with_puck, player_with_puck.stats.get_shooting());
+
+        let user = game.get_user_info(player_with_puck.get_user_id());
+        let player_position = user.team.get_field_player_pos(
+            &player_with_puck.get_player_id());
+        let mut actions = vec![Shot {
+            action_type: ActionTypes::Shot,
+            account_id: (user.account_id.clone()),
+            player_number: player_with_puck.number,
+            player_position: player_position.clone()
+        }];
 
         if !has_won(player_stat, opponent_field_player_stat) {
-            actions.push(ShotBlocked);
+            let opponent_player = game.get_opponent_field_player();
+            let opponent_user = game.get_opponent_info(user.user_id);
+            let opponent_user_id = opponent_player.1.get_user_id();
+            let opponent_player_id = opponent_player.1.get_player_id();
+            let opponent_position = opponent_user.team.get_field_player_pos(
+                &opponent_player_id);
+
+            actions.push(ShotBlocked {
+                action_type: ActionTypes::ShotBlocked,
+                account_id: opponent_user.account_id.clone(),
+                player_number: opponent_player.1.number,
+                player_position: opponent_position.clone()
+            });
+
+            game.player_with_puck = Option::from((opponent_user_id, opponent_player_id));
         } else {
             if PROBABILITY_SHOT_MISSED >= Game::get_random_in_range(1, 100, 1) {
                 actions.push(self.do_shot_missed(game));
@@ -38,11 +61,12 @@ impl ShotAction {
         let opponent_field_player = game.get_opponent_field_player();
         get_relative_field_player_stat(
             &opponent_field_player.1,
-            (opponent_field_player.1.stats.shot_blocking + opponent_field_player.1.stats.defensive_awareness) as f32 / 10.0
+            (opponent_field_player.1.stats.shot_blocking
+                + opponent_field_player.1.stats.defensive_awareness) as f32 / 10.0
         ) * opponent_field_player.0
     }
 
-    fn do_shot_missed(&self, game: &mut Game) -> ActionTypes {
+    fn do_shot_missed(&self, game: &mut Game) -> ActionData {
         let random_user_id = Game::get_random_in_range(1, 2, 19);
         let user_with_puck_id = game.get_user_id_player_with_puck();
 
@@ -55,13 +79,27 @@ impl ShotAction {
         let rnd = Game::get_random_in_range(1, 2, 21);
 
         let random_position = positions[rnd];
-        let player_id = game.get_field_player_id_by_pos(random_user_id, &random_position);
+        let player_id = game.get_field_player_id_by_pos(&random_position, random_user_id);
+
+        let user = game.get_user_info(random_user_id);
+        let player = user.team.get_field_player(&player_id);
+
+        // random_position may not be available. get_field_player_id_by_pos will return the player to a different position
+        let player_position = user.team.get_field_player_pos(&player_id);
+
+        let action = ShotMissed {
+            action_type: ActionTypes::ShotMissed,
+            account_id: user.account_id.clone(),
+            player_number: player.number,
+            player_position: player_position.clone(),
+        };
+
         game.player_with_puck = Option::from((random_user_id, player_id));
 
-        ShotMissed
+        action
     }
 
-    fn fight_against_goalie(&self, game: &mut Game, field_player_stat: f32) -> ActionTypes {
+    fn fight_against_goalie(&self, game: &mut Game, field_player_stat: f32) -> ActionData {
         let user_id_player_with_puck = game.get_user_id_player_with_puck();
         return if self.is_goalie_out(game, &user_id_player_with_puck) {
             self.score_goal(game, &user_id_player_with_puck)
@@ -73,13 +111,19 @@ impl ShotAction {
 
             let pass_before_shot = self.has_pass_before_shot(game);
             let reflexes = opponent_goalie.get_reflexes_rel_pass(pass_before_shot);
-            let goalie_stat = self.get_relative_goalie_stat(opponent_goalie, reflexes);
+            let goalie_stat = self.get_relative_goalie_stat(
+                opponent_goalie, reflexes
+            );
 
             if has_won(field_player_stat, goalie_stat) {
                 self.score_goal(game, &user_id_player_with_puck)
             } else {
                 if PROBABILITY_SAVE >= Game::get_random_in_range(1, 100, 2) {
-                    Save
+                    Save {
+                        action_type: ActionTypes::Save,
+                        account_id: user_opponent.account_id.clone(),
+                        goalie_number: opponent_goalie.number,
+                    }
                 } else {
                     self.do_rebound(game)
                 }
@@ -95,7 +139,7 @@ impl ShotAction {
         }
     }
 
-    fn score_goal(&self, game: &mut Game, user_id: &usize) -> ActionTypes {
+    fn score_goal(&self, game: &mut Game, user_id: &usize) -> ActionData {
         self.change_morale_after_goal(game);
         game.get_user_info_mut(user_id).team.score += 1;
 
@@ -105,15 +149,31 @@ impl ShotAction {
             game.remove_penalty_players(&1);
         }
 
-        Goal
+        let user = game.get_user_info(user_id.clone());
+        let player_with_puck = game.get_player_with_puck();
+
+        let (pass_player_name, pass_player_num) = match game.last_action.clone() {
+            Pass { from_player_name, from_player_number, .. } => {
+                (Some(from_player_name), Some(from_player_number))
+            },
+            _ => (None, None)
+        };
+        Goal {
+            action_type: ActionTypes::Goal,
+            account_id: user.account_id.clone(),
+            player_name1: player_with_puck.name.clone().expect("Player name not found"),
+            player_img: player_with_puck.img.clone().expect("Player img not found"),
+            player_number1: player_with_puck.number,
+            player_name2: pass_player_name,
+            player_number2: pass_player_num
+        }
     }
 
     fn has_pass_before_shot(&self, game: &Game) -> bool {
-        if game.last_action == Pass {
-            return true;
+        match game.last_action {
+            Pass {..} => true,
+            _ => false
         }
-
-        return false;
     }
 
     fn get_relative_goalie_stat(&self, player: &Goalie, compared_stat: f32) -> f32 {
@@ -163,7 +223,7 @@ impl ShotAction {
         }
     }
 
-    fn do_rebound(&self, game: &mut Game) -> ActionTypes {
+    fn do_rebound(&self, game: &mut Game) -> ActionData {
         let random_user_id = Game::get_random_in_range(1, 2, 19);
         let user_with_puck_id = game.get_user_id_player_with_puck();
 
@@ -176,9 +236,21 @@ impl ShotAction {
         let rnd = Game::get_random_in_range(1, 3, 20);
 
         let random_position = positions[rnd];
-        let player_id = game.get_field_player_id_by_pos(random_user_id, &random_position);
+        let player_id = game.get_field_player_id_by_pos(&random_position, random_user_id.clone());
+
+        let user = game.get_user_info(random_user_id);
+        let player = user.team.get_field_player(&player_id);
+        let player_position = user.team.get_field_player_pos(&player_id);
+
+        let action = Rebound {
+            action_type: ActionTypes::Rebound,
+            account_id: user.account_id.clone(),
+            player_number: player.number,
+            player_position: player_position.clone(),
+        };
+
         game.player_with_puck = Option::from((random_user_id, player_id));
 
-        Rebound
+        action
     }
 }

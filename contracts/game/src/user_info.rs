@@ -14,7 +14,7 @@ pub type UserId = usize;
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(crate = "near_sdk::serde")]
 pub struct UserInfo {
-    pub(crate) user_id: UserId,
+    pub(crate) user_id: UserId, // 1 or 2
     pub(crate) team: Team,
     pub(crate) account_id: AccountId,
     pub(crate) take_to_called: bool,
@@ -75,10 +75,7 @@ impl Hockey {
 
     pub fn set_team_logo(
         &mut self,
-        form_name: String,
-        pattern_name: String,
-        first_layer_color_number: String,
-        second_layer_color_number: String
+        logo_json: String
     ) { }
 
     pub fn remove_friend(&mut self, friend_id: AccountId) {

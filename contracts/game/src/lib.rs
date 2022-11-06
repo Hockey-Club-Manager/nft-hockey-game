@@ -3,12 +3,13 @@ use near_sdk::{CryptoHash, ext_contract, Gas, Promise, PromiseError};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{AccountId, Balance, BorshStorageKey, env, serde_json, log, near_bindgen, PanicOnDefault};
 use near_sdk::env::{predecessor_account_id};
-use game::actions::action::ActionTypes::{CoachSpeech, GoalieBack, GoalieOut, TakeTO};
+use game::actions::action::ActionData::{CoachSpeech, GoalieBack, GoalieOut, TakeTO};
 
 use crate::external::{ext_manage_team};
 use crate::manager::{GameConfig, TokenBalance, UpdateStatsAction, VGameConfig, VStats};
 use team::players::player::PlayerPosition;
 use team::players::field_player::FieldPlayer;
+use crate::game::actions::action::{ActionData, ActionTypes};
 use crate::game::game::{Event, Game, GameState};
 use crate::team::team_metadata::TeamMetadata;
 use crate::user_info::{Account, hash_account_id, UserInfo};
@@ -277,7 +278,16 @@ impl Hockey {
                     game.user2.account_id.clone()
                 };
 
-                self.internal_distribute_reward(&game.reward, &winner_account, game_id);
+                let reward = self.internal_distribute_reward(
+                    &game.reward, &winner_account, game_id);
+
+                let winner_account = game.get_user_info(winner_index);
+                generated_actions.push(ActionData::GameFinished {
+                    action_type: ActionTypes::GameFinished,
+                    winner_account_id: winner_account.account_id.clone(),
+                    reward
+                });
+
                 game.winner_index = Some(winner_index);
 
                 self.internal_stop_game(game_id);

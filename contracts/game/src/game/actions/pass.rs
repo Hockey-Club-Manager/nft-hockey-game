@@ -1,12 +1,12 @@
 use crate::{Game, PlayerPosition};
-use crate::game::actions::action::{ActionTypes, DoAction};
-use crate::game::actions::action::ActionTypes::{Pass, PassCaught};
+use crate::game::actions::action::{ActionData, ActionTypes, DoAction};
+use crate::game::actions::action::ActionData::{Pass, PassCaught};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
 use crate::PlayerPosition::{Center, LeftDefender, LeftWing, RightDefender, RightWing};
 
 pub struct PassAction;
 impl DoAction for PassAction {
-    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
+    fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
         let opponent= game.get_opponent_field_player();
         let mut opponent_stat = get_relative_field_player_stat(&opponent.1, opponent.1.stats.get_iq()) * opponent.0;
 
@@ -27,15 +27,41 @@ impl DoAction for PassAction {
             opponent_stat += center.stats.get_iq();
         }
 
-        return if has_won(player_with_puck_stat, opponent_stat) {
-            let new_player_with_id = game.get_field_player_id_by_pos(player_with_puck.get_user_id(), &pass_to);
-            game.player_with_puck = Option::from((player_with_puck.get_user_id(), new_player_with_id.clone()));
+        let pass_to_player_id = game.get_field_player_id_by_pos(&pass_to, player_with_puck.get_user_id());
+        let pass_to_player = user.team.get_field_player(&pass_to_player_id);
 
-            vec![Pass]
+        return if has_won(player_with_puck_stat, opponent_stat) {
+            let action = vec![Pass {
+                action_type: ActionTypes::Pass,
+                account_id: (user.account_id.clone()),
+                from_player_name: player_with_puck.name.clone().expect("Player name not found"),
+                from_player_number: player_with_puck.number,
+                from: player_with_puck_pos.clone(),
+                to_player_number: pass_to_player.number,
+                to: pass_to
+            }];
+
+            game.player_with_puck = Option::from((player_with_puck.get_user_id(), pass_to_player_id.clone()));
+
+            action
         } else {
+            let opponent_user = game.get_opponent_info(player_with_puck_id.0);
+            let opponent_position = opponent_user.team.get_field_player_pos(&opponent.1.get_player_id());
+
+            let action = vec![PassCaught {
+                action_type: ActionTypes::PassCaught,
+                account_id: (opponent_user.account_id.clone()),
+                from_player_number: player_with_puck.number,
+                from: player_with_puck_pos,
+                to_player_number: pass_to_player.number,
+                to: pass_to,
+                caught_player_number: opponent.1.number,
+                caught_player_position: opponent_position.clone(),
+            }];
+
             game.player_with_puck = Option::from((opponent.1.get_user_id(), opponent.1.get_player_id()));
 
-            vec![PassCaught]
+            action
         }
     }
 }

@@ -1,7 +1,7 @@
 use near_sdk::log;
 use crate::{FieldPlayer, Game, TokenId};
-use crate::game::actions::action::ActionTypes::{Battle, PenaltyShot, Dangle, Move};
-use crate::game::actions::action::{ActionTypes};
+use crate::game::actions::action::ActionData::{Battle, PenaltyShot, Dangle, Move};
+use crate::game::actions::action::{ActionData, ActionTypes};
 use crate::game::actions::dangle::DangleAction;
 use crate::game::actions::move_action::MoveAction;
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
@@ -23,7 +23,7 @@ pub const BIG_PENALTY: u8 = 12; // number of events
 
 pub trait RandomAction {
     fn check_probability(&self, game: &Game) -> bool;
-    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes>;
+    fn do_action(&self, game: &mut Game) -> Vec<ActionData>;
 }
 
 pub struct Giveaway;
@@ -37,24 +37,41 @@ impl RandomAction for Giveaway {
         false
     }
 
-    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
-        let mut actions = vec![ActionTypes::Giveaway];
-
+    fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
         let rnd = Game::get_random_in_range(1, 100, 12);
 
         if PROBABILITY_BATTLE >= rnd {
-            actions.push(battle(game));
+            battle(game)
         } else {
-            let opponent_player = game.get_opponent_field_player();
-            game.player_with_puck = Option::from((opponent_player.1.get_user_id(), opponent_player.1.get_player_id()));
-        }
+            let player_with_puck = game.get_player_with_puck();
+            let user = game.get_user_info(player_with_puck.get_user_id());
+            let player_with_puck_position = user.team.get_field_player_pos(&player_with_puck.get_player_id());
 
-        actions
+            let opponent_player = game.get_opponent_field_player();
+            let opponent_user = game.get_user_info(opponent_player.1.get_user_id());
+            let opponent_player_position = user.team.get_field_player_pos(&opponent_player.1.get_player_id());
+
+            let action = vec![ActionData::Giveaway {
+                action_type: ActionTypes::Giveaway,
+                account_id1: user.account_id.clone(),
+                player_number1: player_with_puck.number,
+                player_position1: player_with_puck_position.clone(),
+                account_id2: opponent_user.account_id.clone(),
+                player_number2: opponent_player.1.number,
+                player_position2: opponent_player_position.clone()
+            }];
+
+            game.player_with_puck = Option::from((opponent_player.1.get_user_id(), opponent_player.1.get_player_id()));
+
+            action
+        }
     }
 }
 
-fn battle(game: &mut Game) -> ActionTypes {
-    let player_with_puck = game.get_player_with_puck(); let opponent_player = game.get_opponent_field_player();
+fn battle(game: &mut Game) -> Vec<ActionData> {
+    let player_with_puck = game.get_player_with_puck();
+    let opponent_player = game.get_opponent_field_player();
+
     let player1_stat = (
         player_with_puck.stats.puck_control +
         player_with_puck.stats.aggressiveness +
@@ -70,11 +87,44 @@ fn battle(game: &mut Game) -> ActionTypes {
     let compared_stat1 = get_relative_field_player_stat(player_with_puck, player1_stat);
     let compared_stat2= get_relative_field_player_stat(opponent_player.1, player2_stat) * opponent_player.0;
 
+    let user_with_puck = game.get_user_info(player_with_puck.get_user_id());
+    let player_with_puck_position = user_with_puck.team.get_field_player_pos(
+        &player_with_puck.get_player_id());
+
+    let opponent_user = game.get_user_info(opponent_player.1.get_user_id());
+    let opponent_player_position = opponent_user.team.get_field_player_pos(
+        &opponent_player.1.get_player_id());
+
+    let mut actions = vec![Battle {
+        action_type: ActionTypes::Battle,
+        account_id1: user_with_puck.account_id.clone(),
+        player_number1: player_with_puck.number,
+        player_position1: player_with_puck_position.clone(),
+        account_id2: opponent_user.account_id.clone(),
+        player_number2: opponent_player.1.number,
+        player_position2: opponent_player_position.clone(),
+    }];
+
     if has_won(compared_stat2, compared_stat1) {
-        game.player_with_puck = Option::from((opponent_player.1.get_user_id(), opponent_player.1.get_player_id()));
+        actions.push(ActionData::BattleWon {
+            action_type: ActionTypes::BattleWon,
+            account_id: opponent_user.account_id.clone(),
+            player_number: opponent_player.1.number,
+            player_position: opponent_player_position.clone(),
+        });
+
+        game.player_with_puck = Option::from(
+            (opponent_player.1.get_user_id(), opponent_player.1.get_player_id()));
+    } else {
+        actions.push(ActionData::BattleWon {
+            action_type: ActionTypes::BattleWon,
+            account_id: user_with_puck.account_id.clone(),
+            player_number: player_with_puck.number,
+            player_position: player_with_puck_position.clone(),
+        })
     }
 
-    Battle
+    actions
 }
 
 pub struct Takeaway;
@@ -88,19 +138,34 @@ impl RandomAction for Takeaway {
         false
     }
 
-    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
-        let mut actions = vec![ActionTypes::Giveaway];
-
+    fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
         let rnd = Game::get_random_in_range(1, 100, 14);
 
-        if PROBABILITY_BATTLE >= rnd {
-            actions.push(battle(game));
+        return if PROBABILITY_BATTLE >= rnd {
+            battle(game)
         } else {
-            let opponent_player = game.get_opponent_field_player();
-            game.player_with_puck = Option::from((opponent_player.1.get_user_id(), opponent_player.1.get_player_id()));
-        }
+            let player_with_puck = game.get_player_with_puck();
+            let user = game.get_user_info(player_with_puck.get_user_id());
+            let player_with_puck_position = user.team.get_field_player_pos(&player_with_puck.get_player_id());
 
-        actions
+            let opponent_player = game.get_opponent_field_player();
+            let opponent_user = game.get_user_info(opponent_player.1.get_user_id());
+            let opponent_player_position = user.team.get_field_player_pos(&opponent_player.1.get_player_id());
+
+            let action = vec![ActionData::Takeaway {
+                action_type: ActionTypes::Takeaway,
+                account_id1: user.account_id.clone(),
+                player_number1: player_with_puck.number,
+                player_position1: player_with_puck_position.clone(),
+                account_id2: opponent_user.account_id.clone(),
+                player_number2: opponent_player.1.number,
+                player_position2: opponent_player_position.clone()
+            }];
+
+            game.player_with_puck = Option::from((opponent_player.1.get_user_id(), opponent_player.1.get_player_id()));
+
+            action
+        }
     }
 }
 
@@ -115,8 +180,8 @@ impl RandomAction for PuckOut {
         false
     }
 
-    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
-        vec![ActionTypes::PuckOut]
+    fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
+        vec![ActionData::PuckOut { action_type: ActionTypes::PuckOut }]
     }
 }
 
@@ -132,7 +197,7 @@ impl RandomAction for BigPenalty {
         false
     }
 
-    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
+    fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
         let player_with_puck = game.get_player_with_puck();
         let opponent_player = game.get_opponent_field_player();
 
@@ -141,8 +206,11 @@ impl RandomAction for BigPenalty {
 
         if has_won(player_stat1, player_stat2) {
             // The rules were violated by the opponent of the player with the puck
-            if game.last_action == Move || game.last_action == Dangle {
-                return vec![PenaltyShot]
+            match game.last_action {
+                Move {..} | Dangle {..} => {
+                    return vec![generate_penalty_shot_action(game, player_with_puck)];
+                },
+                _ => {}
             }
 
             let penalty_player_id = opponent_player.1.get_player_id();
@@ -164,7 +232,28 @@ impl RandomAction for BigPenalty {
             game.player_with_puck = Some((user_id, opponent_player_id));
         }
 
-        vec![ActionTypes::BigPenalty]
+        vec![ActionData::DelayedPenaltySignal {
+            action_type: ActionTypes::DelayedPenaltySignal,
+            type_of_penalty: ActionTypes::BigPenalty,
+        }]
+    }
+}
+
+fn generate_penalty_shot_action(game: &Game, player_with_puck: &FieldPlayer) -> ActionData {
+    let user = game.get_user_info(player_with_puck.get_user_id());
+    let opponent = game.get_opponent_info(player_with_puck.get_user_id());
+    let goalie = opponent.team.get_active_goalie();
+
+    return PenaltyShot {
+        action_type: ActionTypes::PenaltyShot,
+        account_id1: user.account_id.clone(),
+        player_name: player_with_puck.name.clone().expect("Player name not found"),
+        player_img: player_with_puck.img.clone().expect("Player img not found"),
+        player_number: player_with_puck.number,
+        account_id2: opponent.account_id.clone(),
+        goalie_name: goalie.name.clone().expect("Goalie name not found"),
+        goalie_img: goalie.img.clone().expect("Goalie img not found"),
+        goalie_number: goalie.number,
     }
 }
 
@@ -185,7 +274,7 @@ impl RandomAction for SmallPenalty {
         false
     }
 
-    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
+    fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
         let player_with_puck = game.get_player_with_puck();
         let opponent_player = game.get_opponent_field_player();
 
@@ -194,9 +283,13 @@ impl RandomAction for SmallPenalty {
 
         if has_won(player_stat1, player_stat2) {
             // The rules were violated by the opponent of the player with the puck
-            if game.last_action == Move || game.last_action == Dangle {
-                return vec![PenaltyShot]
+            match game.last_action {
+                Move {..} | Dangle {..} => {
+                    return vec![generate_penalty_shot_action(game, player_with_puck)];
+                },
+                _ => {}
             }
+
             let penalty_player_id = opponent_player.1.get_player_id();
             let penalty_user_id = opponent_player.1.get_user_id();
 
@@ -216,7 +309,10 @@ impl RandomAction for SmallPenalty {
             game.player_with_puck = Some((user_id, opponent_player_id));
         }
 
-        vec![ActionTypes::SmallPenalty]
+        vec![ActionData::DelayedPenaltySignal {
+            action_type: ActionTypes::DelayedPenaltySignal,
+            type_of_penalty: ActionTypes::BigPenalty,
+        }]
     }
 }
 
@@ -236,19 +332,57 @@ impl RandomAction for Fight {
         false
     }
 
-    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
+    fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
         let player_with_puck = game.get_player_with_puck();
-        let user_id_with_puck = player_with_puck.get_user_id();
-
         let opponent_player = game.get_opponent_field_player();
 
-        let compared_stat1 = get_relative_field_player_stat(player_with_puck, player_with_puck.stats.fighting_skill as f32);
-        let compared_stat2= get_relative_field_player_stat(opponent_player.1, opponent_player.1.stats.fighting_skill as f32) * opponent_player.0;
+        let compared_stat1 = get_relative_field_player_stat(player_with_puck,
+                                                            player_with_puck.stats.fighting_skill as f32);
+        let compared_stat2= get_relative_field_player_stat(opponent_player.1,
+                                                           opponent_player.1.stats.fighting_skill as f32) * opponent_player.0;
 
         let player1_id = player_with_puck.get_player_id();
         let user1_id = player_with_puck.get_user_id();
         let player2_id = opponent_player.1.get_player_id();
         let user2_id = opponent_player.1.get_user_id();
+
+        let user_id_with_puck = player_with_puck.get_user_id();
+        let user_with_puck = game.get_user_info(user_id_with_puck);
+        let opponent_info = game.get_opponent_info(user_id_with_puck);
+
+        let mut actions = vec![
+            ActionData::Fight {
+                action_type: ActionTypes::Fight,
+                account_id1: user_with_puck.account_id.clone(),
+                player_number1: player_with_puck.number,
+                account_id2: opponent_info.account_id.clone(),
+                player_number2: opponent_player.1.number,
+            }
+        ];
+
+        if has_won(compared_stat2, compared_stat1) {
+            actions.push(ActionData::FightWon {
+                action_type: ActionTypes::StartGame,
+                account_id: opponent_info.account_id.clone(),
+                player_name: opponent_player.1.name.clone().expect("Player name not found"),
+                player_img: opponent_player.1.img.clone().expect("Player img not found"),
+                player_number: opponent_player.1.number,
+            });
+
+            self.increase_morale_opponent_team(game, &user_id_with_puck);
+            self.reduce_morale_team_with_puck(game, &user_id_with_puck);
+        } else {
+            actions.push(ActionData::FightWon {
+                action_type: ActionTypes::StartGame,
+                account_id: user_with_puck.account_id.clone(),
+                player_name: player_with_puck.name.clone().expect("Player name not found"),
+                player_img: player_with_puck.img.clone().expect("Player img not found"),
+                player_number: player_with_puck.number,
+            });
+
+            self.increase_morale_team_with_puck(game, &user_id_with_puck);
+            self.reduce_morale_opponent_team(game, &user_id_with_puck);
+        }
 
         game.do_penalty(BIG_PENALTY,
                         &player1_id,
@@ -260,15 +394,7 @@ impl RandomAction for Fight {
                         &user1_id,
                         &user2_id);
 
-        if has_won(compared_stat2, compared_stat1) {
-            self.increase_morale_opponent_team(game, &user_id_with_puck);
-            self.reduce_morale_team_with_puck(game, &user_id_with_puck);
-        } else {
-            self.increase_morale_team_with_puck(game, &user_id_with_puck);
-            self.reduce_morale_opponent_team(game, &user_id_with_puck);
-        }
-
-        vec![ActionTypes::Fight]
+        actions
     }
 }
 
@@ -305,7 +431,7 @@ impl RandomAction for NetOff {
         false
     }
 
-    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
-        vec![ActionTypes::NetOff]
+    fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
+        vec![ActionData::NetOff { action_type: ActionTypes::NetOff }]
     }
 }

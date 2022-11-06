@@ -1,6 +1,6 @@
 use crate::team::players::player::{PlayerRole};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{AccountId, log};
+use near_sdk::{AccountId, Balance, log};
 use crate::team::players::player::PlayerRole::*;
 
 use near_sdk::serde::{Deserialize, Serialize};
@@ -14,8 +14,7 @@ use crate::game::actions::random_actions::{BigPenalty, Fight, Giveaway, NetOff, 
 use crate::game::game::{Game};
 use crate::team::five::{ActiveFive, FiveIds, Tactics};
 use crate::team::numbers::{FiveNumber};
-use crate::TokenId;
-
+use crate::{FieldPlayer, PlayerPosition, TokenId};
 
 #[derive(Serialize, Deserialize)]
 #[derive(Clone, Copy, PartialEq, BorshDeserialize, BorshSerialize)]
@@ -25,68 +24,338 @@ pub enum ActionTypes {
     EndOfPeriod,
     Overtime,
     GameFinished,
-
     Pass,
     PassCaught,
-
     Shot,
     ShotBlocked,
     ShotMissed,
     Goal,
     Save,
     Rebound,
-
     FaceOff,
     FaceOffWin,
-
     Move,
     Hit,
-
     Offside,
-
     Dangle,
-    PokeCheck,
-
+    PockCheck,
     DumpIn,
     DumpOut,
     Icing,
-
     Giveaway,
     Takeaway,
     PuckOut,
     BigPenalty,
     SmallPenalty,
+    DelayedPenaltySignal,
     NetOff,
     Fight,
+    FightWon,
     Battle,
-
-    PuckLose,
-
+    BattleWon,
     TakeTO,
     CoachSpeech,
     GoalieOut,
     GoalieBack,
-
     PenaltyShot,
-
-    FirstTeamChangeActiveFive,
-    SecondTeamChangeActiveFive,
-
-    EndedPenaltyForTheFirstTeam,
-    EndedPenaltyForTheSecondTeam,
+    EndedPenalty,
 }
 
+#[derive(Serialize, Deserialize)]
+#[derive(Clone, PartialEq, BorshDeserialize, BorshSerialize)]
+#[serde(crate = "near_sdk::serde")]
 pub enum ActionData {
+    StartGame {
+        action_type: ActionTypes
+    },
+    EndOfPeriod {
+        action_type: ActionTypes,
+        number: u8,
+    },
+    Overtime {
+        action_type: ActionTypes
+    },
+    GameFinished {
+        action_type: ActionTypes,
+        winner_account_id: AccountId,
+        reward: Balance,
+    },
+    Pass {
+        action_type: ActionTypes,
+        account_id: AccountId, // account id player with puck
 
+        from_player_name: String,
+        from_player_number: u8,
+        from: PlayerPosition,
+
+        to_player_number: u8,
+        to: PlayerPosition,
+    },
+    PassCaught {
+        action_type: ActionTypes,
+        account_id: AccountId, // Account ID of the player who caught the pass
+
+        from_player_number: u8,
+        from: PlayerPosition,
+
+        to_player_number: u8,
+        to: PlayerPosition,
+
+        caught_player_number: u8,
+        caught_player_position: PlayerPosition,
+    },
+    Shot {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        player_number: u8,
+        player_position: PlayerPosition,
+    },
+    ShotBlocked {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        // The player who blocked the shot
+        player_number: u8,
+        player_position: PlayerPosition,
+    },
+    ShotMissed {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        // The player who received the puck
+        player_number: u8,
+        player_position: PlayerPosition,
+    },
+    Goal {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        // The player who scored the goal
+        player_name1: String,
+        player_img: String,
+        player_number1: u8,
+
+        // The player who gave the assist
+        player_name2: Option<String>,
+        player_number2: Option<u8>,
+    },
+    Save {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        // Goalie
+        goalie_number: u8,
+    },
+    Rebound {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        // The player who received the puck
+        player_number: u8,
+        player_position: PlayerPosition,
+    },
+    FaceOff {
+        action_type: ActionTypes,
+        account_id1: AccountId,
+        player_number1: u8,
+        player_position1: PlayerPosition,
+
+        account_id2: AccountId,
+        player_number2: u8,
+        player_position2: PlayerPosition,
+    },
+    FaceOffWin {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        // The player who won face-off
+        player_number: u8,
+        player_position: PlayerPosition,
+    },
+    Move {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        player_number: u8,
+        player_position: PlayerPosition,
+    },
+    Hit {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        // The player who took the puck
+        player_number: u8,
+        player_position: PlayerPosition,
+    },
+    Offside {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        player_number: u8,
+        player_position: PlayerPosition,
+    },
+    Dangle {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        player_number: u8,
+        player_position: PlayerPosition,
+    },
+    PokeCheck {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        // The player who took the puck
+        player_number: u8,
+        player_position: PlayerPosition,
+    },
+    Dump {
+        action_type: ActionTypes,
+        account_id: AccountId, // account id player with puck
+
+        from_player_number: u8,
+        from: PlayerPosition,
+
+        to_player_number: u8,
+        to: PlayerPosition,
+    },
+    Icing {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        player_number: u8,
+    },
+    Giveaway {
+        action_type: ActionTypes,
+
+        // player who lost the puck
+        account_id1: AccountId,
+        player_number1: u8,
+        player_position1: PlayerPosition,
+
+        // The player who took the puck
+        account_id2: AccountId,
+        player_number2: u8,
+        player_position2: PlayerPosition,
+    },
+    Takeaway {
+        action_type: ActionTypes,
+
+        // player who lost the puck
+        account_id1: AccountId,
+        player_number1: u8,
+        player_position1: PlayerPosition,
+
+        // The player who took the puck
+        account_id2: AccountId,
+        player_number2: u8,
+        player_position2: PlayerPosition,
+    },
+    PuckOut {
+        action_type: ActionTypes,
+    },
+    BigPenalty {
+        action_type: ActionTypes,
+        account_id: String,
+
+        player_img: String,
+        player_name: String,
+        player_number: u8,
+    },
+    SmallPenalty {
+        action_type: ActionTypes,
+        account_id: String,
+
+        player_img: String,
+        player_name: String,
+        player_number: u8,
+    },
+    DelayedPenaltySignal {
+        action_type: ActionTypes,
+        type_of_penalty: ActionTypes,
+    },
+    NetOff {
+        action_type: ActionTypes,
+    },
+    Fight {
+        action_type: ActionTypes,
+
+        account_id1: AccountId,
+        player_number1: u8,
+
+        account_id2: AccountId,
+        player_number2: u8,
+    },
+    FightWon {
+        action_type: ActionTypes,
+        account_id: AccountId,
+
+        player_name: String,
+        player_img: String,
+        player_number: u8,
+    },
+    Battle {
+        action_type: ActionTypes,
+
+        account_id1: AccountId,
+        player_number1: u8,
+        player_position1: PlayerPosition,
+
+        account_id2: AccountId,
+        player_number2: u8,
+        player_position2: PlayerPosition,
+    },
+    BattleWon {
+        action_type: ActionTypes,
+
+        account_id: AccountId,
+        player_number: u8,
+        player_position: PlayerPosition,
+    },
+    TakeTO {
+        action_type: ActionTypes,
+        account_id: AccountId,
+    },
+    CoachSpeech {
+        action_type: ActionTypes,
+        account_id: AccountId,
+    },
+    GoalieOut {
+        action_type: ActionTypes,
+        account_id: AccountId,
+    },
+    GoalieBack {
+        action_type: ActionTypes,
+        account_id: AccountId,
+    },
+    PenaltyShot {
+        action_type: ActionTypes,
+
+        account_id1: AccountId,
+        player_name: String,
+        player_img: String,
+        player_number: u8,
+
+        account_id2: AccountId,
+        goalie_name: String,
+        goalie_img: String,
+        goalie_number: u8,
+    },
+    EndedPenalty {
+        action_type: ActionTypes,
+        account_id: AccountId,
+        player_number: u8,
+    },
 }
 
 pub trait DoAction {
-    fn do_action(&self, game: &mut Game) -> Vec<ActionTypes>;
+    fn do_action(&self, game: &mut Game) -> Vec<ActionData>;
 }
 
 pub struct Action;
 impl Action {
-    pub fn do_action(self, game: &mut Game) -> Vec<ActionTypes> {
+    pub fn do_action(self, game: &mut Game) -> Vec<ActionData> {
         let events =  self.random_action_happened(game);
         if events.is_none() {
             return self.choose_and_do_action(game);
@@ -95,14 +364,17 @@ impl Action {
         return events.unwrap();
     }
 
-    fn random_action_happened(&self, game: &mut Game) -> Option<Vec<ActionTypes>> {
+    fn random_action_happened(&self, game: &mut Game) -> Option<Vec<ActionData>> {
         let mut random_actions: Vec<Box<dyn RandomAction>> = vec![
             Box::new(Giveaway),
             Box::new(Takeaway),
             Box::new(PuckOut),
             Box::new(Fight),
-            Box::new(NetOff),
         ];
+
+        if game.zone_number != 2 {
+            random_actions.push(Box::new(NetOff));
+        }
 
         let number_of_penalty_players1 = game.user1.team.get_number_of_penalty_players();
         let number_of_penalty_players2 = game.user2.team.get_number_of_penalty_players();
@@ -121,7 +393,7 @@ impl Action {
         None
     }
 
-    fn choose_and_do_action(&self, game: &mut Game) -> Vec<ActionTypes> {
+    fn choose_and_do_action(&self, game: &mut Game) -> Vec<ActionData> {
         let mut is_attack_zone = false;
         let user_player_id = game.get_player_id_with_puck();
         if game.zone_number == 3 && user_player_id.0 == 1 || game.zone_number == 1 && user_player_id.0 == 2 {
