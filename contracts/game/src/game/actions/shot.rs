@@ -48,7 +48,7 @@ impl DoAction for ShotAction {
             if PROBABILITY_SHOT_MISSED >= Game::get_random_in_range(1, 100, 1) {
                 actions.push(self.do_shot_missed(game));
             } else {
-                actions.push(self.fight_against_goalie(game, player_stat));
+                actions.append(&mut self.fight_against_goalie(game, player_stat));
             }
         }
 
@@ -99,7 +99,7 @@ impl ShotAction {
         action
     }
 
-    fn fight_against_goalie(&self, game: &mut Game, field_player_stat: f32) -> ActionData {
+    fn fight_against_goalie(&self, game: &mut Game, field_player_stat: f32) -> Vec<ActionData> {
         let user_id_player_with_puck = game.get_user_id_player_with_puck();
         return if self.is_goalie_out(game, &user_id_player_with_puck) {
             self.score_goal(game, &user_id_player_with_puck)
@@ -119,13 +119,13 @@ impl ShotAction {
                 self.score_goal(game, &user_id_player_with_puck)
             } else {
                 if PROBABILITY_SAVE >= Game::get_random_in_range(1, 100, 2) {
-                    Save {
+                    vec![Save {
                         action_type: ActionTypes::Save,
                         account_id: user_opponent.account_id.clone(),
                         goalie_number: opponent_goalie.number,
-                    }
+                    }]
                 } else {
-                    self.do_rebound(game)
+                    vec![self.do_rebound(game)]
                 }
             }
         }
@@ -139,14 +139,19 @@ impl ShotAction {
         }
     }
 
-    fn score_goal(&self, game: &mut Game, user_id: &usize) -> ActionData {
+    fn score_goal(&self, game: &mut Game, user_id: &usize) -> Vec<ActionData> {
         self.change_morale_after_goal(game);
         game.get_user_info_mut(user_id).team.score += 1;
 
-        if *user_id == 1 as usize {
-            game.remove_penalty_players(&2);
+        let penalty_action = if *user_id == 1 as usize {
+            game.remove_penalty_players(&2)
         } else {
-            game.remove_penalty_players(&1);
+            game.remove_penalty_players(&1)
+        };
+
+        let mut actions = Vec::new();
+        if penalty_action.is_some() {
+            actions.push(penalty_action.unwrap());
         }
 
         let user = game.get_user_info(user_id.clone());
@@ -158,7 +163,8 @@ impl ShotAction {
             },
             _ => (None, None)
         };
-        Goal {
+
+        actions.push(Goal {
             action_type: ActionTypes::Goal,
             account_id: user.account_id.clone(),
             player_name1: player_with_puck.name.clone().expect("Player name not found"),
@@ -166,7 +172,9 @@ impl ShotAction {
             player_number1: player_with_puck.number,
             player_name2: pass_player_name,
             player_number2: pass_player_num
-        }
+        });
+
+        actions
     }
 
     fn has_pass_before_shot(&self, game: &Game) -> bool {

@@ -920,25 +920,38 @@ impl Game {
     }
 
     // If a goal is scored
-    pub fn remove_penalty_players(&mut self, user_id: &UserId) {
+    pub fn remove_penalty_players(&mut self, user_id: &UserId) -> Option<ActionData> {
         let user_info = self.get_user_info_mut(user_id);
 
         let small_penalties_len = user_info.team.players_to_small_penalty.len();
         if small_penalties_len != 0 {
             user_info.team.players_to_small_penalty.remove(small_penalties_len - 1);
-            return;
+            return None;
         }
 
         let big_penalties_len = user_info.team.players_to_big_penalty.len();
         if big_penalties_len != 0 {
             user_info.team.players_to_small_penalty.remove(big_penalties_len - 1);
-            return;
+            return None;
         }
 
         if user_info.team.penalty_players.len() != 0 {
-            user_info.team.penalty_players.remove(0);
+
+            let player_id = user_info.team.penalty_players.remove(0);
+            let player = user_info.team.get_field_player(&player_id);
+
+            let action = Some(EndedPenalty {
+                action_type: ActionTypes::EndedPenalty,
+                account_id: user_info.account_id.clone(),
+                player_number: player.number,
+            });
+
             self.put_players_on_field(user_id);
+
+            return action;
         }
+
+        None
     }
 
     // If the number of players in pk = 3 we need to release the 4th in pks and the 5th in pps
