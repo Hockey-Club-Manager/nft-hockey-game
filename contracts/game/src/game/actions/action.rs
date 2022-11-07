@@ -381,6 +381,7 @@ impl Action {
                 return Some(action.do_action(game));
             }
         }
+        log!("ended");
 
         None
     }
@@ -394,6 +395,8 @@ impl Action {
 
         let user = game.get_user_info(user_player_id.0);
         let active_five = user.team.get_active_five();
+
+        log!("{} {}", user_player_id.0, user_player_id.1);
         let player_with_puck_role = user.team.get_field_player(&user_player_id.1).player_role;
 
         log!("{} {}", user_player_id.0, user_player_id.1);

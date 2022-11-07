@@ -9,6 +9,8 @@ use crate::{Hockey, StorageKey};
 use crate::team::team::Team;
 
 pub type UserId = usize;
+pub const USER_ID1: usize = 1;
+pub const USER_ID2: usize = 2;
 
 #[derive(BorshDeserialize, BorshSerialize)]
 #[derive(Clone, Serialize, Deserialize)]

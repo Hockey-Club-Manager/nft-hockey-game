@@ -458,8 +458,7 @@ impl Team {
         let players_in_active_five = active_five.field_players.clone();
         active_five.field_players.clear();
 
-        let number_of_players_to_replace = 2;
-        let mut number_of_replaced_players = 0;
+        let mut number_of_players_to_replace = 2;
 
         for (position, player_id) in &players {
             let is_replaced_position = active_five.replaced_position.contains(position);
@@ -467,39 +466,24 @@ impl Team {
                                                           &player_with_puck,
                                                           &players_to_big_penalty,
                                                           &players_to_small_penalty);
-
+            log!("{} - to replace is {}", player_id.clone(), is_player_available.clone());
+            log!("contains {}", is_replaced_position);
             if is_player_available && !is_replaced_position
-                && number_of_players_to_replace > number_of_replaced_players {
+                && number_of_players_to_replace > 0 {
                 active_five.field_players.insert(position.clone(), player_id.clone());
                 active_five.replaced_position.push(position.clone());
-                number_of_replaced_players += 1;
+                log!("replaced");
+                number_of_players_to_replace -= 1;
             } else {
+                log!("not replaced");
                 let id = players_in_active_five.get(position).unwrap();
                 active_five.field_players.insert(position.clone(), id.clone());
             }
         }
 
-        if self.active_five.is_goalie_out && self.is_goalie_substitutions_in_active_five() {
+        if self.active_five.is_goalie_out {
             self.goalie_out();
         }
-    }
-
-    fn is_goalie_substitutions_in_active_five(&self) -> bool {
-        let goalie_sub1_id = self.goalie_substitutions
-            .get(&GoalieSubstitution1)
-            .expect("GoalieSubstitution1 not found");
-
-        let goalie_sub2_id = self.goalie_substitutions
-            .get(&GoalieSubstitution2)
-            .expect("GoalieSubstitution2 not found");
-
-        for (_position, id) in &self.active_five.field_players {
-            if *id == *goalie_sub1_id || *id == *goalie_sub2_id {
-                return true;
-            }
-        }
-
-        false
     }
 
     pub fn swap_all_players_in_active_five(&mut self, player_with_puck: &Option<(UserId, TokenId)>) {

@@ -38,6 +38,7 @@ impl RandomAction for Giveaway {
     }
 
     fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
+        log!("Giveaway");
         let rnd = Game::get_random_in_range(1, 100, 12);
 
         if PROBABILITY_BATTLE >= rnd {
@@ -139,6 +140,7 @@ impl RandomAction for Takeaway {
     }
 
     fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
+        log!("Takeaway");
         let rnd = Game::get_random_in_range(1, 100, 14);
 
         return if PROBABILITY_BATTLE >= rnd {
@@ -150,7 +152,7 @@ impl RandomAction for Takeaway {
 
             let opponent_player = game.get_opponent_field_player();
             let opponent_user = game.get_user_info(opponent_player.1.get_user_id());
-            let opponent_player_position = user.team.get_field_player_pos(&opponent_player.1.get_player_id());
+            let opponent_player_position = opponent_user.team.get_field_player_pos(&opponent_player.1.get_player_id());
 
             let action = vec![ActionData::Takeaway {
                 action_type: ActionTypes::Takeaway,
@@ -181,6 +183,7 @@ impl RandomAction for PuckOut {
     }
 
     fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
+        log!("PuckOut");
         vec![ActionData::PuckOut { action_type: ActionTypes::PuckOut }]
     }
 }
@@ -198,6 +201,7 @@ impl RandomAction for BigPenalty {
     }
 
     fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
+        log!("BigPenalty");
         let player_with_puck = game.get_player_with_puck();
         let opponent_player = game.get_opponent_field_player();
 
@@ -275,6 +279,7 @@ impl RandomAction for SmallPenalty {
     }
 
     fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
+        log!("Small penalty");
         let player_with_puck = game.get_player_with_puck();
         let opponent_player = game.get_opponent_field_player();
 
@@ -333,6 +338,7 @@ impl RandomAction for Fight {
     }
 
     fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
+        log!("Fight");
         let player_with_puck = game.get_player_with_puck();
         let opponent_player = game.get_opponent_field_player();
 
@@ -432,6 +438,7 @@ impl RandomAction for NetOff {
     }
 
     fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
+        log!("NetOff");
         vec![ActionData::NetOff { action_type: ActionTypes::NetOff }]
     }
 }

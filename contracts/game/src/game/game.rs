@@ -18,7 +18,7 @@ use crate::team::numbers::FiveNumber;
 use crate::team::numbers::FiveNumber::{First, PenaltyKill1, PenaltyKill2, PowerPlay1, PowerPlay2};
 use crate::team::players::player::Hand::Left;
 use crate::team::team_metadata::team_metadata_to_team;
-use crate::user_info::UserId;
+use crate::user_info::{USER_ID1, USER_ID2, UserId};
 
 
 #[derive(Debug, PartialEq, Eq)]
@@ -74,7 +74,7 @@ impl Game {
         let team2 = team_metadata_to_team(teams.1, 2);
 
         let user_info1 = UserInfo {
-            user_id: 1,
+            user_id: USER_ID1,
             team: team1,
             account_id: account_id_1,
             take_to_called: false,
@@ -83,7 +83,7 @@ impl Game {
         };
 
         let user_info2 = UserInfo {
-            user_id: 2,
+            user_id: USER_ID2,
             team: team2,
             account_id: account_id_2,
             take_to_called: false,
@@ -122,6 +122,7 @@ impl Game {
         let player_id = self.get_field_player_id_by_pos(position, user_id.clone());
 
         let user_info = self.get_user_info(user_id);
+        log!("user_id: {}", user_id.clone());
         user_info.team.get_field_player(&player_id)
     }
 
@@ -201,7 +202,7 @@ impl Game {
     }
 
     pub fn get_user_info_mut(&mut self, user_id: &usize) -> &mut UserInfo {
-        if *user_id == 1 {
+        if *user_id == USER_ID1 {
             return &mut self.user1;
         }
 
@@ -209,7 +210,7 @@ impl Game {
     }
 
     pub fn get_user_info(&self, user_id: usize) -> &UserInfo {
-        if user_id == 1 {
+        if user_id == USER_ID1 {
             return &self.user1;
         }
 
@@ -228,29 +229,29 @@ impl Game {
     }
 
     pub fn get_opponent_info(&self, user_id: usize) -> &UserInfo {
-        if user_id == 0 {
-            return self.get_user_info(1);
+        if user_id == USER_ID1 {
+            return self.get_user_info(USER_ID2);
         }
 
-        self.get_user_info(0)
+        self.get_user_info(USER_ID1)
     }
 
     pub fn get_opponent_info_mut(&mut self, user_id: &usize) -> &mut UserInfo {
-        if *user_id == 0 {
-            return self.get_user_info_mut(&1);
+        if *user_id == USER_ID1 {
+            return self.get_user_info_mut(&USER_ID2);
         }
 
-        self.get_user_info_mut(&0)
+        self.get_user_info_mut(&USER_ID1)
     }
 
     pub fn get_opponent_field_player(&self) -> (f32, &FieldPlayer) {
         let user_player_ids = self.player_with_puck.clone().unwrap();
         let position = self.get_coeff_player_pos(&user_player_ids);
 
-        return if user_player_ids.0 == 1 {
-            (position.0, self.get_field_player_by_pos(2, &position.1))
+        return if user_player_ids.0 == USER_ID1 {
+            (position.0, self.get_field_player_by_pos(USER_ID2, &position.1))
         } else {
-            (position.0, self.get_field_player_by_pos(1, &position.1))
+            (position.0, self.get_field_player_by_pos(USER_ID1, &position.1))
         }
     }
 
@@ -434,8 +435,8 @@ impl Game {
                 self.check_teams_to_change_active_five();
                 actions.append(&mut self.reduce_penalty());
 
-                self.swap_players_in_five(&1);
-                self.swap_players_in_five(&2);
+                self.swap_players_in_five(&USER_ID1);
+                self.swap_players_in_five(&USER_ID2);
             }
         };
 
@@ -549,11 +550,11 @@ impl Game {
 
         let user_id = self.get_user_id_player_with_puck();
 
-        if user_id == 1 {
-            let user2 = self.get_user_info_mut(&2);
+        if user_id == USER_ID1 {
+            let user2 = self.get_user_info_mut(&USER_ID2);
             user2.team.swap_all_players_in_active_five(&player_with_puck);
         } else {
-            let user1 = self.get_user_info_mut(&1);
+            let user1 = self.get_user_info_mut(&USER_ID1);
             user1.team.swap_all_players_in_active_five(&player_with_puck);
         }
     }
@@ -562,10 +563,10 @@ impl Game {
         match self.player_with_puck.clone() {
             None =>  vec![],
             Some((user_id, _player_id)) => {
-                let opponent_id = if user_id == 0 {
-                    1
+                let opponent_id = if user_id == USER_ID1 {
+                    USER_ID2
                 } else {
-                    0
+                    USER_ID1
                 };
                 self.do_penalties(opponent_id)
             }
@@ -573,10 +574,10 @@ impl Game {
     }
 
     fn do_penalties(&mut self, penalty_user_id: UserId) -> Vec<ActionData> {
-        let user_id = if penalty_user_id == 0 {
-            1
+        let user_id = if penalty_user_id == USER_ID1 {
+            USER_ID2
         } else {
-            0
+            USER_ID1
         };
 
         let mut actions = Vec::new();
@@ -1024,21 +1025,21 @@ impl Game {
         self.user1 = self.user2.clone();
         self.user2 = temp_user;
 
-        self.user1.user_id = 1;
-        self.user2.user_id = 2;
+        self.user1.user_id = USER_ID1;
+        self.user2.user_id = USER_ID2;
 
         for (_, player) in &mut self.user1.team.field_players {
-            player.user_id = Some(1);
+            player.user_id = Some(USER_ID1);
         }
         for (_, goalie) in &mut self.user1.team.goalies {
-            goalie.user_id = Some(1);
+            goalie.user_id = Some(USER_ID1);
         }
 
         for (_, player) in &mut self.user2.team.field_players {
-            player.user_id = Some(2);
+            player.user_id = Some(USER_ID2);
         }
         for (_, goalie) in &mut self.user2.team.goalies {
-            goalie.user_id = Some(2);
+            goalie.user_id = Some(USER_ID2);
         }
     }
 }
