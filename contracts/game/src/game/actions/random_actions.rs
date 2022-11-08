@@ -1,5 +1,6 @@
 use near_sdk::log;
 use crate::{FieldPlayer, Game, TokenId};
+use crate::ActionData::Penalty;
 use crate::game::actions::action::ActionData::{Battle, PenaltyShot, Dangle, Move};
 use crate::game::actions::action::{ActionData, ActionTypes};
 use crate::game::actions::dangle::DangleAction;
@@ -50,7 +51,7 @@ impl RandomAction for Giveaway {
 
             let opponent_player = game.get_opponent_field_player();
             let opponent_user = game.get_user_info(opponent_player.1.get_user_id());
-            let opponent_player_position = user.team.get_field_player_pos(&opponent_player.1.get_player_id());
+            let opponent_player_position = opponent_user.team.get_field_player_pos(&opponent_player.1.get_player_id());
 
             let action = vec![ActionData::Giveaway {
                 action_type: ActionTypes::Giveaway,
@@ -390,17 +391,35 @@ impl RandomAction for Fight {
             self.reduce_morale_opponent_team(game, &user_id_with_puck);
         }
 
-        game.do_penalty(BIG_PENALTY,
+        actions.push(get_penalty_by_fight_action(game.do_penalty(BIG_PENALTY,
                         &player1_id,
                         &user2_id,
-                        &user1_id);
+                        &user1_id)));
 
-        game.do_penalty(BIG_PENALTY,
+        actions.push(game.do_penalty(BIG_PENALTY,
                         &player2_id,
                         &user1_id,
-                        &user2_id);
+                        &user2_id));
+
 
         actions
+    }
+}
+
+fn get_penalty_by_fight_action(action_data: ActionData) -> ActionData {
+    match action_data {
+        Penalty { action_type, account_id, is_fight,
+            player_img, player_name, player_number, } => {
+            Penalty {
+                action_type,
+                account_id,
+                is_fight: true,
+                player_img,
+                player_name,
+                player_number
+            }
+        },
+        _ => panic!("")
     }
 }
 

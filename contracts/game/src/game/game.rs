@@ -249,6 +249,8 @@ impl Game {
     }
 
     pub fn get_opponent_field_player(&self) -> (f32, &FieldPlayer) {
+        log!("get opponent_field_player");
+
         let user_player_ids = self.player_with_puck.clone().unwrap();
         let position = self.get_coeff_player_pos(&user_player_ids);
 
@@ -435,12 +437,16 @@ impl Game {
 
         self.increase_five_time_field();
         match self.last_action {
-            Icing {..} => { },
+            Icing {..} => { log!("Icing")},
             _ => {
+                log!("No icing");
                 self.check_teams_to_change_active_five();
+                log!("team checks");
                 actions.append(&mut self.reduce_penalty());
-
+                log!("append players 1");
                 self.swap_players_in_five(&USER_ID1);
+
+                log!("append players 2");
                 self.swap_players_in_five(&USER_ID2);
             }
         };
@@ -459,7 +465,7 @@ impl Game {
         let action = Action;
 
         let actions = match self.last_action {
-            StartGame {..} => {
+            StartGame { .. } => {
                 self.zone_number = 2;
                 self.event_generation_delay += 3 * SECOND;
 
@@ -470,22 +476,22 @@ impl Game {
                     StartPeriod {
                         action_type: ActionTypes::StartPeriod,
                         number: 1,
-                    }
+                    },
                 ];
                 actions.append(&mut self.face_off(&Center));
 
                 actions
             },
-            EndOfPeriod {..} => {
+            EndOfPeriod { .. } => {
                 let mut actions = if self.turns == FIRST_PERIOD {
                     vec![StartPeriod {
                         action_type: ActionTypes::StartPeriod,
-                        number: 2
+                        number: 2,
                     }]
                 } else if self.turns == SECOND_PERIOD {
                     vec![StartPeriod {
                         action_type: ActionTypes::StartPeriod,
-                        number: 3
+                        number: 3,
                     }]
                 } else {
                     vec![]
@@ -495,42 +501,61 @@ impl Game {
                 self.event_generation_delay += 3 * SECOND;
 
                 self.player_with_puck = None;
+                actions.append(&mut self.check_and_do_penalties());
                 self.swap_all_players_in_fives();
                 actions.append(&mut self.face_off(&Center));
 
                 actions
             },
-           Goal { .. } => {
+            Goal { .. } => {
                 self.zone_number = 2;
                 self.event_generation_delay += 3 * SECOND;
 
                 self.player_with_puck = None;
+
+                let mut actions = Vec::new();
+
+                actions.append(&mut self.check_and_do_penalties());
                 self.swap_all_players_in_fives();
-                self.face_off(&Center)
+                actions.append(&mut self.face_off(&Center));
+
+                actions
             },
-            PuckOut {..} | NetOff {..}=> {
+            PuckOut { .. } | NetOff { .. } => {
                 let random_position = self.get_random_position();
                 self.event_generation_delay += 3 * SECOND;
 
                 self.player_with_puck = None;
+
+                let mut actions = Vec::new();
+
+                actions.append(&mut self.check_and_do_penalties());
                 self.swap_all_players_in_fives();
-                self.face_off(&random_position)
+                actions.append(&mut self.face_off(&random_position));
+
+                actions
             },
-            Offside {..} => {
+            Offside { .. } => {
                 let random_position = self.get_random_position_after_offside();
                 self.event_generation_delay += 3 * SECOND;
 
                 self.player_with_puck = None;
+
+                let mut actions = Vec::new();
+
+                actions.append(&mut self.check_and_do_penalties());
                 self.swap_all_players_in_fives();
-                self.face_off(&random_position)
+                actions.append(&mut self.face_off(&random_position));
+
+                actions
             }
-            Save {..} => {
+            Save { .. } => {
                 self.event_generation_delay += 3 * SECOND;
 
                 self.swap_all_players_in_fives();
                 self.face_off_after_save()
             },
-            Icing {..} => {
+            Icing { .. } => {
                 self.zone_number = match self.get_user_id_player_with_puck() {
                     1 => 1,
                     2 => 3,
@@ -541,13 +566,18 @@ impl Game {
                 self.event_generation_delay += 3 * SECOND;
 
                 self.player_with_puck = None;
+                let mut actions = Vec::new();
+
+                actions.append(&mut self.check_and_do_penalties());
                 self.swap_all_players_on_opponent_team();
-                self.face_off(&random_position)
+                actions.append(&mut self.face_off(&random_position));
+
+                actions
             },
-            Penalty {..} | Fight {..} | FightWon {..}  => {
+            Penalty { .. } | Fight { .. } | FightWon { .. } => {
                 self.zone_number = match self.get_user_id_player_with_puck() {
-                    1 => 1,
-                    2 => 3,
+                    1 => 3,
+                    2 => 1,
                     _ => panic!("User id not found :(")
                 };
 
@@ -555,10 +585,15 @@ impl Game {
                 self.event_generation_delay += 3 * SECOND;
 
                 self.player_with_puck = None;
+                let mut actions = Vec::new();
+
+                actions.append(&mut self.check_and_do_penalties());
                 self.swap_all_players_in_fives();
-                self.face_off(&random_position)
+
+                actions.append(&mut self.face_off(&random_position));
+                actions
             },
-            PenaltyShot {..} => {
+            PenaltyShot { .. } => {
                 self.event_generation_delay += 5 * SECOND;
                 self.do_penalty_shot()
             }
@@ -573,10 +608,10 @@ impl Game {
 
     fn swap_all_players_in_fives(&mut self) {
         let player_with_puck = self.player_with_puck.clone();
-        let user1 = self.get_user_info_mut(&1);
+        let user1 = self.get_user_info_mut(&USER_ID1);
         user1.team.swap_all_players_in_active_five(&player_with_puck);
 
-        let user2 = self.get_user_info_mut(&2);
+        let user2 = self.get_user_info_mut(&USER_ID2);
         user2.team.swap_all_players_in_active_five(&player_with_puck);
     }
 
@@ -617,13 +652,13 @@ impl Game {
 
         let mut actions = Vec::new();
 
-        let players_to_big_penalty = self.get_players_to_big_penalty(&user_id);
+        let players_to_big_penalty = self.get_players_to_big_penalty(&penalty_user_id);
         actions.append(&mut self.dp(players_to_big_penalty, &user_id, &penalty_user_id, BIG_PENALTY));
 
-        let players_to_small_penalty = self.get_players_to_small_penalty(&user_id);
+        let players_to_small_penalty = self.get_players_to_small_penalty(&penalty_user_id);
         actions.append(&mut self.dp(players_to_small_penalty, &user_id, &penalty_user_id, SMALL_PENALTY));
 
-        self.clear_players_to_penalties(&user_id);
+        self.clear_players_to_penalties(&penalty_user_id);
 
         actions
     }
@@ -678,13 +713,13 @@ impl Game {
             SmallPenalty
         };
 
-        let player_with_puck = self.player_with_puck.clone();
         let penalty_user = self.get_user_info(penalty_user_id.clone());
         let penalty_player = penalty_user.team.get_field_player(penalty_player_id);
 
         let action = Penalty {
             action_type,
             account_id: penalty_user.account_id.clone(),
+            is_fight: false,
             player_img: penalty_player.img.clone().expect("Player img not found"),
             player_name: penalty_player.name.clone().expect("Player name not found"),
             player_number: penalty_player.number,
@@ -694,8 +729,6 @@ impl Game {
 
         let penalty_user_mut = self.get_user_info_mut(penalty_user_id);
         penalty_user_mut.team.do_penalty(&penalty_player_id);
-
-        penalty_user_mut.team.swap_all_players_in_active_five(&player_with_puck);
 
         let active_five_number = penalty_user_mut.team.active_five.get_current_five_number();
         let number_of_players = penalty_user_mut.team.get_five_number_of_players(&active_five_number);
@@ -831,7 +864,7 @@ impl Game {
     }
 
     fn face_off(&mut self, player_position: &PlayerPosition) -> Vec<ActionData> {
-        let player1 = self.get_field_player_by_pos(1, player_position);
+        let player1 = self.get_field_player_by_pos(USER_ID1, player_position);
         let user = self.get_user_info(player1.get_user_id());
         let position1 = user.team.get_field_player_pos(&player1.get_player_id());
         let active_five = user.team.get_active_five();
@@ -843,7 +876,7 @@ impl Game {
             active_five.get_number_of_players(),
             opponent_five.get_number_of_players(),
             position1);
-        let player2 = self.get_field_player_by_pos(2, opponent_pos.1);
+        let player2 = self.get_field_player_by_pos(USER_ID2, opponent_pos.1);
 
         let compared_stat1 = get_relative_field_player_stat(
             player1, player1.stats.face_offs as f32);
@@ -998,13 +1031,14 @@ impl Game {
 
     fn swap_players_in_five(&mut self, user_id: &UserId) {
         let player_with_puck: Option<TokenId>= if self.player_with_puck.is_some() {
+            log!("player_with_puck: {}", self.player_with_puck.clone().unwrap().1);
             Some(self.player_with_puck.clone().unwrap().1)
         } else {
+            log!("None");
             None
         };
-
         let user = self.get_user_info_mut(user_id);
-
+        log!("user_id: {}", user_id);
         user.team.swap_players_in_active_five(player_with_puck);
     }
 

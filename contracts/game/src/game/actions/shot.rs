@@ -1,3 +1,4 @@
+use near_sdk::log;
 use crate::game::actions::action::ActionData::{Goal, Pass, Rebound, Save, Shot, ShotBlocked, ShotMissed};
 use crate::{Game, PlayerPosition};
 use crate::game::actions::action::{ActionData, ActionTypes, DoAction};
@@ -82,6 +83,8 @@ impl ShotAction {
         let player_id = game.get_field_player_id_by_pos(&random_position, random_user_id);
 
         let user = game.get_user_info(random_user_id);
+
+        log!("user_id: {}", user.user_id.clone());
         let player = user.team.get_field_player(&player_id);
 
         // random_position may not be available. get_field_player_id_by_pos will return the player to a different position
@@ -248,6 +251,7 @@ impl ShotAction {
         let player_id = game.get_field_player_id_by_pos(&random_position, random_user_id.clone());
 
         let user = game.get_user_info(random_user_id);
+        log!("user_id: {}", user.user_id.clone());
         let player = user.team.get_field_player(&player_id);
         let player_position = user.team.get_field_player_pos(&player_id);
 

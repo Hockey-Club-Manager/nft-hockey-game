@@ -1,3 +1,5 @@
+extern crate core;
+
 use near_sdk::collections::{LookupMap, UnorderedMap};
 use near_sdk::{CryptoHash, ext_contract, Gas, Promise, PromiseError};
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};

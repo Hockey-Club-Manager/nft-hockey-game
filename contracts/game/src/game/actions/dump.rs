@@ -211,7 +211,7 @@ impl DumpAction {
             PlayerPosition::RightDefender | PlayerPosition::RightWing => {
                 PlayerPosition::LeftDefender
             },
-            _ => panic!("Unknown position")
+            _ => player_position.clone()
         };
     }
 

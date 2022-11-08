@@ -445,28 +445,24 @@ impl Team {
 
         let current_five_number = self.active_five.current_number.clone();
         let players = self.get_players_in_five(&current_five_number);
-        let number_of_players_in_current_five = self.get_number_of_field_players(&current_five_number);
 
         let active_five = self.get_active_five_mut();
-        let number_of_players_in_active_five = active_five.get_number_of_players();
-
-        if active_five.current_number == current_five_number &&
-            number_of_players_in_active_five == number_of_players_in_current_five {
-            return;
-        }
 
         let players_in_active_five = active_five.field_players.clone();
         active_five.field_players.clear();
+        log!("clear five");
 
         let mut number_of_players_to_replace = 2;
 
         for (position, player_id) in &players {
             let is_replaced_position = active_five.replaced_position.contains(position);
-            let is_player_available = is_player_available(player_id,
+
+            let player_id_to_replace = players_in_active_five.get(position).unwrap();
+            let is_player_available = is_player_available(player_id_to_replace,
                                                           &player_with_puck,
                                                           &players_to_big_penalty,
                                                           &players_to_small_penalty);
-            log!("{} - to replace is {}", player_id.clone(), is_player_available.clone());
+            log!("{} - to replace is {}", player_id_to_replace.clone(), is_player_available.clone());
             log!("contains {}", is_replaced_position);
             if is_player_available && !is_replaced_position
                 && number_of_players_to_replace > 0 {
@@ -476,8 +472,7 @@ impl Team {
                 number_of_players_to_replace -= 1;
             } else {
                 log!("not replaced");
-                let id = players_in_active_five.get(position).unwrap();
-                active_five.field_players.insert(position.clone(), id.clone());
+                active_five.field_players.insert(position.clone(), player_id_to_replace.clone());
             }
         }
 
@@ -491,13 +486,17 @@ impl Team {
         let players = self.get_players_in_five(&current_five_number);
 
         let active_five = self.get_active_five_mut();
+        let players_in_current_five = active_five.field_players.clone();
+
         active_five.field_players.clear();
         active_five.replaced_position.clear();
 
         for (pos, id) in &players {
+            let player_in_active_five_id = players_in_current_five.get(pos).expect("Player not found");
+
             let is_available = match player_with_puck {
                 Some((_user_id, player_id)) => {
-                    if *player_id != *id {
+                    if *player_in_active_five_id != *player_id {
                         true
                     } else {
                         false
@@ -509,6 +508,8 @@ impl Team {
             if is_available {
                 active_five.field_players.insert(pos.clone(), id.clone());
                 active_five.replaced_position.push(pos.clone());
+            } else {
+                active_five.field_players.insert(pos.clone(), player_in_active_five_id.clone());
             }
         }
 
@@ -574,7 +575,6 @@ impl Team {
         }
     }
 }
-
 
 fn is_player_available(
     player_id: &TokenId,

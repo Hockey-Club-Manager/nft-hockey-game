@@ -277,6 +277,8 @@ pub enum ActionData {
         action_type: ActionTypes,
         account_id: AccountId,
 
+        is_fight: bool,
+
         player_img: String,
         player_name: String,
         player_number: u8,
