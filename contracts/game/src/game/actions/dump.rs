@@ -54,20 +54,23 @@ impl DumpAction {
         let player = user.team.get_field_player(&player_id_to_dump);
         let player_position = user.team.get_field_player_pos(&player.get_player_id());
 
+        let new_zone_number = if user_player_id.0 == 1 {
+            3
+        } else {
+            1
+        };
+
         let action = vec![Dump {
             action_type,
             account_id: user.account_id.clone(),
+            zone_number: new_zone_number,
             from_player_number: player_with_puck.number,
             from: player_with_puck_position.clone(),
             to_player_number: player.number,
             to: player_position.clone(),
         }];
 
-        if user_player_id.0 == 1 {
-            game.zone_number = 3;
-        } else {
-            game.zone_number = 1;
-        }
+        game.zone_number = new_zone_number;
 
         game.player_with_puck = Option::from((user_player_id.0, player_id_to_dump.clone()));
 
@@ -259,6 +262,7 @@ impl DumpAction {
         let action = vec![Dump {
             action_type: DumpOut,
             account_id: user.account_id.clone(),
+            zone_number: 2,
             from_player_number: player_with_puck.number,
             from: player_with_puck_position.clone(),
             to_player_number: player.number,

@@ -1,7 +1,7 @@
 use crate::*;
 use near_sdk::{log, CryptoHash, serde_json};
 use std::mem::size_of;
-use near_sdk::env::{attached_deposit, predecessor_account_id};
+use near_sdk::env::{attached_deposit};
 use crate::extra::player_type::PlayerType;
 use crate::pack::*;
 
@@ -17,7 +17,7 @@ pub(crate) fn hash_account_id(account_id: &AccountId) -> CryptoHash {
 
 pub(crate) fn assert_one_yocto() {
     assert_eq!(
-        env::attached_deposit(),
+        attached_deposit(),
         1,
         "Requires attached deposit of exactly 1 yoctoNEAR",
     )
@@ -25,7 +25,7 @@ pub(crate) fn assert_one_yocto() {
 
 pub(crate) fn assert_at_least_one_yocto() {
     assert!(
-        env::attached_deposit() >= 1,
+        attached_deposit() >= 1,
         "Requires attached deposit of at least 1 yoctoNEAR",
     )
 }
@@ -89,7 +89,7 @@ impl Contract {
     ) {
         match player_type {
             PlayerType::FieldPlayer => {
-                let mut token_set = self.get_field_players_set(rarity);;
+                let mut token_set = self.get_field_players_set(rarity);
 
                 token_set.insert(token_id);
                 self.field_players.insert(rarity, &token_set);
@@ -100,7 +100,6 @@ impl Contract {
                 token_set.insert(token_id);
                 self.goalies.insert(rarity, &token_set);
             }
-            _ => panic!("Player type not found!")
         };
     }
 
@@ -123,7 +122,6 @@ impl Contract {
                 token_set.remove(token_id);
                 self.goalies.insert(rarity, &token_set);
             }
-            _ => panic!("Player type not found!")
         };
     }
 

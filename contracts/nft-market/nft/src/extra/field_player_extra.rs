@@ -5,7 +5,6 @@ use crate::extra::player_position::PlayerPosition;
 use crate::extra::player_role::PlayerRole;
 use crate::extra::player_type::PlayerType;
 use crate::extra::stats::{calculate_rarity, Stats};
-use crate::Rarity::*;
 
 
 #[derive(Serialize, Deserialize)]

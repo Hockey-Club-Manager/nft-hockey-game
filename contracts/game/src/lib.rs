@@ -32,7 +32,6 @@ const SECOND: u64 = 1000000000;
 // 1 NEAR
 const MIN_DEPOSIT: Balance = 1_000_000_000_000_000_000_000_000;
 const ONE_YOCTO: Balance = 1;
-const NUMBER_OF_STEPS: u128 = 75;
 
 #[derive(BorshSerialize, BorshStorageKey)]
 enum StorageKey {
@@ -128,7 +127,7 @@ impl Hockey {
                 MIN_DEPOSIT
         );
 
-        ext_manage_team::ext(AccountId::new_unchecked("hcm.parh.testnet".parse().unwrap()))
+        ext_manage_team::ext(AccountId::new_unchecked(NFT_CONTRACT.parse().unwrap()))
             .with_static_gas(Gas(100_000_000_000_000))
             .get_owner_team(account_id.clone())
             .then(
@@ -295,7 +294,7 @@ impl Hockey {
             _ => {}
         };
 
-        let generated_event = game.generate_event(&generated_actions);
+        let generated_event = game.generate_event(&mut generated_actions);
 
         self.games.insert(&game_id, &game);
 

@@ -21,6 +21,7 @@ use crate::{FieldPlayer, PlayerPosition, TokenId};
 #[serde(crate = "near_sdk::serde")]
 pub enum ActionTypes {
     StartGame,
+    StartPeriod,
     EndOfPeriod,
     Overtime,
     GameFinished,
@@ -66,7 +67,11 @@ pub enum ActionTypes {
 #[serde(crate = "near_sdk::serde")]
 pub enum ActionData {
     StartGame {
-        action_type: ActionTypes
+        action_type: ActionTypes,
+    },
+    StartPeriod {
+        action_type: ActionTypes,
+        number: u8,
     },
     EndOfPeriod {
         action_type: ActionTypes,
@@ -151,12 +156,14 @@ pub enum ActionData {
         action_type: ActionTypes,
         account_id: AccountId,
 
+        goalie_number: u8,
         // The player who received the puck
         player_number: u8,
         player_position: PlayerPosition,
     },
     FaceOff {
         action_type: ActionTypes,
+        zone_number: u8,
         account_id1: AccountId,
         player_number1: u8,
         player_position1: PlayerPosition,
@@ -168,6 +175,7 @@ pub enum ActionData {
     FaceOffWin {
         action_type: ActionTypes,
         account_id: AccountId,
+        zone_number: u8,
 
         // The player who won face-off
         player_number: u8,
@@ -175,6 +183,7 @@ pub enum ActionData {
     },
     Move {
         action_type: ActionTypes,
+        zone_number: u8,
         account_id: AccountId,
 
         player_number: u8,
@@ -184,12 +193,15 @@ pub enum ActionData {
         action_type: ActionTypes,
         account_id: AccountId,
 
-        // The player who took the puck
         player_number: u8,
         player_position: PlayerPosition,
+
+        // The player who took the puck
+        opponent_number: u8,
     },
     Offside {
         action_type: ActionTypes,
+        zone_number: u8,
         account_id: AccountId,
 
         player_number: u8,
@@ -198,13 +210,18 @@ pub enum ActionData {
     Dangle {
         action_type: ActionTypes,
         account_id: AccountId,
+        zone_number: u8,
 
         player_number: u8,
         player_position: PlayerPosition,
+
+        opponent_number: u8,
     },
     PokeCheck {
         action_type: ActionTypes,
         account_id: AccountId,
+
+        opponent_number: u8,
 
         // The player who took the puck
         player_number: u8,
@@ -213,6 +230,7 @@ pub enum ActionData {
     Dump {
         action_type: ActionTypes,
         account_id: AccountId, // account id player with puck
+        zone_number: u8,
 
         from_player_number: u8,
         from: PlayerPosition,

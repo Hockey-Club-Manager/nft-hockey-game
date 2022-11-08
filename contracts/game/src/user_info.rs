@@ -193,7 +193,7 @@ impl Hockey {
             opponent_id: Some(friend_id.clone())
         };
 
-        ext_manage_team::ext(AccountId::new_unchecked("hcm.parh.testnet".parse().unwrap()))
+        ext_manage_team::ext(AccountId::new_unchecked(NFT_CONTRACT.parse().unwrap()))
             .with_static_gas(Gas(100_000_000_000_000))
             .get_teams(account_id.clone(), friend_id.clone())
             .then(

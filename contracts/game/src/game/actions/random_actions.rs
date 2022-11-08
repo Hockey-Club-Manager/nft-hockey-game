@@ -28,7 +28,7 @@ pub trait RandomAction {
 
 pub struct Giveaway;
 impl RandomAction for Giveaway {
-    fn check_probability(&self, game: &Game) -> bool {
+    fn check_probability(&self, _: &Game) -> bool {
         let rnd = Game::get_random_in_range(1, 100, 11);
         if PROBABILITY_GIVEAWAY >= rnd {
             return true;
@@ -130,7 +130,7 @@ fn battle(game: &mut Game) -> Vec<ActionData> {
 
 pub struct Takeaway;
 impl RandomAction for Takeaway {
-    fn check_probability(&self, game: &Game) -> bool {
+    fn check_probability(&self, _: &Game) -> bool {
         let rnd = Game::get_random_in_range(1, 100, 13);
         if PROBABILITY_TAKEAWAY >= rnd {
             return true;
@@ -182,7 +182,7 @@ impl RandomAction for PuckOut {
         false
     }
 
-    fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
+    fn do_action(&self, _: &mut Game) -> Vec<ActionData> {
         log!("PuckOut");
         vec![ActionData::PuckOut { action_type: ActionTypes::PuckOut }]
     }
@@ -269,7 +269,7 @@ fn move_player_to_big_penalties(game: &mut Game, player_id: TokenId, user_id: Us
 
 pub struct SmallPenalty;
 impl RandomAction for SmallPenalty {
-    fn check_probability(&self, game: &Game) -> bool {
+    fn check_probability(&self, _: &Game) -> bool {
         let rnd = Game::get_random_in_range(1, 100, 17);
         if PROBABILITY_SMALL_PENALTY >= rnd {
             return true;
@@ -437,7 +437,7 @@ impl RandomAction for NetOff {
         false
     }
 
-    fn do_action(&self, game: &mut Game) -> Vec<ActionData> {
+    fn do_action(&self, _: &mut Game) -> Vec<ActionData> {
         log!("NetOff");
         vec![ActionData::NetOff { action_type: ActionTypes::NetOff }]
     }

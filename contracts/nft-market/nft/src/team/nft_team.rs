@@ -1,15 +1,13 @@
 use crate::*;
 use std::collections::HashMap;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::{ext_contract, Gas, log};
-use near_sdk::env::panic;
+use near_sdk::{ext_contract, Gas};
 use near_sdk::serde_json;
 use crate::{TokenId, TokenMetadata};
 use crate::extra::field_player_extra::FieldPlayerExtra;
 use crate::extra::goalie_extra::GoalieExtra;
 use crate::extra::player_position::PlayerPosition;
 use crate::team::ice_time_priority::IceTimePriority;
-use crate::team::nft_team::IceTimePriority::*;
 use crate::team::number_five::*;
 use crate::team::number_goalie::{GoalieSubstitution, NumberGoalie};
 
@@ -160,7 +158,7 @@ impl Contract {
         let player_metadata = self.token_metadata_by_id.get(&field_player_id).expect("Token has no metadata");
         let _result: FieldPlayerExtra = match serde_json::from_str(&player_metadata.extra.unwrap()) {
             Ok(field_player_extra) => field_player_extra,
-            Err(E) => panic!("{}", E)
+            Err(e) => panic!("{}", e)
         };
     }
 
@@ -199,6 +197,8 @@ impl Contract {
             if !user_tokens.contains(&id) {
                 panic!("You are not the owner of the token");
             }
+
+            self.check_goalie(id, account_id);
         }
 
         result
@@ -215,7 +215,7 @@ impl Contract {
         let player_metadata = self.token_metadata_by_id.get(&goalie_id).expect("Token has no metadata");
         let _result: GoalieExtra = match serde_json::from_str(&player_metadata.extra.unwrap()) {
             Ok(goalie_extra) => goalie_extra,
-            Err(E) => panic!("{}", E)
+            Err(e) => panic!("{}", e)
         };
     }
 

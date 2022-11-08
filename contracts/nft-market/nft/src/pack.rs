@@ -1,4 +1,4 @@
-use near_sdk::env::{attached_deposit, predecessor_account_id};
+use near_sdk::env::{predecessor_account_id};
 use near_sdk::{log, serde_json};
 use crate::*;
 use crate::extra::player_type::PlayerType;

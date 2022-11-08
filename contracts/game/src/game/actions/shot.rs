@@ -125,7 +125,8 @@ impl ShotAction {
                         goalie_number: opponent_goalie.number,
                     }]
                 } else {
-                    vec![self.do_rebound(game)]
+                    let goalie_number = opponent_goalie.number;
+                    vec![self.do_rebound(game, goalie_number)]
                 }
             }
         }
@@ -231,7 +232,7 @@ impl ShotAction {
         }
     }
 
-    fn do_rebound(&self, game: &mut Game) -> ActionData {
+    fn do_rebound(&self, game: &mut Game, goalie_number: u8) -> ActionData {
         let random_user_id = Game::get_random_in_range(1, 2, 19);
         let user_with_puck_id = game.get_user_id_player_with_puck();
 
@@ -253,6 +254,7 @@ impl ShotAction {
         let action = Rebound {
             action_type: ActionTypes::Rebound,
             account_id: user.account_id.clone(),
+            goalie_number,
             player_number: player.number,
             player_position: player_position.clone(),
         };

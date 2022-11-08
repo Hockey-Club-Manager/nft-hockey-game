@@ -3,6 +3,7 @@ use crate::game::actions::action::ActionData::{Hit, Move, Offside};
 use crate::game::actions::action::{ActionData, ActionTypes, DoAction};
 use crate::{Game};
 use crate::game::actions::utils::{get_relative_field_player_stat, has_won};
+use crate::user_info::USER_ID2;
 
 pub struct MoveAction;
 impl DoAction for MoveAction {
@@ -14,8 +15,20 @@ impl DoAction for MoveAction {
         let position_player_with_puck = user.team.get_field_player_pos(
             &player_with_puck.get_player_id());
 
+        let opponent = game.get_opponent_field_player();
+        let opponent_stat = get_relative_field_player_stat(
+            &opponent.1,
+            (opponent.1.stats.defensive_awareness as f32 + opponent.1.stats.get_strength()) / 2.0
+        ) * opponent.0;
+
+        let mut new_zone_number: u8 = 3;
+        if player_with_puck.get_user_id() == USER_ID2 {
+            new_zone_number = 1;
+        }
+
         let mut actions = vec![Move {
             action_type: ActionTypes::Move,
+            zone_number: new_zone_number,
             account_id: user.account_id.clone(),
             player_number: player_with_puck.number,
             player_position: position_player_with_puck.clone()
@@ -25,6 +38,7 @@ impl DoAction for MoveAction {
         if rnd_offside <= 15 {
             actions.push(Offside {
                 action_type: ActionTypes::Move,
+                zone_number: 2,
                 account_id: user.account_id.clone(),
                 player_number: player_with_puck.number,
                 player_position: position_player_with_puck.clone()
@@ -34,19 +48,8 @@ impl DoAction for MoveAction {
             return actions;
         }
 
-        let opponent = game.get_opponent_field_player();
-        let opponent_stat = get_relative_field_player_stat(
-            &opponent.1,
-            (opponent.1.stats.defensive_awareness as f32 + opponent.1.stats.get_strength()) / 2.0
-        ) * opponent.0;
-
-        let mut relative_side_zone: i8 = 1;
-        if player_with_puck.get_user_id() == 2 {
-            relative_side_zone = -1;
-        }
-
         if has_won(player_stat, opponent_stat) {
-            game.zone_number += relative_side_zone;
+            game.zone_number = new_zone_number;
         } else {
             let opponent_user = game.get_opponent_info(user.user_id);
             let opponent_position = opponent_user.team
@@ -57,6 +60,7 @@ impl DoAction for MoveAction {
                 account_id: opponent_user.account_id.clone(),
                 player_number: opponent.1.number,
                 player_position: opponent_position.clone(),
+                opponent_number: player_with_puck.number
             });
 
             game.player_with_puck = Option::from((opponent.1.get_user_id(), opponent.1.get_player_id()));

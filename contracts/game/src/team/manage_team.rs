@@ -26,7 +26,7 @@ impl Hockey {
             panic!("Account id not found!")
         }
 
-        let event = game.generate_event(&vec![TakeTO{
+        let event = game.generate_event(&mut vec![TakeTO{
             action_type: ActionTypes::TakeTO,
             account_id,
         }]);
@@ -43,7 +43,7 @@ impl Hockey {
         let event = if game.user1.account_id == account_id {
             if !game.user1.coach_speech_called {
                 self.change_stats_coach_speech(&mut game.user1);
-                game.generate_event(&vec![CoachSpeech {
+                game.generate_event(&mut vec![CoachSpeech {
                     action_type: ActionTypes::CoachSpeech,
                     account_id
                 }])
@@ -53,7 +53,7 @@ impl Hockey {
         } else if game.user2.account_id == account_id {
             if !game.user2.coach_speech_called {
                 self.change_stats_coach_speech(&mut game.user2);
-                game.generate_event(&vec![CoachSpeech {
+                game.generate_event(&mut vec![CoachSpeech {
                     action_type: ActionTypes::CoachSpeech,
                     account_id
                 }])
@@ -77,7 +77,7 @@ impl Hockey {
             game.user1.is_goalie_out = true;
             game.user1.team.active_goalie_substitution = goalie_substitution;
             game.user1.team.goalie_out();
-            game.generate_event(&vec![GoalieOut {
+            game.generate_event(&mut vec![GoalieOut {
                 action_type: ActionTypes::GoalieOut,
                 account_id
             }])
@@ -85,7 +85,7 @@ impl Hockey {
             game.user2.is_goalie_out = true;
             game.user2.team.active_goalie_substitution = goalie_substitution;
             game.user2.team.goalie_out();
-            game.generate_event(&vec![GoalieOut {
+            game.generate_event(&mut vec![GoalieOut {
                 action_type: ActionTypes::GoalieOut,
                 account_id
             }])
@@ -105,14 +105,14 @@ impl Hockey {
         let event = if game.user1.account_id == account_id  && game.user1.is_goalie_out{
             game.user1.is_goalie_out = false;
             game.user1.team.goalie_out();
-            game.generate_event(&vec![GoalieBack {
+            game.generate_event(&mut vec![GoalieBack {
                 action_type: ActionTypes::GoalieBack,
                 account_id
             }])
         } else if game.user2.account_id == account_id && game.user2.is_goalie_out{
             game.user2.is_goalie_out = false;
             game.user2.team.goalie_out();
-            game.generate_event(&vec![GoalieBack {
+            game.generate_event(&mut vec![GoalieBack {
                 action_type: ActionTypes::GoalieBack,
                 account_id
             }])

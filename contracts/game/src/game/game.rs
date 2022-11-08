@@ -20,6 +20,9 @@ use crate::team::players::player::Hand::Left;
 use crate::team::team_metadata::team_metadata_to_team;
 use crate::user_info::{USER_ID1, USER_ID2, UserId};
 
+pub const FIRST_PERIOD: u8 = 25;
+pub const SECOND_PERIOD: u8 = 50;
+pub const THIRD_PERIOD: u8 = 75;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum GameState {
@@ -32,7 +35,8 @@ pub enum GameState {
 pub struct Event {
     pub(crate) player_with_puck: Option<(UserId, TokenId)>,
     pub(crate) actions: Vec<ActionData>,
-    pub(crate) zone_number: i8,
+    pub(crate) random_numbers: Vec<u8>,
+    pub(crate) zone_number: u8,
     pub(crate) time: Timestamp,
     pub(crate) user1: UserInfo,
     pub(crate) user2: UserInfo,
@@ -50,8 +54,8 @@ pub struct Game {
     pub(crate) winner_index: Option<usize>,
 
     pub(crate) player_with_puck: Option<(UserId, TokenId)>,
-    pub(crate) zone_number: i8,
-    pub(crate) turns: u128,
+    pub(crate) zone_number: u8,
+    pub(crate) turns: u8,
     pub(crate) last_action: ActionData,
 
     pub(crate) last_event_generation_time: Timestamp,
@@ -70,7 +74,7 @@ impl Game {
         reward: TokenBalance,
         game_id: &GameId
     ) -> Game {
-        let mut team1 = team_metadata_to_team(teams.0, 1);
+        let team1 = team_metadata_to_team(teams.0, 1);
         let team2 = team_metadata_to_team(teams.1, 2);
 
         let user_info1 = UserInfo {
@@ -373,8 +377,8 @@ impl Game {
         }
     }
 
-    pub fn generate_event(&mut self, actions: &Vec<ActionData>) -> Event {
-        for action in actions {
+    pub fn generate_event(&mut self, actions: &mut Vec<ActionData>) -> Event {
+        for action in actions.into_iter() {
             match action {
                 TakeTO {..} | CoachSpeech {..} | GoalieBack {..}
                 | GoalieOut {..} | EndedPenalty {..} | DelayedPenaltySignal {..}
@@ -392,7 +396,8 @@ impl Game {
             zone_number: self.zone_number.clone(),
             actions: actions.clone(),
             player_with_puck: self.player_with_puck.clone(),
-            event_generation_delay: self.event_generation_delay / SECOND
+            event_generation_delay: self.event_generation_delay / SECOND,
+            random_numbers: env::random_seed(),
         }
     }
 }
@@ -408,7 +413,7 @@ pub fn get_amount_of_spent_strength(ice_time_priority: IceTimePriority) -> u8 {
 }
 
 impl Game {
-    pub fn get_game_state(&mut self) -> (GameState, Option<ActionData>) {
+   pub fn get_game_state(&mut self) -> (GameState, Option<ActionData>) {
         return if self.is_game_over() {
             (
                 GameState::GameOver { winner_id: self.get_winner_id() },
@@ -417,7 +422,7 @@ impl Game {
         } else {
             let state = GameState::InProgress;
 
-            if self.turns == NUMBER_OF_STEPS {
+            if self.turns == THIRD_PERIOD {
                 (state, Some(Overtime { action_type: ActionTypes::Overtime }))
             } else {
                 (state, None)
@@ -458,14 +463,44 @@ impl Game {
                 self.zone_number = 2;
                 self.event_generation_delay += 3 * SECOND;
 
-                let mut actions = vec![StartGame {
-                    action_type: ActionTypes::StartGame
-                }];
+                let mut actions = vec![
+                    StartGame {
+                        action_type: ActionTypes::StartGame,
+                    },
+                    StartPeriod {
+                        action_type: ActionTypes::StartPeriod,
+                        number: 1,
+                    }
+                ];
                 actions.append(&mut self.face_off(&Center));
 
                 actions
             },
-            Goal { .. } | EndOfPeriod {..} => {
+            EndOfPeriod {..} => {
+                let mut actions = if self.turns == FIRST_PERIOD {
+                    vec![StartPeriod {
+                        action_type: ActionTypes::StartPeriod,
+                        number: 2
+                    }]
+                } else if self.turns == SECOND_PERIOD {
+                    vec![StartPeriod {
+                        action_type: ActionTypes::StartPeriod,
+                        number: 3
+                    }]
+                } else {
+                    vec![]
+                };
+
+                self.zone_number = 2;
+                self.event_generation_delay += 3 * SECOND;
+
+                self.player_with_puck = None;
+                self.swap_all_players_in_fives();
+                actions.append(&mut self.face_off(&Center));
+
+                actions
+            },
+           Goal { .. } => {
                 self.zone_number = 2;
                 self.event_generation_delay += 3 * SECOND;
 
@@ -818,6 +853,7 @@ impl Game {
 
         let mut actions = vec![FaceOff {
             action_type: ActionTypes::FaceOff,
+            zone_number: self.zone_number,
             account_id1: user.account_id.clone(),
             player_number1: player1.number,
             player_position1: position1.clone(),
@@ -830,6 +866,7 @@ impl Game {
             actions.push(FaceOffWin {
                 action_type: ActionTypes::FaceOffWin,
                 account_id: user.account_id.clone(),
+                zone_number: self.zone_number,
                 player_number: player1.number,
                 player_position: position1.clone(),
             });
@@ -839,6 +876,7 @@ impl Game {
             actions.push(FaceOffWin {
                 action_type: ActionTypes::FaceOffWin,
                 account_id: opponent_user.account_id.clone(),
+                zone_number: self.zone_number,
                 player_number: player2.number,
                 player_position: opponent_pos.1.clone(),
             });
@@ -869,13 +907,13 @@ impl Game {
     }
 
     fn check_end_of_period(&mut self) -> Option<ActionData> {
-        if [25, 50, 75].contains(&self.turns) {
-            let period = if self.turns >= 75 {
+        if [FIRST_PERIOD, SECOND_PERIOD, THIRD_PERIOD].contains(&self.turns) {
+            let period = if self.turns >= THIRD_PERIOD {
                 3
-            } else if self.turns >= 50 {
+            } else if self.turns >= SECOND_PERIOD {
                 2
             } else {
-                1
+                FIRST_PERIOD
             };
 
             self.swap_users();
@@ -887,7 +925,7 @@ impl Game {
     }
 
     fn is_game_over(&self) -> bool {
-        if self.turns >= NUMBER_OF_STEPS && self.user1.team.score != self.user2.team.score {
+        if self.turns >= THIRD_PERIOD && self.user1.team.score != self.user2.team.score {
             true
         } else {
             false

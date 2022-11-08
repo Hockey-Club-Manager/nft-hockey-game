@@ -26,23 +26,22 @@ pub struct Goalie {
 impl Goalie {
     pub fn get_reflexes_rel_pass(&self, pass_before_shot: bool) -> f32 {
         let reflexes = self.stats.get_reflexes();
-        let mut pass_coeff: f32 = 1.0;
 
-        if pass_before_shot {
+        let pass_coeff: f32 = if pass_before_shot {
             match self.player_role {
-                PlayerRole::Butterfly => pass_coeff = 1.2,
-                PlayerRole::Hybrid => pass_coeff = 1.0,
-                PlayerRole::Standup => pass_coeff = 0.8,
+                PlayerRole::Butterfly => 1.2,
+                PlayerRole::Hybrid => 1.0,
+                PlayerRole::Standup => 0.8,
                 _ => panic!("Incorrect goalie role")
             }
         } else {
             match self.player_role {
-                PlayerRole::Butterfly => pass_coeff = 0.8,
-                PlayerRole::Hybrid => pass_coeff = 1.0,
-                PlayerRole::Standup => pass_coeff = 1.2,
+                PlayerRole::Butterfly => 0.8,
+                PlayerRole::Hybrid => 1.0,
+                PlayerRole::Standup => 1.2,
                 _ => panic!("Incorrect goalie role")
             }
-        }
+        };
 
         reflexes * pass_coeff
     }
@@ -117,15 +116,5 @@ impl GoalieStats {
         self.speed += value;
         self.vision += value;
         self.morale += value;
-    }
-
-    pub fn decrease_strength(&mut self, value: u8) {
-        self.aggressiveness -= value;
-        self.agility -= value;
-        self.durability -= value;
-        self.endurance -= value;
-        self.speed -= value;
-        self.vision -= value;
-        self.morale -= value;
     }
 }
